@@ -33,7 +33,8 @@
 #define _COMMON_H
 
 #if HAVE_CONFIG_H+0
-# include <config.h>
+//MBG - MODIFIED TO INCLUDE IN A NON-SHITTY WAY
+# include "../config.h"
 #endif
 
 #include <fribidi-common.h>

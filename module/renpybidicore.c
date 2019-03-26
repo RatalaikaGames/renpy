@@ -1,6 +1,7 @@
 #include <Python.h>
 #include <fribidi-src/lib/fribidi.h>
 #include <stdlib.h>
+#include <malloc.h>
 
 #ifndef alloca
 #include <alloca.h>

@@ -324,6 +324,7 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
             sys.exit(-1)
 
     # Build the module normally once we have the c file.
+    compile_if = False #MBG - set to false always
     if compile_if:
 
         if mod_coverage:

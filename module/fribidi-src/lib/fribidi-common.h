@@ -32,6 +32,9 @@
 #ifndef _FRIBIDI_COMMON_H
 #define _FRIBIDI_COMMON_H
 
+ //MBG CUSTOMIZATIONS
+#undef WIN32
+
 #if DONT_HAVE_FRIBIDI_CONFIG_H+0
 # define FRIBIDI "fribidi"
 # define FRIBIDI_NAME "fribidi"
