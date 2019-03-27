@@ -256,7 +256,9 @@ def main():
 
     # Note the game directory.
     game.basepath = renpy.config.gamedir
+    print("CORPSMAN " + renpy.config.gamedir + " CORPSMAN")
     renpy.config.searchpath = [ renpy.config.gamedir ]
+
 
     if renpy.android and ("ANDROID_PUBLIC" in os.environ):
 
@@ -277,6 +279,7 @@ def main():
     if renpy.android:
         renpy.config.searchpath = [ ]
         renpy.config.commondir = None
+
 
     # Load Ren'Py extensions.
     for dir in renpy.config.searchpath:  # @ReservedAssignment

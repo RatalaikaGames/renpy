@@ -260,8 +260,10 @@ def scandirfiles():
             files = common_files  # @UnusedVariable
         else:
             files = game_files  # @UnusedVariable
+        
+        #print("DOING FRAGMENT " + i + " ON BASEDIR " + renpy.config.basedir)
 
-        i = os.path.join(renpy.config.basedir, i)
+        #i = os.path.join(renpy.config.basedir, i) #MBG WTF? CONCATENING A FULL PATH WITH ANOTHER FULL PATH? WHY ARENT THE SEARCH PATHS FRAGMENTS?
         for j in walkdir(i):
             add(i, j)
 
@@ -546,7 +548,7 @@ def get_prefixes(tl=True):
         language = renpy.game.preferences.language  # @UndefinedVariable
     else:
         language = None
-
+    
     for prefix in renpy.config.search_prefixes:
 
         if language is not None:
@@ -638,7 +640,8 @@ def transfn(name):
         name = name.decode("utf-8")
 
     for d in renpy.config.searchpath:
-        fn = os.path.join(renpy.config.basedir, d, name)
+        #fn = os.path.join(renpy.config.basedir, d, name) #MBG - ONCE AGAIN, THIS IS A DOUBLY-BUILT PATH. W-T-F
+        fn = os.path.join(d, name) #MBG - MY VERSION
 
         add_auto(fn)
 

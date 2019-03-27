@@ -131,6 +131,9 @@ class Script(object):
 
         self.scan_script_files()
 
+        #print("HOG--------------")
+        #print(self.script_files)
+
         self.translator.chain_translates()
 
         self.serial = 0
@@ -229,6 +232,7 @@ class Script(object):
 
         for dir, fn in dirlist:  # @ReservedAssignment
 
+            #print("WHAT: " + dir + " | " + fn)
             if fn.endswith(".rpy"):
                 if dir is None:
                     continue
@@ -678,7 +682,6 @@ class Script(object):
             f.close()
 
         else:
-
             # Otherwise, we're loading from disk. So we need to decide if
             # we want to load the rpy or the rpyc file.
             rpyfn = dir + "/" + fn + source
@@ -691,6 +694,7 @@ class Script(object):
                     rpydigest = hashlib.md5(f.read()).digest()
             else:
                 rpydigest = None
+
 
             try:
                 if os.path.exists(rpycfn):

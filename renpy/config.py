@@ -49,7 +49,8 @@ screen_width = 800
 screen_height = 600
 
 # Should sound be enabled?
-sound = True
+#sound = True #MBG - disabled, to speed up development
+sound = False
 
 # Turns recoverable errors into fatal ones, so that the user can know
 # about and fix them.
@@ -390,6 +391,13 @@ basedir = None
 renpy_base = None
 commondir = None
 logdir = None  # Where log and error files go.
+
+#MBG - NEEDED CUSTOMIZING??
+#gamedir = "data/compiled/ags/python/renpygame"
+#basedir = "data/compiled/ags/python/renpysrc"
+#renpy_base = "data/compiled/ags/python/renpysrc/renpy"
+#commondir = "data/compiled/ags/python/renpysrc/renpy/common"
+#logdir = None  # Where log and error files go.
 
 # Should we enable OpenGL mode?
 gl_enable = True
@@ -939,6 +947,8 @@ del collections
 
 
 def init():
+
+
     import renpy.display
 
     global scene
