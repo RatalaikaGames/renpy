@@ -195,7 +195,7 @@ label _start:
 
     scene black
 
-    call _gl_test
+    #call _gl_test #MBG removed
 
     python hide:
         renpy.warp.warp()

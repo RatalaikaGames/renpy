@@ -26,6 +26,7 @@ from __future__ import print_function
 
 import sys
 import pygame_sdl2 as pygame
+import pygame_sdl2.image #MBG - had to add
 import threading
 import renpy.display
 import renpy.audio

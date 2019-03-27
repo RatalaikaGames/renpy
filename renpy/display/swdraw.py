@@ -731,6 +731,8 @@ class SWDraw(object):
 
     def set_mode(self, virtual_size, physical_size, fullscreen):
 
+        print("WRINKLIN FRANKLIN")
+
         # Reset before resize.
         renpy.display.interface.kill_textures_and_surfaces()
         self.reset()
@@ -964,6 +966,8 @@ class SWDraw(object):
         Draws the screen.
         """
 
+        print("AM I A WEASEL")
+
         if fullscreen_video:
 
             if not self.showing_video:
@@ -1005,6 +1009,7 @@ class SWDraw(object):
                 renpy.display.scale.smoothscale(self.window, self.screen.get_size(), self.screen)
 
             self.draw_mouse(True)
+            print("FLIPPER!! I AM A DOLPHIN SQUEEEEEEE")
             pygame.display.flip()
 
         if fullscreen_video:

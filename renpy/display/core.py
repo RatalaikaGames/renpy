@@ -2026,7 +2026,11 @@ class Interface(object):
         else:
             draws = self.get_draw_constructors()
 
+        print("CAFE BABE--------------")
+        print(draws)
+
         for draw in draws:
+            print("SET MODE BABE?")
             if draw.set_mode(virtual_size, physical_size, fullscreen):
                 renpy.display.draw = draw
                 break
@@ -2079,7 +2083,10 @@ class Interface(object):
             )
 
         if draw:
+            print("I AM A HAWK AAAAAAAAAAAAAAAAAAAAAWK")
             renpy.display.draw.draw_screen(surftree, fullscreen_video)
+        else:
+            print("I AM A MOOSE MOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 
         now = time.time()
 
