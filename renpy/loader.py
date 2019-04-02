@@ -483,7 +483,13 @@ def load_core(name):
             return open_file(fn, "rb")
         except:
             pass
-
+            
+    # MBG - try opening absolute path...
+    try:
+        return open_file(name, "rb")
+    except:
+        pass
+        
     # Look for it in archive files.
     for prefix, index in archives:
         if not name in index:
