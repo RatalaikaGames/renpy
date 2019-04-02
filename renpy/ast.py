@@ -34,6 +34,8 @@ import renpy.test
 import hashlib
 import re
 import time
+import binascii
+import os
 
 
 def statement_name(name):
@@ -272,10 +274,17 @@ class PyCode(object):
 
         # The source code.
         self.source = source
-
+        
+        #MBG - NOPE
         # The time is necessary so we can disambiguate between Python
         # blocks on the same line in different script versions.
-        self.location = loc + ( int(time.time()), )
+        #self.location = loc + ( int(time.time()), )
+        tmp = loc[0]
+        if tmp.endswith('/rpy'): tmp = tmp[:-4] + '.rpy' 
+        if tmp.endswith('/rpym'): tmp = tmp[:-5] + '.rpym' 
+        mtime = os.stat(tmp).st_mtime
+        self.location = loc + ( mtime, )
+        
         self.mode = mode
 
         # This will be initialized later on, after we are serialized.
