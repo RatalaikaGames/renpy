@@ -2083,10 +2083,8 @@ class Interface(object):
             )
 
         if draw:
-            print("I AM A HAWK AAAAAAAAAAAAAAAAAAAAAWK")
             renpy.display.draw.draw_screen(surftree, fullscreen_video)
-        else:
-            print("I AM A MOOSE MOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+
 
         now = time.time()
 
