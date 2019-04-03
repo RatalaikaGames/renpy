@@ -52,24 +52,28 @@ class FileLocation(object):
     def __init__(self, directory):
         self.directory = directory
 
+        # MBG - NOPE. I'm sure it's already there
         # Make the save directory.
-        try:
-            os.makedirs(self.directory)
-        except:
-            pass
+#        try:
+#            os.makedirs(self.directory)
+#        except:
+#            pass
 
-        # Try to write a test file.
-        try:
-            fn = os.path.join(self.directory, "text.txt")
 
-            with open(fn, "w") as f:
-                f.write("Test.")
-
-            os.unlink(fn)
-
-            self.active = True
-        except:
-            self.active = False
+         # MBG - NOPE. I'm sure it will work
+#        # Try to write a test file.
+#        try:
+#            fn = os.path.join(self.directory, "text.txt")
+#
+#            with open(fn, "w") as f:
+#                f.write("Test.")
+#
+#            os.unlink(fn)
+#
+#            self.active = True
+#        except:
+#            self.active = False
+        self.active = True
 
         # A map from slotname to the mtime of that slot.
         self.mtimes = { }
@@ -82,7 +86,7 @@ class FileLocation(object):
 
         # The data loaded from the persistent file.
         self.persistent_data = None
-
+        
     def filename(self, slotname):
         """
         Given a slot name, returns a filename.
@@ -518,6 +522,8 @@ scan_thread_condition = threading.Condition()
 def run_scan_thread():
     global quit_scan_thread
 
+    print("run_scan_thread")
+
     quit_scan_thread = False
 
     while not quit_scan_thread:
@@ -549,10 +555,11 @@ def init():
     # 1. User savedir.
     location.add(FileLocation(renpy.config.savedir))
 
+    # MBG - nope
     # 2. Game-local savedir.
-    if (not renpy.mobile) and (not renpy.macapp):
-        path = os.path.join(renpy.config.gamedir, "saves")
-        location.add(FileLocation(path))
+    #if (not renpy.mobile) and (not renpy.macapp):
+    #    path = os.path.join(renpy.config.gamedir, "saves")
+    #    location.add(FileLocation(path))
 
     # Scan the location once.
     location.scan()
@@ -561,3 +568,4 @@ def init():
 
     scan_thread = threading.Thread(target=run_scan_thread)
     scan_thread.start()
+    
