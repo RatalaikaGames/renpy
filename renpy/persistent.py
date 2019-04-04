@@ -435,16 +435,9 @@ class _MultiPersistent(object):
     def save(self):
 
         fn = self._filename
-        f = file(fn + ".new", "wb")
+        f = file(fn, "wb")
         dump(self, f)
         f.close()
-
-        try:
-            os.rename(fn + ".new", fn)
-        except:
-            os.unlink(fn)
-            os.rename(fn + ".new", fn)
-
 
 def MultiPersistent(name):
 
@@ -473,12 +466,6 @@ def MultiPersistent(name):
 
     if "RENPY_MULTIPERSISTENT" in os.environ:
         files = [ os.environ["RENPY_MULTIPERSISTENT"] ]
-
-    # Make the new persistent directory, why not?
-    try:
-        os.makedirs(files[-1])
-    except:
-        pass
 
     fn = ""  # prevent a warning from happening.
 

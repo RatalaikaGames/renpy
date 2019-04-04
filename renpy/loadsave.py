@@ -297,31 +297,6 @@ class SaveAbort(Exception):
     pass
 
 
-def safe_rename(old, new):
-    """
-    Safely rename old to new.
-    """
-
-    if os.path.exists(new):
-        os.unlink(new)
-
-    try:
-        os.rename(old, new)
-    except:
-
-        # If the rename failed, try again.
-        try:
-            os.unlink(new)
-            os.rename(old, new)
-        except:
-
-            # If it fails a second time, give up.
-            try:
-                os.unlink(old)
-            except:
-                pass
-
-
 class SaveRecord(object):
     """
     This is passed to the save locations. It contains the information that
@@ -342,15 +317,7 @@ class SaveRecord(object):
         This writes a standard-format savefile to `filename`.
         """
 
-        filename_new = filename + ".new"
-
-        # For speed, copy the file after we've written it at least once.
-        if self.first_filename is not None:
-            shutil.copyfile(self.first_filename, filename_new)
-            safe_rename(filename_new, filename)
-            return
-
-        zf = zipfile.ZipFile(filename_new, "w", zipfile.ZIP_DEFLATED)
+        zf = zipfile.ZipFile(filename, "w", zipfile.ZIP_DEFLATED)
 
         # Screenshot.
         zf.writestr("screenshot.png", self.screenshot)
@@ -368,8 +335,6 @@ class SaveRecord(object):
         zf.writestr("log", self.log)
 
         zf.close()
-
-        safe_rename(filename_new, filename)
 
         self.first_filename = filename
 
@@ -710,12 +675,14 @@ def can_load(filename, test=False):
 
     Returns true if `filename` exists as a save slot, and False otherwise.
     """
-
+    
     c = get_cache(filename)
 
     if c.get_mtime():
+        print("CAN LOAD TRUE ", filename)
         return True
     else:
+        print("CAN LOAD FALSE ", filename)
         return False
 
 
@@ -726,6 +693,8 @@ def load(filename):
     Loads the game state from the save slot `filename`. If the file is loaded
     successfully, this function never returns.
     """
+    
+    print("DO LOAD ", filename)
 
     roots, log = loads(location.load(filename))
     log.unfreeze(roots, label="_after_load")
@@ -901,6 +870,3 @@ def init():
 # Save locations are places where saves are saved to or loaded from, or a
 # collection of such locations. This is the default save location.
 location = None
-
-if False:
-    location = renpy.savelocation.FileLocation("blah")

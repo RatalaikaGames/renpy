@@ -33,7 +33,7 @@ import json
 import renpy.display
 import threading
 
-from renpy.loadsave import clear_slot, safe_rename
+from renpy.loadsave import clear_slot
 import shutil
 
 disk_lock = threading.RLock()
@@ -52,27 +52,6 @@ class FileLocation(object):
     def __init__(self, directory):
         self.directory = directory
 
-        # MBG - NOPE. I'm sure it's already there
-        # Make the save directory.
-#        try:
-#            os.makedirs(self.directory)
-#        except:
-#            pass
-
-
-         # MBG - NOPE. I'm sure it will work
-#        # Try to write a test file.
-#        try:
-#            fn = os.path.join(self.directory, "text.txt")
-#
-#            with open(fn, "w") as f:
-#                f.write("Test.")
-#
-#            os.unlink(fn)
-#
-#            self.active = True
-#        except:
-#            self.active = False
         self.active = True
 
         # A map from slotname to the mtime of that slot.
@@ -93,15 +72,6 @@ class FileLocation(object):
         """
 
         return os.path.join(self.directory, renpy.exports.fsencode(slotname + renpy.savegame_suffix))
-
-    def sync(self):
-        """
-        Called to indicate that the filesystem was changed.
-        """
-
-        if renpy.emscripten:
-            import emscripten  # @UnresolvedImport
-            emscripten.syncfs()
 
     def scan(self):
         """
@@ -140,16 +110,14 @@ class FileLocation(object):
                 if slotname not in new_mtimes:
                     clear_slot(slotname)
 
-            for pfn in [ self.persistent + ".new", self.persistent ]:
-                if os.path.exists(pfn):
-                    mtime = os.path.getmtime(pfn)
+            if os.path.exists(self.persistent):
+                mtime = os.path.getmtime(self.persistent)
 
-                    if mtime != self.persistent_mtime:
-                        data = renpy.persistent.load(pfn)
-                        if data is not None:
-                            self.persistent_mtime = mtime
-                            self.persistent_data = data
-                            break
+                if mtime != self.persistent_mtime:
+                    data = renpy.persistent.load(self.persistent)
+                    if data is not None:
+                        self.persistent_mtime = mtime
+                        self.persistent_data = data
 
     def save(self, slotname, record):
         """
@@ -161,7 +129,6 @@ class FileLocation(object):
         with disk_lock:
             record.write_file(filename)
 
-        self.sync()
         self.scan()
 
     def list(self):
@@ -280,7 +247,6 @@ class FileLocation(object):
             if os.path.exists(filename):
                 os.unlink(filename)
 
-            self.sync()
             self.scan()
 
     def rename(self, old, new):
@@ -301,7 +267,6 @@ class FileLocation(object):
 
             os.rename(old, new)
 
-            self.sync()
             self.scan()
 
     def copy(self, old, new):
@@ -318,7 +283,6 @@ class FileLocation(object):
 
             shutil.copyfile(old, new)
 
-            self.sync()
             self.scan()
 
     def load_persistent(self):
@@ -344,29 +308,8 @@ class FileLocation(object):
             if not self.active:
                 return
 
-            fn = self.persistent
-            fn_tmp = fn + tmp
-            fn_new = fn + ".new"
-
-            with open(fn_tmp, "wb") as f:
+            with open(self.persistent, "wb") as f:
                 f.write(data)
-
-            safe_rename(fn_tmp, fn_new)
-            safe_rename(fn_new, fn)
-
-            self.sync()
-
-    def unlink_persistent(self):
-
-        if not self.active:
-            return
-
-        try:
-            os.unlink(self.persistent)
-
-            self.sync()
-        except:
-            pass
 
     def __eq__(self, other):
         if not isinstance(other, FileLocation):
@@ -374,198 +317,13 @@ class FileLocation(object):
 
         return self.directory == other.directory
 
-
-class MultiLocation(object):
-    """
-    A location that saves in multiple places. When loading or otherwise
-    accessing a file, it loads the newest file found for the given slotname.
-    """
-
-    def __init__(self):
-        self.locations = [ ]
-
-    def active_locations(self):
-        return [ i for i in self.locations if i.active ]
-
-    def newest(self, slotname):
-        """
-        Returns the location containing the slotname with the newest
-        mtime. Returns None of the slot is empty.
-        """
-
-        mtime = -1
-        location = None
-
-        for l in self.locations:
-            if not l.active:
-                continue
-
-            slot_mtime = l.mtime(slotname)
-
-            if slot_mtime > mtime:
-                mtime = slot_mtime
-                location = l
-
-        return location
-
-    def add(self, location):
-        """
-        Adds a new location.
-        """
-
-        if location in self.locations:
-            return
-
-        self.locations.append(location)
-
-    def save(self, slotname, record):
-
-        saved = False
-
-        for l in self.active_locations():
-            l.save(slotname, record)
-            saved = True
-
-        if not saved:
-            raise Exception("Not saved - no valid save locations.")
-
-    def list(self):
-        rv = set()
-
-        for l in self.active_locations():
-            rv.update(l.list())
-
-        return list(rv)
-
-    def mtime(self, slotname):
-        l = self.newest(slotname)
-
-        if l is None:
-            return None
-
-        return l.mtime(slotname)
-
-    def json(self, slotname):
-        l = self.newest(slotname)
-
-        if l is None:
-            return None
-
-        return l.json(slotname)
-
-    def screenshot(self, slotname):
-        l = self.newest(slotname)
-
-        if l is None:
-            return None
-
-        return l.screenshot(slotname)
-
-    def load(self, slotname):
-        l = self.newest(slotname)
-        return l.load(slotname)
-
-    def unlink(self, slotname):
-        for l in self.active_locations():
-            l.unlink(slotname)
-
-    def rename(self, old, new):
-        for l in self.active_locations():
-            l.rename(old, new)
-
-    def copy(self, old, new):
-        for l in self.active_locations():
-            l.copy(old, new)
-
-    def load_persistent(self):
-        rv = [ ]
-
-        for l in self.active_locations():
-            rv.extend(l.load_persistent())
-
-        return rv
-
-    def save_persistent(self, data):
-
-        for l in self.active_locations():
-            l.save_persistent(data)
-
-    def unlink_persistent(self):
-
-        for l in self.active_locations():
-            l.unlink_persistent()
-
-    def scan(self):
-        # This should scan everything, as a scan can help decide if a
-        # location should become active or inactive.
-
-        for l in self.locations:
-            l.scan()
-
-    def __eq__(self, other):
-        if not isinstance(other, MultiLocation):
-            return False
-
-        return self.locations == other.locations
-
-
-# The thread that scans locations every few seconds.
-scan_thread = None
-
-# True if we should quit the scan thread.
-quit_scan_thread = False
-
-# The condition we wait on.
-scan_thread_condition = threading.Condition()
-
-
-def run_scan_thread():
-    global quit_scan_thread
-
-    print("run_scan_thread")
-
-    quit_scan_thread = False
-
-    while not quit_scan_thread:
-
-        try:
-            renpy.loadsave.location.scan()  # @UndefinedVariable
-        except:
-            pass
-
-        with scan_thread_condition:
-            scan_thread_condition.wait(5.0)
-
-
 def quit():  # @ReservedAssignment
-    global quit_scan_thread
-
-    with scan_thread_condition:
-        quit_scan_thread = True
-        scan_thread_condition.notifyAll()
-
-    scan_thread.join()
-
+    pass
 
 def init():
-    global scan_thread
-
-    location = MultiLocation()
-
-    # 1. User savedir.
-    location.add(FileLocation(renpy.config.savedir))
-
-    # MBG - nope
-    # 2. Game-local savedir.
-    #if (not renpy.mobile) and (not renpy.macapp):
-    #    path = os.path.join(renpy.config.gamedir, "saves")
-    #    location.add(FileLocation(path))
+    location = FileLocation(renpy.config.savedir)
 
     # Scan the location once.
     location.scan()
 
     renpy.loadsave.location = location
-
-    scan_thread = threading.Thread(target=run_scan_thread)
-    scan_thread.start()
-    

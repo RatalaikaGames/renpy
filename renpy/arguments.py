@@ -212,17 +212,17 @@ def quit():  # @ReservedAssignment
     return False
 
 
-def rmpersistent():
-    """
-    This command is used to delete the persistent data.
-    """
-
-    takes_no_arguments("Deletes the persistent data.")
-
-    renpy.loadsave.location.unlink_persistent()
-    renpy.persistent.should_save_persistent = False
-
-    return False
+#def rmpersistent():
+#    """
+#    This command is used to delete the persistent data.
+#    """
+#
+#    takes_no_arguments("Deletes the persistent data.")
+#
+#    renpy.loadsave.location.unlink_persistent()
+#    renpy.persistent.should_save_persistent = False
+#
+#    return False
 
 
 def register_command(name, function):
@@ -265,7 +265,7 @@ def pre_init():
     register_command("run", run)
     register_command("lint", renpy.lint.lint)
     register_command("compile", compile)
-    register_command("rmpersistent", rmpersistent)
+    #register_command("rmpersistent", rmpersistent)
     register_command("quit", quit)
 
 
