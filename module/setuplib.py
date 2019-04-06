@@ -264,6 +264,13 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
 
     for dep_fn in deps:
         
+        #MBG - allow referencing external renpy dir.
+        if 'CYTHON_EXTRA_DIRS' in os.environ:
+            for extra in os.environ['CYTHON_EXTRA_DIRS'].split(':'):
+                test = os.path.join(extra,dep_fn)
+                if os.path.exists(test):
+                    dep_fn = test
+        
         if os.path.exists(os.path.join(module_dir, dep_fn)):
             dep_fn = os.path.join(module_dir, dep_fn)
         elif os.path.exists(os.path.join("..", dep_fn)):
@@ -272,8 +279,6 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
             dep_fn = os.path.join("include", dep_fn)
         elif os.path.exists(os.path.join(gen, dep_fn)):
             dep_fn = os.path.join(gen, dep_fn)
-        elif 'renpy_dir' in os.environ and os.path.exists(os.path.join(os.environ['renpy_dir'], dep_fn)): #MBG - allow referencing external renpy dir. could be done better by looking in PYTHONPATH but I'm not that good at python
-            dep_fn = os.path.join(os.environ['renpy_dir'], dep_fn)
         elif os.path.exists(dep_fn):
             pass
         else:
@@ -309,7 +314,7 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
             else:
                 coverage_args = [ ]
 
-            subprocess.check_call([
+            args = [
                 cython_command,
                 "-Iinclude",
                 "-I" + gen,
@@ -317,7 +322,11 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
                 ] + annotate + lang_args + coverage_args + [
                 fn,
                 "-o",
-                c_fn])
+                c_fn]
+            if 'CYTHON_EXTRA_DIRS' in os.environ:
+                args += ["-I" + s for s in os.environ['CYTHON_EXTRA_DIRS'].split(':')]
+                
+            subprocess.check_call(args)
 
         except subprocess.CalledProcessError as e:
             print()
