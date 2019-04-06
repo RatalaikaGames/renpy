@@ -247,8 +247,8 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
     # Determine if any of the dependencies are newer than the c file.
 
     if language == "c++":
-        c_fn = os.path.join(gen, name + ".cc")
-        necessary_gen.append(name + ".cc")
+        c_fn = os.path.join(gen, name + ".cpp") #MBG - change extension
+        necessary_gen.append(name + ".cpp")
     else:
         c_fn = os.path.join(gen, name + ".c")
         necessary_gen.append(name + ".c")
@@ -263,7 +263,7 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
     # print c_fn, "depends on", deps
 
     for dep_fn in deps:
-
+        
         if os.path.exists(os.path.join(module_dir, dep_fn)):
             dep_fn = os.path.join(module_dir, dep_fn)
         elif os.path.exists(os.path.join("..", dep_fn)):
@@ -272,6 +272,8 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
             dep_fn = os.path.join("include", dep_fn)
         elif os.path.exists(os.path.join(gen, dep_fn)):
             dep_fn = os.path.join(gen, dep_fn)
+        elif 'renpy_dir' in os.environ and os.path.exists(os.path.join(os.environ['renpy_dir'], dep_fn)): #MBG - allow referencing external renpy dir. could be done better by looking in PYTHONPATH but I'm not that good at python
+            dep_fn = os.path.join(os.environ['renpy_dir'], dep_fn)
         elif os.path.exists(dep_fn):
             pass
         else:
