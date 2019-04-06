@@ -111,6 +111,9 @@ int renpy_IMG_SavePNG_RW(SDL_RWops *src, SDL_Surface *surf,int compression){
 
 	fmt=surf->format;
 
+	//MBG: not sure how this happened, but we have red and blue mixed up
+	png_set_bgr(png_ptr);
+
 	if (fmt->Amask) {
 		png_set_IHDR(png_ptr,info_ptr,
 			surf->w,surf->h,8,PNG_COLOR_TYPE_RGB_ALPHA,
