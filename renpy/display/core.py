@@ -1918,18 +1918,18 @@ class Interface(object):
             if name not in renderers:
                 return False
 
-            try:
-                __import__(mod)
-                module = sys.modules[mod]
-                draw_class = getattr(module, cls)
-                draw_objects[name] = draw_class(*args)
-                return True
+            #try:
+            __import__(mod)
+            module = sys.modules[mod]
+            draw_class = getattr(module, cls)
+            draw_objects[name] = draw_class(*args)
+            return True
 
-            except:
-                renpy.display.log.write("Couldn't import {0} renderer:".format(name))
-                renpy.display.log.exception()
-
-                return False
+#            except:
+#                renpy.display.log.write("Couldn't import {0} renderer:".format(name))
+#                renpy.display.log.exception()
+#
+#                return False
 
         if renpy.windows:
             has_angle = make_draw("angle", "renpy.angle.gldraw", "GLDraw")
@@ -1940,6 +1940,7 @@ class Interface(object):
         make_draw("gl2", "renpy.gl2.gl2draw", "GL2Draw", "gl2", False)
         make_draw("gles2", "renpy.gl2.gl2draw", "GL2Draw", "gles2", True)
         make_draw("sw", "renpy.display.swdraw", "SWDraw")
+        make_draw("r3", "r3draw", "r3draw")
 
         rv = [ ]
 
@@ -2030,11 +2031,13 @@ class Interface(object):
         print(draws)
 
         for draw in draws:
-            print("SET MODE BABE?")
+            print("SET MODE BABE? ", draw)
             if draw.set_mode(virtual_size, physical_size, fullscreen):
+                print("OK cool")
                 renpy.display.draw = draw
                 break
             else:
+                print("NOPE")
                 # pygame.display.quit()
                 pass
         else:
