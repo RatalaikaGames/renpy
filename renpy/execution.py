@@ -54,9 +54,9 @@ def check_infinite_loop():
 
     now = time.time()
 
-    if now > il_time:
-        il_time = now + 60
-        raise Exception("Possible infinite loop.")
+    #if now > il_time:
+    #    il_time = now + 60
+    #    raise Exception("Possible infinite loop.")
 
     if renpy.config.developer and (il_time > now + 60):
         il_time = now + 60
