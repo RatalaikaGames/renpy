@@ -2,7 +2,7 @@ setlocal
 
 pushd %~dp0
 
-set BASEDIR=%~dp0\..\..\
+set BASEDIR=%~dp0..\..\
 
 set PYDIR=%BASEDIR%python27-for-tools\
 set path=%PYDIR%;%PYDIR%Scripts;%PATH%
