@@ -49,8 +49,7 @@ screen_width = 800
 screen_height = 600
 
 # Should sound be enabled?
-#sound = True #MBG - disabled, to speed up development
-sound = False
+sound = True
 
 # Turns recoverable errors into fatal ones, so that the user can know
 # about and fix them.
