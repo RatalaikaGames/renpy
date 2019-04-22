@@ -106,7 +106,7 @@ def start(basedir, gamedir):
 
     global event_thread
 
-    event_thread = threading.Thread(target=run_event_thread)
+    event_thread = threading.Thread(target=run_event_thread,name="renpy_presplash")
     event_thread.daemon = True
     event_thread.start()
 

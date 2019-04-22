@@ -840,7 +840,7 @@ def init():
 
         periodic_thread_quit = False
 
-        periodic_thread = threading.Thread(target=periodic_thread_main)
+        periodic_thread = threading.Thread(target=periodic_thread_main,name="renpy_audio")
         periodic_thread.daemon = True
         periodic_thread.start()
 

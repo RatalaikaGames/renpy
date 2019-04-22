@@ -3365,7 +3365,7 @@ def invoke_in_thread(fn, *args, **kwargs):
 
         restart_interaction()
 
-    t = threading.Thread(target=run)
+    t = threading.Thread(target=run,name="renpy_invoke_in_thread")
     t.daemon = True
     t.start()
 

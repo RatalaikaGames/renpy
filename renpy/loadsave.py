@@ -493,7 +493,7 @@ def force_autosave(take_screenshot=False):
         return
 
     autosave_not_running.clear()
-    t = threading.Thread(target=autosave_thread, args=(take_screenshot,))
+    t = threading.Thread(target=autosave_thread, args=(take_screenshot,), name="renpy_autosave")
     t.daemon = True
     t.start()
 
