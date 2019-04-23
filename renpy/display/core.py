@@ -2027,17 +2027,11 @@ class Interface(object):
         else:
             draws = self.get_draw_constructors()
 
-        print("CAFE BABE--------------")
-        print(draws)
-
         for draw in draws:
-            print("SET MODE BABE? ", draw)
             if draw.set_mode(virtual_size, physical_size, fullscreen):
-                print("OK cool")
                 renpy.display.draw = draw
                 break
             else:
-                print("NOPE")
                 # pygame.display.quit()
                 pass
         else:
