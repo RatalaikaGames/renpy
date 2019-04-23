@@ -279,7 +279,9 @@ class PyCode(object):
         # The time is necessary so we can disambiguate between Python
         # blocks on the same line in different script versions.
         #self.location = loc + ( int(time.time()), )
-        tmp = loc[0]
+        tmp = loc[0][2:] # changes ../renpycommon/stuff to /renpycommon/stuff
+        # WELL. in my engine, rom files dont have a timestamp (this is always 0)
+        # I thought this is why my dirty scripts werent being rebuilt, but I don't really understand any of this dirty tracking anyway. The original comments bove make no sense to me
         if tmp.endswith('/rpy'): tmp = tmp[:-4] + '.rpy' 
         if tmp.endswith('/rpym'): tmp = tmp[:-5] + '.rpym' 
         mtime = os.stat(tmp).st_mtime
