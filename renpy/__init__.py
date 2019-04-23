@@ -425,14 +425,15 @@ def import_all():
 
     sys.modules['renpy.display.text'] = renpy.text.text
 
-    import renpy.gl
-    update_path(renpy.gl)
+    #MBG - removed some unused things here
+    #import renpy.gl
+    #update_path(renpy.gl)
 
-    import renpy.gl2
-    update_path(renpy.gl2)
+    #import renpy.gl2
+    #update_path(renpy.gl2)
 
-    import renpy.angle
-    update_path(renpy.angle)
+    #import renpy.angle
+    #update_path(renpy.angle)
 
     import renpy.display.layout
     import renpy.display.viewport
