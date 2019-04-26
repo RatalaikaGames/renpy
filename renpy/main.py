@@ -256,7 +256,6 @@ def main():
 
     # Note the game directory.
     game.basepath = renpy.config.gamedir
-    print("CORPSMAN " + renpy.config.gamedir + " CORPSMAN")
     renpy.config.searchpath = [ renpy.config.gamedir ]
 
 
