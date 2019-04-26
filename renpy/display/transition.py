@@ -336,6 +336,8 @@ class Dissolve(Transition):
     def __init__(self, time, old_widget=None, new_widget=None, alpha=False, time_warp=None, **properties):
         super(Dissolve, self).__init__(time, **properties)
 
+        #TEST
+        time = 60
         self.time = time
         self.old_widget = old_widget
         self.new_widget = new_widget
