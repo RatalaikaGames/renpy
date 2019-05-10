@@ -33,6 +33,7 @@ import re
 
 import renpy.display
 import renpy.audio
+import _ratapy
 
 from renpy.pyanalysis import const, pure, not_const
 
@@ -2986,11 +2987,11 @@ def vibrate(duration):
     is only supported on Android.
     """
 
-    try:
-        import android  # @UnresolvedImport
-        android.vibrate(duration)
-    except:
-        pass
+    #try:
+    #    android.vibrate(duration)
+    #except:
+    #    pass
+    _ratapy.vibrate(duration)
 
 
 def get_say_attributes():
