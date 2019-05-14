@@ -14,4 +14,6 @@ mklink /D c:\python27 %PYDIR%
 
 python setup.py build_ext %*
 
+del gen\_renpybidi.c
+
 popd
