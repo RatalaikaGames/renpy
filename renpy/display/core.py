@@ -28,6 +28,8 @@ import renpy.audio
 import renpy.text
 import renpy.test
 
+import _ratapy
+
 import pygame_sdl2 as pygame
 
 import sys
@@ -2410,6 +2412,10 @@ class Interface(object):
             visible = renpy.store.mouse_visible and (not renpy.game.less_mouse)
 
         visible = visible and self.show_mouse and not (renpy.display.video.fullscreen)
+        
+        # MBG hack - for our games, let's add another mechanism to suppress the mouse
+        if _ratapy.is_hide_mouse():
+            visible = False
 
         # If not visible, hide the mouse.
         if not visible:
