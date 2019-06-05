@@ -302,11 +302,12 @@ You may be using a system install of python. Please run {0}.sh,
                 renpy.config.gamedir = gamedir
                 renpy.config.args = [ ]
 
-                if renpy.android:
-                    renpy.config.logdir = os.environ['ANDROID_PUBLIC']
-                else:
-                    renpy.config.logdir = basedir
-
+                # MBG - needed customizing
+                #if renpy.android:
+                #    renpy.config.logdir = os.environ['ANDROID_PUBLIC']
+                #else:
+                #    renpy.config.logdir = basedir
+                logdir = "/tmp/logs"
                 if not os.path.exists(renpy.config.logdir):
                     os.makedirs(renpy.config.logdir, 0o777)
 

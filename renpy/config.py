@@ -391,13 +391,6 @@ renpy_base = None
 commondir = None
 logdir = None  # Where log and error files go.
 
-#MBG - NEEDED CUSTOMIZING??
-#gamedir = "data/compiled/ags/python/renpygame"
-#basedir = "data/compiled/ags/python/renpysrc"
-#renpy_base = "data/compiled/ags/python/renpysrc/renpy"
-#commondir = "data/compiled/ags/python/renpysrc/renpy/common"
-#logdir = None  # Where log and error files go.
-
 # Should we enable OpenGL mode?
 gl_enable = True
 
