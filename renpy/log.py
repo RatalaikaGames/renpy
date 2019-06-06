@@ -88,6 +88,11 @@ class LogFile(object):
         if renpy.macapp:
             return False
 
+        #MBG WTF, I SPENT OVER AN HOUR TRYING TO FIGURE OUT WHERE DEVELOPER GETS SET TO true
+        #TIME FOR MY OWN LOGIC
+        if os.environ.get("CONSOLE_KIND",None) == "WINDOWS":
+            renpy.config.developer = True
+
         if self.developer and not renpy.config.developer:
             return False
 
