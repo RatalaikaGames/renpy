@@ -123,7 +123,8 @@ init -1500 python in achievement:
     renpy.register_persistent("_achievements", merge)
     renpy.register_persistent("_achievement_progress", merge_progress)
 
-    backends.append(PersistentBackend())
+    #MBG - can't have this on consoles.. unpredictable saves and complex analysis. let the backend deal with memory.
+    #backends.append(PersistentBackend())
 
     steam_maximum_framerate = 15
 
