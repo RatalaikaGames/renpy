@@ -1,7 +1,5 @@
 cdef class Matrix:
 
-    cdef float m[0]
-
     cdef public float xdx
     cdef public float xdy
     cdef public float xdz
@@ -22,6 +20,8 @@ cdef class Matrix:
     cdef public float wdz
     cdef public float wdw
 
+    cdef inline float* m(Matrix self):
+        return &self.xdx;
 
     cdef inline void transform4(Matrix self, float *ox, float *oy, float *oz, float *ow, float x, float y, float z, float w):
         ox[0] = x * self.xdx + y * self.xdy + z * self.xdz + w * self.xdw

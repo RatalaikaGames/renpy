@@ -21,7 +21,7 @@ cdef class Matrix:
 
     def __init__(Matrix self, l):
 
-        memset(self.m, 0, sizeof(float) * 16)
+        memset(self.m(), 0, sizeof(float) * 16)
 
         if l is None:
             return
@@ -54,20 +54,20 @@ cdef class Matrix:
         rv = { }
 
         for i in range(16):
-            rv[fields[i]] = self.m[i]
+            rv[fields[i]] = self.m()[i]
 
         return rv
 
     def __setstate__(self, state):
 
-        memset(self.m, 0, sizeof(float) * 16)
+        memset(self.m(), 0, sizeof(float) * 16)
 
         self.zdz = 1.0
         self.wdw = 1.0
 
         for i in range(16):
             if fields[i] in state:
-                self.m[i] = state[fields[i]]
+                self.m()[i] = state[fields[i]]
 
     def __mul__(Matrix self, Matrix other):
 
@@ -97,13 +97,13 @@ cdef class Matrix:
 
     def __getitem__(Matrix self, int index):
         if 0 <= index < 16:
-            return self.m[index]
+            return self.m()[index]
 
         raise IndexError("Matrix index out of range.")
 
     def __setitem__(Matrix self, int index, float value):
         if 0 <= index < 16:
-            self.m[index] = value
+            self.m()[index] = value
             return
 
         raise IndexError("Matrix index out of range.")
@@ -117,7 +117,7 @@ cdef class Matrix:
             if y:
                 rv += "\n        "
             for 0 <= x < 4:
-                rv += "{:8.5f}, ".format(self.m[x + y * 4])
+                rv += "{:8.5f}, ".format(self.m()[x + y * 4])
 
         return rv + "])"
 
@@ -148,7 +148,7 @@ cdef class Matrix:
         total = 0
 
         for 0 < i < 16:
-            total += abs(self.m[i] - other.m[i])
+            total += abs(self.m()[i] - other.m()[i])
 
         return total < .0001
 
@@ -168,7 +168,7 @@ cdef class Matrix:
         total_2 = 0
 
         for 0 < i < 16:
-            v = abs(self.m[i])
+            v = abs(self.m()[i])
             total_1 += abs(v - aligned_1[i])
             total_2 += abs(v - aligned_2[i])
 
@@ -177,7 +177,7 @@ cdef class Matrix:
 cdef class Matrix2D(Matrix):
 
     def __init__(Matrix2D self, double xdx, double xdy, double ydx, double ydy):
-        memset(self.m, 0, sizeof(float) * 16)
+        memset(self.m(), 0, sizeof(float) * 16)
 
         self.xdx = xdx
         self.xdy = xdy
