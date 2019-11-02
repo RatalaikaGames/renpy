@@ -42,12 +42,12 @@ def rotate(float x, float y, float z):
         The amount to rotate around the origin, in degrees.
     """
 
-    cdef float sinx = sin(pi*x/180)
-    cdef float cosx = cos(pi*x/180)
-    cdef float siny = sin(pi*y/180)
-    cdef float cosy = cos(pi*y/180)
-    cdef float sinz = sin(pi*z/180)
-    cdef float cosz = cos(pi*z/180)
+    cdef float sinx = sin(MATRIX_PI*x/180)
+    cdef float cosx = cos(MATRIX_PI*x/180)
+    cdef float siny = sin(MATRIX_PI*y/180)
+    cdef float cosy = cos(MATRIX_PI*y/180)
+    cdef float sinz = sin(MATRIX_PI*z/180)
+    cdef float cosz = cos(MATRIX_PI*z/180)
 
     cdef Matrix rv = Matrix(None)
 

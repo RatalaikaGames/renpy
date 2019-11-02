@@ -1,7 +1,10 @@
 from __future__ import print_function
 
 from libc.string cimport memset
-from libc.math cimport sin, cos, M_PI as pi
+from libc.math cimport sin, cos
+
+# MBG - libc math functions arent fully reliable, but M_PI is _really_ unreliable
+DEF MATRIX_PI = 3.14159265358979323846
 
 cdef float *aligned_1 = [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
 cdef float *aligned_2 = [ 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
