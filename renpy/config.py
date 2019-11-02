@@ -255,13 +255,6 @@ original_developer = False
 # The default value of developer that's used when it's set to auto.
 default_developer = False
 
-#MBG hack: set developer when running on windows
-if os.environ.get("CONSOLE_KIND",None) == "WINDOWS":
-    print("RENPY CONFIG SET DEVELOPER TRUE")
-    default_developer = True
-    developer = True
-    original_developer = True
-
 # A logfile that logging messages are sent to.
 log = None
 
