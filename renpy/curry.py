@@ -20,7 +20,8 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
+
 
 class Curry(object):
     """
@@ -29,6 +30,8 @@ class Curry(object):
     supplied to the call.
     """
 
+    hash = None
+
     def __init__(self, callable, *args, **kwargs):  # @ReservedAssignment
         self.callable = callable
         self.args = args
@@ -36,8 +39,11 @@ class Curry(object):
         self.__doc__ = getattr(self.callable, "__doc__", None)
 
     def __call__(self, *args, **kwargs):
-        return self.callable(*(self.args + args),
-                             **dict(self.kwargs.items() + kwargs.items()))
+
+        merged_kwargs = dict(self.kwargs)
+        merged_kwargs.update(kwargs)
+
+        return self.callable(*(self.args + args), **merged_kwargs)
 
     def __repr__(self):
         return "<curry %s %r %r>" % (self.callable, self.args, self.kwargs)
@@ -50,8 +56,18 @@ class Curry(object):
             self.args == other.args and
             self.kwargs == other.kwargs)
 
+    def __ne__(self, other):
+        return not (self == other)
+
     def __hash__(self):
-        return hash(self.callable) ^ hash(self.args) ^ hash(self.kwargs)
+
+        if self.hash is None:
+            self.hash ^= hash(self.callable) ^ hash(self.args)
+
+            for i in self.kwargs.items():
+                self.hash ^= hash(i)
+
+        return self.hash
 
 
 def curry(fn):

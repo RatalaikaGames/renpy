@@ -253,6 +253,70 @@ def test_texture_sizes(Environ environ, draw):
     SIZES.reverse()
     return True
 
+
+# Texture number management. This exists because on Nvidia GPUs, glGenTextures
+# is very slow (~3ms) when threaded optimizations are enabled. So instead of
+# using it, a large number of textures are allocated all at once. When a
+# texture is returned to the free pool, it is deallocated on the GPU.
+
+# A list of texture numbers that have been allocated, but are not currently
+# being meaningfully used.
+allocated_texture_numbers = [ ]
+
+cdef GLuint generate_texture_number():
+    """
+    This returns an empty texture number.
+    """
+
+    cdef int i
+    cdef GLuint texnums[100]
+
+    if allocated_texture_numbers:
+        return allocated_texture_numbers.pop()
+
+    glGenTextures(100, texnums)
+
+    i = 100 - 1
+
+    while i >= 0:
+        allocated_texture_numbers.append(texnums[i])
+        i -= 1
+
+    return allocated_texture_numbers.pop()
+
+cdef void delete_texture_number(GLuint n):
+    """
+    This releases the space associated with a texture number on the GPU,
+    and adds the number back on the free pool.
+    """
+
+    glBindTexture(GL_TEXTURE_2D, n)
+
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        tex_internalformat,
+        0, # width
+        0, # height
+        0, # border
+        tex_format,
+        tex_type,
+        <GLubyte *> NULL)
+
+    allocated_texture_numbers.append(n)
+
+def free_texture_numbers():
+    """
+    Frees the allocated texture numbers entirely.
+    """
+
+    cdef GLuint texnums[1]
+
+    while allocated_texture_numbers:
+        texnums[0] = allocated_texture_numbers.pop()
+        glDeleteTextures(1, texnums)
+
+
 cdef class TextureCore:
     """
     This object stores information about an OpenGL texture.
@@ -269,25 +333,12 @@ cdef class TextureCore:
         self.generation = 0
         self.number = 0
 
-        # The format of this texture in the GPU (or 0 if not known).
-        self.format = 0
-
-        # These are used to map an index into texture coordinates.
-        self.xmul = 0
-        self.xadd = 0
-        self.ymul = 0
-        self.yadd = 0
-
         # These contained the premultiplied (but not GPU-loaded)
         # surface. They allow us to defer loading until the surface is
         # needed.
 
         self.premult = None
         self.premult_size = None
-        self.premult_left = 0
-        self.premult_right = 0
-        self.premult_top = 0
-        self.premult_bottom = 0
 
         # True if we're in NEAREST mode. False if we're in LINEAR mode.
         self.nearest = False
@@ -461,19 +512,15 @@ cdef class TextureCore:
         global total_texture_size
         global texture_count
 
-        cdef unsigned int texnums[1]
-
         if self.number != 0:
             return 0
 
-        glGenTextures(1, texnums)
-
-        self.number = texnums[0]
+        self.number = generate_texture_number()
         self.format = 0
 
         texture_generation[self.number] = generation
 
-        texture_numbers.add(texnums[0])
+        texture_numbers.add(self.number)
 
         total_texture_size += self.width * self.height * 4
         texture_count += 1
@@ -492,12 +539,8 @@ cdef class TextureCore:
         if self.number == 0:
             return
 
-        cdef GLuint texnums[1]
-
-        texnums[0] = self.number
-
         if texture_generation[self.number] == self.generation:
-            glDeleteTextures(1, texnums)
+            delete_texture_number(self.number)
 
         self.number = 0
 
@@ -566,8 +609,6 @@ def alloc_texture(width, height):
 
 
 def dealloc_textures():
-    cdef GLuint texnums[1]
-
     for l in free_textures.values():
         for t in l:
             t.deallocate()
@@ -580,8 +621,7 @@ def dealloc_textures():
     if not renpy.game.preferences.gl_npot:
 
         for t in texture_numbers:
-            texnums[0] = t
-            glDeleteTextures(1, texnums)
+            delete_texture_number(t)
 
     free_textures.clear()
 
@@ -992,7 +1032,7 @@ def align_axes(*args):
     return rv
 
 
-cpdef blit(TextureGrid tg, double sx, double sy, render.Matrix2D transform, double alpha, double over, Environ environ, bint nearest):
+cpdef blit(TextureGrid tg, double sx, double sy, Matrix transform, double alpha, double over, Environ environ, bint nearest):
     """
     This draws texgrid `tg` to the screen. `sx` and `sy` are offsets from
     the upper-left corner of the screen.
@@ -1037,7 +1077,7 @@ cpdef blit(TextureGrid tg, double sx, double sy, render.Matrix2D transform, doub
 
         y += texh
 
-cpdef blend(TextureGrid tg0, TextureGrid tg1, double sx, double sy, render.Matrix2D transform, double alpha, double over, double fraction, Environ environ, bint nearest):
+cpdef blend(TextureGrid tg0, TextureGrid tg1, double sx, double sy, Matrix transform, double alpha, double over, double fraction, Environ environ, bint nearest):
     """
     Blends two textures to the screen.
 
@@ -1094,7 +1134,7 @@ cpdef blend(TextureGrid tg0, TextureGrid tg1, double sx, double sy, render.Matri
         y += t0h
 
 
-cpdef imageblend(TextureGrid tg0, TextureGrid tg1, TextureGrid tg2, double sx, double sy, render.Matrix2D transform, double alpha, double over, double fraction, int ramp, Environ environ, bint nearest):
+cpdef imageblend(TextureGrid tg0, TextureGrid tg1, TextureGrid tg2, double sx, double sy, Matrix transform, double alpha, double over, double fraction, int ramp, Environ environ, bint nearest):
     """
     This uses texture 0 to control the blending of tetures 1 and 2 to
     the screen.
@@ -1384,7 +1424,7 @@ cdef void draw_rectangle(
     double y,
     double w,
     double h,
-    render.Matrix2D transform,
+    Matrix transform,
     TextureCore tex0, float tex0x, float tex0y,
     TextureCore tex1, float tex1x, float tex1y,
     TextureCore tex2, float tex2x, float tex2y,

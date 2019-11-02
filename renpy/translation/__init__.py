@@ -22,6 +22,7 @@
 from __future__ import print_function
 
 import renpy
+renpy.update_path()
 
 import hashlib
 import re
@@ -623,7 +624,9 @@ def change_language(language, force=False):
     global old_language
 
     renpy.game.preferences.language = language
-
+    if old_language == language and not force:
+        return
+    
     tl = renpy.game.script.translator
 
     renpy.style.restore(style_backup)  # @UndefinedVariable
@@ -637,19 +640,18 @@ def change_language(language, force=False):
     else:
         old_change_language(tl, language)
 
+    renpy.store._history_list = renpy.store.list()
+    renpy.store.nvl_list = renpy.store.list()
+
     for i in renpy.config.change_language_callbacks:
         i()
 
-    if force or (old_language != language):
+    # Reset various parts of the system. Most notably, this clears the image
+    # cache, letting us load translated images.
+    renpy.exports.free_memory()
 
-        # Reset various parts of the system. Most notably, this clears the image
-        # cache, letting us load translated images.
-        renpy.exports.free_memory()
-
-        # Rebuild the styles.
-        renpy.style.rebuild()  # @UndefinedVariable
-
-        old_language = language
+    # Rebuild the styles.
+    renpy.style.rebuild()  # @UndefinedVariable
 
     for i in renpy.config.translate_clean_stores:
         renpy.python.reset_store_changes(i)
@@ -660,6 +662,7 @@ def change_language(language, force=False):
     if language != old_language:
         renpy.exports.block_rollback()
 
+        old_language = language
 
 def check_language():
     """

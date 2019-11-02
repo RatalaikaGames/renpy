@@ -39,6 +39,9 @@ position_property_names = [
     "maximum",
     "xmaximum",
     "ymaximum",
+    "minimum",
+    "xminimum",
+    "yminimum",
     "area",
     "clipping",
     "xfill",
@@ -51,15 +54,14 @@ position_property_names = [
     "xysize",
     "alt",
     "debug",
-    "tooltip",
     ]
 
-position_properties = [ Style(i) for i in position_property_names ]
+position_properties = [ Style(i) for i in position_property_names ] + [ Keyword("tooltip") ]
 text_position_properties = [ PrefixStyle("text_", i) for i in position_property_names ]
-side_position_properties = [ PrefixStyle("side_", i) for i in position_property_names ]
+side_position_properties = [ PrefixStyle("side_", i) for i in position_property_names ] + [ Keyword("tooltip") ]
 viewport_position_properties = [ PrefixStyle("viewport_", i) for i in position_property_names ]
-scrollbar_position_properties = [ PrefixStyle("scrollbar_", i) for i in position_property_names ]
-vscrollbar_position_properties = [ PrefixStyle("vscrollbar_", i) for i in position_property_names ]
+scrollbar_position_properties = [ PrefixStyle("scrollbar_", i) for i in position_property_names ] + [ Keyword("tooltip") ]
+vscrollbar_position_properties = [ PrefixStyle("vscrollbar_", i) for i in position_property_names ] + [ Keyword("tooltip") ]
 
 text_property_names = [
     "antialias",
@@ -84,6 +86,7 @@ text_property_names = [
     "min_width",
     "newline_indent",
     "outlines",
+    "outline_scaling",
     "rest_indent",
     "ruby_style",
     "slow_cps",
@@ -93,9 +96,6 @@ text_property_names = [
     "text_align",
     "text_y_fudge",
     "underline",
-    "minimum",
-    "xminimum",
-    "yminimum",
     "hinting",
     "adjust_spacing",
     ]
@@ -121,9 +121,6 @@ window_properties = [ Style(i) for i in [
     "ypadding",
     "padding",
     "size_group",
-    "minimum",
-    "xminimum",
-    "yminimum",
     ] ]
 
 button_properties = [ Style(i) for i in [
@@ -182,9 +179,6 @@ box_property_names = [
     "fit_first",
     "xfit",
     "yfit",
-    "minimum",
-    "xminimum",
-    "yminimum",
 ]
 
 box_properties = [ Style(i) for i in box_property_names ]
@@ -205,6 +199,7 @@ ui_properties = [
     Keyword("style_suffix"),
     Keyword("focus"),
     Keyword("default"),
+    Keyword("default_focus"),
     ]
 
 property_groups = {

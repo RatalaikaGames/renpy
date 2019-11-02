@@ -19,20 +19,22 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
+
 import renpy
 import os.path
 from pickle import loads
-from cStringIO import StringIO
 import sys
 import types
 import threading
 import zlib
 import re
+import io
+import renpy.six as six
 
 # Ensure the utf-8 codec is loaded, to prevent recursion when we use it
 # to look up filenames.
-u"".encode("utf-8")
+u"".encode(u"utf-8")
 
 
 # Physical Paths
@@ -125,15 +127,15 @@ def index_archives():
 
         try:
             fn = transfn(prefix + ".rpa")
-            f = file(fn, "rb")
+            f = open(fn, "rb")
             l = f.readline()
 
             # 3.0 Branch.
-            if l.startswith("RPA-3.0 "):
+            if l.startswith(b"RPA-3.0 "):
                 offset = int(l[8:24], 16)
                 key = int(l[25:33], 16)
                 f.seek(offset)
-                index = loads(f.read().decode("zlib"))
+                index = loads(zlib.decompress(f.read()))
 
                 # Deobfuscate the index.
 
@@ -150,10 +152,10 @@ def index_archives():
                 continue
 
             # 2.0 Branch.
-            if l.startswith("RPA-2.0 "):
+            if l.startswith(b"RPA-2.0 "):
                 offset = int(l[8:], 16)
                 f.seek(offset)
-                index = loads(f.read().decode("zlib"))
+                index = loads(zlib.decompress(f.read()))
                 archives.append((prefix, index))
                 f.close()
                 continue
@@ -162,7 +164,7 @@ def index_archives():
             f.close()
 
             fn = transfn(prefix + ".rpi")
-            index = loads(file(fn, "rb").read().decode("zlib"))
+            index = loads(zlib.decompress(open(fn, "rb").read()))
             archives.append((prefix, index))
         except:
             raise
@@ -270,7 +272,7 @@ def scandirfiles():
     files = game_files
 
     for _prefix, index in archives:
-        for j in index.iterkeys():
+        for j in six.iterkeys(index):
             add(None, j)
 
 
@@ -467,6 +469,14 @@ def load_core(name):
         if rv is not None:
             return rv
 
+    # Look for the file directly.
+    if not renpy.config.force_archives:
+        try:
+            fn = transfn(name)
+            return open_file(fn, "rb")
+        except:
+            pass
+
     # Look for the file in the apk.
     for apk in apks:
         prefixed_name = "/".join("x-" + i for i in name.split("/"))
@@ -505,7 +515,7 @@ def load_core(name):
             t = index[name][0]
             if len(t) == 2:
                 offset, dlen = t
-                start = ''
+                start = b''
             else:
                 offset, dlen, start = t
 
@@ -513,13 +523,13 @@ def load_core(name):
 
         # Compatibility path.
         else:
-            f = file(afn, "rb")
+            f = open(afn, "rb")
 
             for offset, dlen in index[name]:
                 f.seek(offset)
                 data.append(f.read(dlen))
 
-            rv = StringIO(''.join(data))
+            rv = io.BytesIO(b''.join(data))
             f.close()
 
         return rv
@@ -594,17 +604,18 @@ def loadable_core(name):
     if name in loadable_cache:
         return loadable_cache[name]
 
-    for apk in apks:
-        prefixed_name = "/".join("x-" + i for i in name.split("/"))
-        if prefixed_name in apk.info:
-            return True
-
     try:
         transfn(name)
         loadable_cache[name] = True
         return True
     except:
         pass
+
+    for apk in apks:
+        prefixed_name = "/".join("x-" + i for i in name.split("/"))
+        if prefixed_name in apk.info:
+            loadable_cache[name] = True
+            return True
 
     for _prefix, index in archives:
         if name in index:
@@ -742,17 +753,26 @@ class RenpyImporter(object):
         if filename.endswith("__init__.py"):
             mod.__path__ = [ filename[:-len("__init__.py")] ]
 
-        source = load(filename).read().decode("utf8")
-        if source and source[0] == u'\ufeff':
-            source = source[1:]
-        source = source.encode("raw_unicode_escape")
+        for encoding in [ "utf-8", "latin-1" ]:
 
-        source = source.replace("\r", "")
+            try:
 
-        code = compile(source, filename, 'exec', renpy.python.old_compile_flags, 1)
-        exec code in mod.__dict__
+                source = load(filename).read().decode(encoding)
+                if source and source[0] == u'\ufeff':
+                    source = source[1:]
+                source = source.encode("raw_unicode_escape")
 
-        return mod
+                source = source.replace("\r", "")
+
+                code = compile(source, filename, 'exec', renpy.python.old_compile_flags, 1)
+                break
+            except:
+                if encoding == "latin-1":
+                    raise
+
+        exec(code, mod.__dict__)
+
+        return sys.modules[fullname]
 
     def get_data(self, filename):
         return load(filename).read()
@@ -862,7 +882,7 @@ def auto_thread_function():
             if auto_quit_flag:
                 return
 
-            items = auto_mtimes.items()
+            items = list(auto_mtimes.items())
 
         for fn, mtime in items:
 

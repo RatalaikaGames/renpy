@@ -820,3 +820,63 @@ translate russian strings:
     # _developer\developer.rpym:154
     old "Show deleted"
     new "Показать удалённые"
+
+    # 00accessibility.rpy:76
+    old "Font Override"
+    new "Переопределение шрифта"
+
+    # 00accessibility.rpy:80
+    old "Default"
+    new "По умолчанию"
+
+    # 00accessibility.rpy:84
+    old "DejaVu Sans"
+    new "DejaVu Sans"
+
+    # 00accessibility.rpy:88
+    old "Opendyslexic"
+    new "Opendyslexic"
+
+    # 00accessibility.rpy:94
+    old "Text Size Scaling"
+    new "Масштабирование размера текста"
+
+    # 00accessibility.rpy:100
+    old "Reset"
+    new "Сбросить"
+
+    # 00accessibility.rpy:105
+    old "Line Spacing Scaling"
+    new "Масштабирование межстрочного интервала"
+
+    # 00accessibility.rpy:117
+    old "Self-Voicing"
+    new "Озвучка через синтезатор речи"
+
+    # 00accessibility.rpy:121
+    old "Off"
+    new "Выключить"
+
+    # 00accessibility.rpy:125
+    old "Text-to-speech"
+    new "Преобразование текста в речь"
+
+    # 00accessibility.rpy:129
+    old "Clipboard"
+    new "Из буфера обмена"
+
+    # 00preferences.rpy:430
+    old "font transform"
+    new "преобразование шрифта"
+
+    # 00preferences.rpy:433
+    old "font size"
+    new "размер шрифта"
+
+    # 00preferences.rpy:441
+    old "font line spacing"
+    new "межстрочный интервал"
+
+    # renpy/common/00accessibility.rpy:191
+    old "The options on this menu are intended to improve accessibility. They may not work with all games, and some combinations of options may render the game unplayable. This is not an issue with the game or engine. For the best results when changing fonts, try to keep the text size the same as it originally was."
+    new "Параметры этого меню предназначены для увеличения доступности. Они могут работать не со всеми играми, а некоторые комбинации опций могут сделать игру отображаемой некорректно. Это не проблема с игрой или движком. Для достижения наилучших результатов при изменении шрифтов старайтесь сохранять размер текста таким, каким он был изначально."

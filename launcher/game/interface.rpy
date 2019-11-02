@@ -257,6 +257,7 @@ screen launcher_input:
                 xalign 0.5
                 color INPUT_COLOR
                 allow allow
+                copypaste True
 
             if filename:
                 add SPACER
@@ -381,7 +382,7 @@ init python in interface:
 
         As an example of usage::
 
-            with interface.error_handling("opening the log file"):
+            with interface.error_handling(_("opening the log file")):
                 f = open("log.txt", "w")
         """
 
@@ -390,7 +391,7 @@ init python in interface:
         except Exception as e:
             renpy.renpy.error.report_exception(e, editor=False)
 
-            error(_("While [what!q], an error occured:"),
+            error(_("While [what!qt], an error occured:"),
                 _("[exception!q]"),
                 what=what,
                 label=label,

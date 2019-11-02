@@ -44,7 +44,7 @@ from renpy.display.layout import Fixed
 from renpy.display.predict import displayable as predict_displayable
 
 from renpy.python import py_eval_bytecode
-from renpy.pyanalysis import Analysis, NOT_CONST, GLOBAL_CONST, ccache
+from renpy.pyanalysis import Analysis, NOT_CONST, LOCAL_CONST, GLOBAL_CONST, ccache
 
 import hashlib
 import time
@@ -301,6 +301,13 @@ class SLNode(object):
 
         return False
 
+    def has_python(self):
+        """
+        Returns true if this node is Python or has a python node as a child.
+        """
+
+        return False
+
 
 # A sentinel used to indicate a keyword argument was not given.
 NotGiven = renpy.object.Sentinel("NotGiven")
@@ -451,6 +458,31 @@ class SLBlock(SLNode):
 
         return False
 
+    def has_python(self):
+        return any(i.has_python() for i in self.children)
+
+    def has_noncondition_child(self):
+        """
+        Returns true if this block has a child that is not an SLIf statement,
+        or false otherwise.
+        """
+
+        worklist = list(self.children)
+
+        while worklist:
+
+            n = worklist.pop(0)
+
+            if type(n) is SLBlock:
+                worklist.extend(n.children)
+            elif isinstance(n, SLIf):
+                for _, block in n.entries:
+                    worklist.append(block)
+            else:
+                return True
+
+        return False
+
 
 list_or_tuple = (list, tuple)
 
@@ -520,11 +552,12 @@ class SLDisplayable(SLBlock):
     """
 
     hotspot = False
+    variable = None
 
     # A list of variables that are locally constant.
     local_constant = [ ]
 
-    def __init__(self, loc, displayable, scope=False, child_or_fixed=False, style=None, text_style=None, pass_context=False, imagemap=False, replaces=False, default_keywords={}, hotspot=False):
+    def __init__(self, loc, displayable, scope=False, child_or_fixed=False, style=None, text_style=None, pass_context=False, imagemap=False, replaces=False, default_keywords={}, hotspot=False, variable=None):
         """
         `displayable`
             A function that, when called with the positional and keyword
@@ -558,6 +591,9 @@ class SLDisplayable(SLBlock):
 
         `default_keywords`
             The default keyword arguments to supply to the displayable.
+
+        `variable`
+            A variable that the main displayable is assigned to.
         """
 
         SLBlock.__init__(self, loc)
@@ -572,6 +608,7 @@ class SLDisplayable(SLBlock):
         self.hotspot = hotspot
         self.replaces = replaces
         self.default_keywords = default_keywords
+        self.variable = variable
 
         # Positional argument expressions.
         self.positional = [ ]
@@ -588,6 +625,7 @@ class SLDisplayable(SLBlock):
         rv.hotspot = self.hotspot
         rv.replaces = self.replaces
         rv.default_keywords = self.default_keywords
+        rv.variable = self.variable
         rv.positional = self.positional
 
         return rv
@@ -615,6 +653,23 @@ class SLDisplayable(SLBlock):
         # kept and placed into the scope.
         if self.scope:
             self.local_constant = list(analysis.local_constant)
+
+        if self.variable is not None:
+            const = self.constant
+
+            for i in self.positional:
+                const = min(self.constant, analysis.is_constant_expr(i))
+
+            for k, v in self.keyword:
+                const = min(self.constant, analysis.is_constant_expr(v))
+
+                if k == "id":
+                    const = NOT_CONST
+
+            if const == LOCAL_CONST:
+                analysis.mark_constant(self.variable)
+            elif const == NOT_CONST:
+                analysis.mark_not_constant(self.variable)
 
     def prepare(self, analysis):
 
@@ -667,6 +722,9 @@ class SLDisplayable(SLBlock):
         for k, _expr in self.keyword:
             if k == "id":
                 self.constant = NOT_CONST
+
+        if self.variable is not None:
+            self.constant = NOT_CONST
 
     def keywords(self, context):
         # We do not want to pass keywords to our parents, so just return.
@@ -796,6 +854,8 @@ class SLDisplayable(SLBlock):
                 self.report_arguments(cache, positional, keywords, transform)
 
             can_reuse = (old_d is not None) and (positional == cache.positional) and (keywords == cache.keywords) and (context.style_prefix == cache.style_prefix)
+            if (self.variable is not None) and copy_on_change:
+                can_reuse = False
 
             # A hotspot can only be reused if the imagemap it belongs to has
             # not changed.
@@ -872,6 +932,9 @@ class SLDisplayable(SLBlock):
             if not context.predicting:
                 raise
             fail = True
+
+        if self.variable is not None:
+            context.scope[self.variable] = main
 
         ctx.children = [ ]
         ctx.showif = None
@@ -1265,6 +1328,9 @@ class SLIf(SLNode):
 
         return False
 
+    def has_python(self):
+        return any(i[1].has_python() for i in self.entries)
+
 
 class SLShowIf(SLNode):
     """
@@ -1353,6 +1419,9 @@ class SLShowIf(SLNode):
                 return True
 
         return False
+
+    def has_python(self):
+        return any(i[1].has_python() for i in self.entries)
 
 
 class SLFor(SLBlock):
@@ -1508,11 +1577,14 @@ class SLPython(SLNode):
         analysis.python(self.code.source)
 
     def execute(self, context):
-        exec self.code.bytecode in context.globals, context.scope
+        exec(self.code.bytecode, context.globals, context.scope)
 
     def prepare(self, analysis):
         self.constant = NOT_CONST
         self.last_keyword = True
+
+    def has_python(self):
+        return True
 
 
 class SLPass(SLNode):
@@ -1558,6 +1630,9 @@ class SLDefault(SLNode):
             return
 
         scope[variable] = eval(self.expr, context.globals, scope)
+
+    def has_python(self):
+        return True
 
 
 class SLUse(SLNode):
@@ -1627,26 +1702,34 @@ class SLUse(SLNode):
         else:
             const = False
 
-        target = renpy.display.screen.get_screen_variant(self.target)
+        if isinstance(self.target, renpy.ast.PyExpr):
 
-        if target is None:
             self.constant = NOT_CONST
+            const = False
+            self.ast = None
 
-            if renpy.config.developer:
-                raise Exception("A screen named {} does not exist.".format(self.target))
-            else:
+        else:
+
+            target = renpy.display.screen.get_screen_variant(self.target)
+
+            if target is None:
+                self.constant = NOT_CONST
+
+                if renpy.config.developer:
+                    raise Exception("A screen named {} does not exist.".format(self.target))
+                else:
+                    return
+
+            if target.ast is None:
+                self.constant = NOT_CONST
                 return
 
-        if target.ast is None:
-            self.constant = NOT_CONST
-            return
+            if const:
+                self.ast = target.ast.const_ast
+            else:
+                self.ast = target.ast.not_const_ast
 
-        if const:
-            self.ast = target.ast.const_ast
-        else:
-            self.ast = target.ast.not_const_ast
-
-        self.constant = min(self.constant, self.ast.constant)
+            self.constant = min(self.constant, self.ast.constant)
 
     def execute_use_screen(self, context):
 
@@ -1669,7 +1752,20 @@ class SLUse(SLNode):
 
     def execute(self, context):
 
-        ast = self.ast
+        if isinstance(self.target, renpy.ast.PyExpr):
+            target_name = eval(self.target, context.globals, context.scope)
+            target = renpy.display.screen.get_screen_variant(target_name)
+
+            if target is None:
+                raise Exception("A screen named {} does not exist.".format(target_name))
+
+            ast = target.ast.not_const_ast
+
+            id_prefix = "_use_expression"
+
+        else:
+            id_prefix = self.target
+            ast = self.ast
 
         # If self.ast is not an SL2 screen, run it using renpy.display.screen.use_screen.
         if ast is None:
@@ -1683,10 +1779,11 @@ class SLUse(SLNode):
         ctx = SLContext(context)
         ctx.new_cache = context.new_cache[self.serial] = { }
         ctx.miss_cache = context.miss_cache.get(self.serial, None) or { }
+        ctx.uses_scope = [ ]
 
         if self.id:
 
-            use_id = (self.target, eval(self.id, context.globals, context.scope))
+            use_id = (id_prefix, eval(self.id, context.globals, context.scope))
 
             ctx.old_cache = context.old_use_cache.get(use_id, None) or context.old_cache.get(self.serial, None) or { }
 
@@ -1796,7 +1893,6 @@ class SLTransclude(SLNode):
 
         ctx.children = context.children
         ctx.showif = context.showif
-        ctx.uses_scope = context.uses_scope
 
         try:
             renpy.ui.stack.append(ctx)
@@ -1841,6 +1937,7 @@ class SLScreen(SLBlock):
     analysis = None
 
     layer = "'screens'"
+    sensitive = "True"
 
     def __init__(self, loc):
 
@@ -1864,6 +1961,9 @@ class SLScreen(SLBlock):
         # Should we predict this screen?
         self.predict = "None"  # expr.
 
+        # Should this screen be sensitive.
+        self.sensitive = "True"
+
         # The parameters this screen takes.
         self.parameters = None
 
@@ -1884,6 +1984,7 @@ class SLScreen(SLBlock):
         rv.variant = self.variant
         rv.predict = self.predict
         rv.parameters = self.parameters
+        rv.sensitive = self.sensitive
 
         rv.prepared = False
         rv.analysis = None
@@ -1907,6 +2008,7 @@ class SLScreen(SLBlock):
             parameters=self.parameters,
             location=self.location,
             layer=renpy.python.py_eval(self.layer),
+            sensitive=self.sensitive,
             )
 
     def analyze(self, analysis):

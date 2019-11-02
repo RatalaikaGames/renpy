@@ -45,10 +45,18 @@ emscripten = "RENPY_EMSCRIPTEN" in os.environ
 # Is coverage enabled?
 coverage = "RENPY_COVERAGE" in os.environ
 
+# Are we doing a static build?
+static = "RENPY_STATIC" in os.environ
+
 if coverage:
     gen = "gen.coverage"
 else:
     gen = "gen"
+
+
+if static:
+    gen += "-static"
+
 
 # The cython command.
 cython_command = os.environ.get("RENPY_CYTHON", "cython")
@@ -222,7 +230,7 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
     # Figure out what it depends on.
     deps = [ fn ]
 
-    f = file(fn)
+    f = open(fn)
     for l in f:
 
         m = re.search(r'from\s*([\w.]+)\s*cimport', l)
@@ -328,6 +336,18 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
                 
             subprocess.check_call(args)
 
+            # Fix-up source for static loading
+            if static and (len(split_name) > 1):
+                parent_module = '.'.join(split_name[:-1])
+                parent_module_identifier = parent_module.replace('.', '_')
+                with open(c_fn, 'r') as f:
+                    ccode = f.read()
+                ccode = re.sub('Py_InitModule4\("([^"]+)"', 'Py_InitModule4("'+parent_module+'.\\1"', ccode)
+                ccode = re.sub('^__Pyx_PyMODINIT_FUNC init', '__Pyx_PyMODINIT_FUNC init'+parent_module_identifier+'_', ccode, 0, re.MULTILINE)  # Cython 0.28.2
+                ccode = re.sub('^PyMODINIT_FUNC init', 'PyMODINIT_FUNC init'+parent_module_identifier+'_', ccode, 0, re.MULTILINE)  # Cython 0.25.2
+                with open(c_fn, 'w') as f:
+                    f.write(ccode)
+
         except subprocess.CalledProcessError as e:
             print()
             print(str(e))
@@ -382,14 +402,14 @@ def copyfile(source, dest, replace=None, replace_with=None):
         if os.path.getmtime(sfn) <= os.path.getmtime(dfn):
             return
 
-    sf = file(sfn, "rb")
+    sf = open(sfn, "rb")
     data = sf.read()
     sf.close()
 
     if replace:
         data = data.replace(replace, replace_with)
 
-    df = file(dfn, "wb")
+    df = open(dfn, "wb")
     df.write("# This file was automatically generated from " + source + "\n")
     df.write("# Modifications will be automatically overwritten.\n\n")
     df.write(data)

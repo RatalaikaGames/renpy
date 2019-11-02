@@ -22,17 +22,21 @@
 # This module contains the parser for the Ren'Py script language. It's
 # called when parsing is necessary, and creates an AST from the script.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
+
 import codecs
 import re
 import os
 import time
+import contextlib
 
 import renpy.display
 import renpy.test
 
 import renpy.ast as ast
 import renpy.sl2
+import renpy.six as six
+from renpy.six import unichr
 
 # A list of parse error messages.
 parse_errors = [ ]
@@ -109,7 +113,7 @@ def unicode_filename(fn):
     Converts the supplied filename to unicode.
     """
 
-    if isinstance(fn, unicode):
+    if isinstance(fn, six.text_type):
         return fn
 
     # Windows.
@@ -506,7 +510,6 @@ KEYWORDS = set([
     'python',
     'return',
     'scene',
-    'set',
     'show',
     'with',
     'while',
@@ -515,26 +518,26 @@ KEYWORDS = set([
     ])
 
 OPERATORS = [
-    '<',
-    '<=',
-    '>',
-    '>=',
     '<>',
+    '<<',
+    '<=',
+    '<',
+    '>>',
+    '>=',
+    '>',
     '!=',
     '==',
     '|',
     '^',
     '&',
-    '<<',
-    '>>',
     '+',
     '-',
+    '**',
     '*',
-    '/',
     '//',
+    '/',
     '%',
     '~',
-    '**',
     ]
 
 ESCAPED_OPERATORS = [
@@ -551,6 +554,23 @@ word_regexp = ur'[a-zA-Z_\u00a0-\ufffd][0-9a-zA-Z_\u00a0-\ufffd]*'
 image_word_regexp = ur'[-0-9a-zA-Z_\u00a0-\ufffd][-0-9a-zA-Z_\u00a0-\ufffd]*'
 
 
+class SubParse(object):
+    """
+    This represents the information about a subparse that can be provided to
+    a creator-defined statement.
+    """
+
+    def __init__(self, block):
+        self.block = block
+
+    def __repr__(self):
+
+        if not self.block:
+            return "<SubParse empty>"
+        else:
+            return "<SubParse {}:{}>".format(self.block[0].filename, self.block[0].linenumber)
+
+
 class Lexer(object):
     """
     The lexer that is used to lex script files. This works on the idea
@@ -558,7 +578,7 @@ class Lexer(object):
     sub-lexers to lex sub-blocks.
     """
 
-    def __init__(self, block, init=False, init_offset=0, global_label=None, monologue_delimiter="\n\n"):
+    def __init__(self, block, init=False, init_offset=0, global_label=None, monologue_delimiter="\n\n", subparses=None):
 
         # Are we underneath an init block?
         self.init = init
@@ -584,6 +604,8 @@ class Lexer(object):
 
         self.monologue_delimiter = monologue_delimiter
 
+        self.subparses = subparses
+
     def advance(self):
         """
         Advances this lexer to the next line in the block. The lexer
@@ -607,6 +629,19 @@ class Lexer(object):
         self.word_cache_pos = -1
 
         return True
+
+    def unadvance(self):
+        """
+        Puts the parsing point at the end of the previous line. This is used
+        after renpy_statement to prevent the advance that Ren'Py statements
+        do.
+        """
+
+        self.line -= 1
+        self.eob = False
+        self.filename, self.number, self.text, self.subblock = self.block[self.line]
+        self.pos = len(self.text)
+        self.word_cache_pos = -1
 
     def match_regexp(self, regexp):
         """
@@ -664,6 +699,18 @@ class Lexer(object):
         self.pos = oldpos
         return ''
 
+    @contextlib.contextmanager
+    def catch_error(self):
+        """
+        Catches errors, then causes the line to advance if it hasn't been
+        advanced already.
+        """
+
+        try:
+            yield
+        except ParseError as e:
+            parse_errors.append(e.message)
+
     def error(self, msg):
         """
         Convenience function for reporting a parse error at the current
@@ -710,6 +757,12 @@ class Lexer(object):
         if not self.subblock:
             self.error('%s expects a non-empty block.' % stmt)
 
+    def has_block(self):
+        """
+        Called to check if the current line has a non-empty block.
+        """
+        return bool(self.subblock)
+
     def subblock_lexer(self, init=False):
         """
         Returns a new lexer object, equiped to parse the block
@@ -718,11 +771,11 @@ class Lexer(object):
 
         init = self.init or init
 
-        return Lexer(self.subblock, init=init, init_offset=self.init_offset, global_label=self.global_label, monologue_delimiter=self.monologue_delimiter)
+        return Lexer(self.subblock, init=init, init_offset=self.init_offset, global_label=self.global_label, monologue_delimiter=self.monologue_delimiter, subparses=self.subparses)
 
     def string(self):
         """
-        Lexes a string, and returns the string to the user, or none if
+        Lexes a string, and returns the string to the user, or None if
         no string could be found. This also takes care of expanding
         escapes and collapsing whitespace.
 
@@ -1190,7 +1243,7 @@ class Lexer(object):
         if not text:
             return None
 
-        return renpy.ast.PyExpr(self.text[start:self.pos].strip(), self.filename, self.number)
+        return renpy.ast.PyExpr(text, self.filename, self.number)
 
     def comma_expression(self):
         """
@@ -1222,6 +1275,10 @@ class Lexer(object):
 
         self.line, self.filename, self.number, self.text, self.subblock, self.pos = state
         self.word_cache_pos = -1
+        if self.line < len(self.block):
+            self.eob = False
+        else:
+            self.eob = True
 
     def get_location(self):
         """
@@ -1240,11 +1297,11 @@ class Lexer(object):
         object, which is called directly.
         """
 
-        if isinstance(thing, basestring):
+        if isinstance(thing, six.string_types):
             name = name or thing
             rv = self.match(thing)
         else:
-            name = name or thing.im_func.func_name
+            name = name or thing.__func__.__name__
             rv = thing()
 
         if rv is None:
@@ -1304,6 +1361,70 @@ class Lexer(object):
         process(self.subblock, '')
         return ''.join(rv)
 
+    def arguments(self):
+        """
+        Returns an Argument object if there is a list of arguments, or None
+        there is not one.
+        """
+
+        return parse_arguments(self)
+
+    def renpy_statement(self):
+        """
+        Parses the remainder of the current line as a statement in the
+        Ren'Py script language. Returns a SubParse corresponding to the
+        AST node generated by that statement.
+        """
+
+        if self.subparses is None:
+            raise Exception("A renpy_statement can only be parsed inside a creator-defined statement.")
+
+        block = parse_statement(self)
+        self.unadvance()
+
+        if not isinstance(block, list):
+            block = [ block ]
+
+        sp = SubParse(block)
+        self.subparses.append(sp)
+
+        return sp
+
+    def renpy_block(self, empty=False):
+
+        if self.subparses is None:
+            raise Exception("A renpy_block can only be parsed inside a creator-defined statement.")
+
+        if self.line < 0:
+            self.advance()
+
+        block = [ ]
+
+        while not self.eob:
+            try:
+
+                stmt = parse_statement(self)
+
+                if isinstance(stmt, list):
+                    block.extend(stmt)
+                else:
+                    block.append(stmt)
+
+            except ParseError as e:
+                parse_errors.append(e.message)
+                self.advance()
+
+        if not block:
+            if empty:
+                block.append(ast.Pass(self.get_location()))
+            else:
+                self.error("At least one Ren'Py statement is expected.")
+
+        sp = SubParse(block)
+        self.subparses.append(sp)
+
+        return sp
+
 
 def parse_image_name(l, string=False, nodash=False):
     """
@@ -1332,7 +1453,7 @@ def parse_image_name(l, string=False, nodash=False):
         s = l.simple_expression()
 
         if s is not None:
-            rv.append(unicode(s))
+            rv.append(six.text_type(s))
         else:
             points.pop()
 
@@ -1481,15 +1602,12 @@ def parse_menu(stmtl, loc, arguments):
     items = [ ]
     item_arguments = [ ]
 
-    l.advance()
-
-    while not l.eob:
+    while l.advance():
 
         if l.keyword('with'):
             with_ = l.require(l.simple_expression)
             l.expect_eol()
             l.expect_noblock('with clause')
-            l.advance()
 
             continue
 
@@ -1497,7 +1615,6 @@ def parse_menu(stmtl, loc, arguments):
             set = l.require(l.simple_expression)  # @ReservedAssignment
             l.expect_eol()
             l.expect_noblock('set menuitem')
-            l.advance()
 
             continue
 
@@ -1521,8 +1638,6 @@ def parse_menu(stmtl, loc, arguments):
             has_say = True
             say_who = who
             say_what = what
-
-            l.advance()
 
             continue
 
@@ -1548,7 +1663,6 @@ def parse_menu(stmtl, loc, arguments):
 
             items.append((label, "True", None))
             item_arguments.append(None)
-            l.advance()
 
             continue
 
@@ -1569,7 +1683,6 @@ def parse_menu(stmtl, loc, arguments):
         block = parse_block(l.subblock_lexer())
 
         items.append((label, condition, block))
-        l.advance()
 
     if not has_choice:
         stmtl.error("Menu does not contain any choices.")
@@ -1579,6 +1692,12 @@ def parse_menu(stmtl, loc, arguments):
         rv.append(ast.Say(loc, say_who, say_what, None, interact=False))
 
     rv.append(ast.Menu(loc, items, set, with_, has_say or has_caption, arguments, item_arguments))
+
+    for index, i in enumerate(rv):
+        if index:
+            i.rollback = "normal"
+        else:
+            i.rollback = "force"
 
     return rv
 
@@ -1854,6 +1973,9 @@ def menu_statement(l, loc):
 
     rv.extend(menu)
 
+    for i in rv:
+        i.statement_start = rv[0]
+
     return rv
 
 
@@ -1910,7 +2032,6 @@ def call_statement(l, loc):
 
     if l.keyword('from'):
         name = l.require(l.label_name_declare)
-        l.set_global_label(name)
         rv.append(ast.Label(loc, name, [], None))
     else:
         if renpy.scriptedit.lines and (loc in renpy.scriptedit.lines):
@@ -2062,7 +2183,20 @@ def define_statement(l, loc):
         store = store + "." + name
         name = l.require(l.word)
 
-    l.require('=')
+    if l.match(r'\['):
+        index = l.delimited_python(r']', True)
+        l.require(r']')
+    else:
+        index = None
+
+    if l.match(r'\+='):
+        operator = "+="
+    elif l.match(r'\|='):
+        operator = "|="
+    else:
+        l.require('=')
+        operator = "="
+
     expr = l.rest()
 
     if not expr:
@@ -2070,7 +2204,7 @@ def define_statement(l, loc):
 
     l.expect_noblock('define statement')
 
-    rv = ast.Define(loc, store, name, expr)
+    rv = ast.Define(loc, store, name, index, operator, expr)
 
     if not l.init:
         rv = ast.Init(loc, [ rv ], priority + l.init_offset)
@@ -2173,6 +2307,8 @@ def python_statement(l, loc):
         store = "store." + l.require(l.dotted_name)
 
     l.require(':')
+    l.expect_eol()
+
     l.expect_block('python block')
 
     python_code = l.python_block()
@@ -2555,7 +2691,7 @@ def style_statement(l, loc):
     return rv
 
 
-def finish_say(l, loc, who, what, attributes=None):
+def finish_say(l, loc, who, what, attributes=None, temporary_attributes=None):
 
     if what is None:
         return None
@@ -2593,14 +2729,40 @@ def finish_say(l, loc, who, what, attributes=None):
         for i in what:
 
             if i == "{clear}":
-                rv.append(ast.UserStatement(loc, "nvl clear", [ ]))
+                rv.append(ast.UserStatement(loc, "nvl clear", [ ], (("nvl", "clear"), { })))
             else:
-                rv.append(ast.Say(loc, who, i, with_, attributes=attributes, interact=interact, arguments=arguments))
+                rv.append(ast.Say(loc, who, i, with_, attributes=attributes, interact=interact, arguments=arguments, temporary_attributes=temporary_attributes))
 
         return rv
 
     else:
-        return ast.Say(loc, who, what, with_, attributes=attributes, interact=interact, arguments=arguments)
+        return ast.Say(loc, who, what, with_, attributes=attributes, interact=interact, arguments=arguments, temporary_attributes=temporary_attributes)
+
+
+def say_attributes(l):
+    """
+    Returns a list of say attributes, or None if there aren't any.
+    """
+
+    attributes = [ ]
+    while True:
+        prefix = l.match(r'-')
+        if not prefix:
+            prefix = ""
+
+        component = l.image_name_component()
+
+        if component is None:
+            break
+
+        attributes.append(prefix + component)
+
+    if attributes:
+        attributes = tuple(attributes)
+    else:
+        attributes = None
+
+    return attributes
 
 
 @statement("")
@@ -2626,29 +2788,18 @@ def say_statement(l, loc):
     # Try for a two-argument say statement.
     who = l.say_expression()
 
-    attributes = [ ]
-    while True:
-        prefix = l.match(r'-')
-        if not prefix:
-            prefix = ""
+    attributes = say_attributes(l)
 
-        component = l.image_name_component()
-
-        if component is None:
-            break
-
-        attributes.append(prefix + component)
-
-    if attributes:
-        attributes = tuple(attributes)
+    if l.match(r'\@'):
+        temporary_attributes = say_attributes(l)
     else:
-        attributes = None
+        temporary_attributes = None
 
     what = l.triple_string() or l.string()
 
     if (who is not None) and (what is not None):
 
-        rv = finish_say(l, loc, who, what, attributes)
+        rv = finish_say(l, loc, who, what, attributes, temporary_attributes)
 
         l.expect_eol()
         l.expect_noblock('say statement')

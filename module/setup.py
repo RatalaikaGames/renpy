@@ -182,6 +182,7 @@ for p in generate_styles.prefixes:
     cython("renpy.styledata.style_{}functions".format(p), pyx=setuplib.gen + "/style_{}functions.pyx".format(p))
 
 # renpy.display
+cython("renpy.display.matrix")
 cython("renpy.display.render", libs=[ 'z', 'm' ])
 cython("renpy.display.accelerator", libs=sdl + [ 'z', 'm' ])
 
@@ -219,18 +220,16 @@ cython("renpy.gl.glrtt_fbo", libs=glew_libs)
 
 cython("renpy.gl2.uguugl", libs=sdl)
 cython("renpy.gl2.uguu", libs=sdl)
+cython("renpy.gl2.gl2geometry")
 cython("renpy.gl2.gl2draw", libs=sdl)
 cython("renpy.gl2.gl2texture", libs=sdl)
-cython("renpy.gl2.gl2environ_shader", libs=sdl)
-cython("renpy.gl2.gl2rtt_fbo", libs=sdl)
-
+cython("renpy.gl2.gl2shader", libs=sdl)
 
 if not (android or ios or emscripten):
     # renpy.angle
     def anglecopy(fn):
         copyfile("renpy/gl/" + fn, "renpy/angle/" + fn, "DEF ANGLE = False", "DEF ANGLE = True")
 
-    anglecopy("glblacklist.py")
     anglecopy("gldraw.pxd")
     anglecopy("gldraw.pyx")
     anglecopy("glenviron_shader.pyx")

@@ -28,7 +28,7 @@ import weakref
 import time
 import os
 
-from renpy.display.render import blit_lock, IDENTITY, BLIT, DISSOLVE, IMAGEDISSOLVE, PIXELLATE
+from renpy.display.render import blit_lock, IDENTITY, BLIT, DISSOLVE, IMAGEDISSOLVE, PIXELLATE, FLATTEN
 
 # A map from cached surface to rle version of cached surface.
 rle_cache = weakref.WeakKeyDictionary()
@@ -310,11 +310,11 @@ def draw_special(what, dest, x, y):
         ramp = "\x00" * 256
 
         for i in xrange(0, ramplen):
-            ramp += chr(255 * i / ramplen)
+            ramp += chr(255 * i // ramplen)
 
         ramp += "\xff" * 256
 
-        step = int( what.operation_complete * (256 + ramplen) )
+        step = int(what.operation_complete * (256 + ramplen))
         ramp = ramp[step:step+256]
 
         renpy.display.module.imageblend(
@@ -337,6 +337,10 @@ def draw_special(what, dest, x, y):
             surf.subsurface((-x, -y, w, h)),
             dest.subsurface((0, 0, w, h)),
             px, px, px, px)
+
+    elif what.operation == FLATTEN:
+        surf = what.children[0][0].render_to_texture(dest.get_masks()[3])
+        dest.subsurface((0, 0, w, h)).blit(surf, (0, 0))
 
     else:
         raise Exception("Unknown operation: %d" % what.operation)
@@ -635,8 +639,8 @@ def draw_transformed(dest, clip, what, xo, yo, alpha, forward, reverse):
         cxo, cyo = reverse.transform(cxo, cyo)
 
         if what.forward:
-            child_forward = forward * what.forward
-            child_reverse = what.reverse * reverse
+            child_forward = what.forward * forward
+            child_reverse = reverse * what.reverse
         else:
             child_forward = forward
             child_reverse = reverse
@@ -1110,21 +1114,12 @@ class SWDraw(object):
         self.mutated_surface(surf)
         return surf
 
-    def free_memory(self):
+    def kill_textures(self):
         """
-        Frees up memory.
+        Kills all textures and caches of textures.
         """
 
         rle_cache.clear()
-
-    def deinit(self):
-        """
-        Called when we're restarted.
-        """
-
-        renpy.display.render.free_memory()
-
-        return
 
     def quit(self):  # @ReservedAssignment
         """

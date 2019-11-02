@@ -1,5 +1,4 @@
-﻿
-translate spanish strings:
+﻿translate spanish strings:
 
     # 00gltest.rpy:70
     old "Renderer"
@@ -212,3 +211,28 @@ translate spanish strings:
     # _errorhandling.rpym:667
     old "Copies the errors.txt file to the clipboard."
     new "Copia el archivo errors.txt al portapapeles."
+
+    # _errorhandling.rpym:542
+    old "Copy BBCode"
+    new "Copiar BBCode"
+
+    # _errorhandling.rpym:544
+    old "Copies the traceback.txt file to the clipboard as BBcode for forums like https://lemmasoft.renai.us/."
+    new "Copia el archivo traceback.txt en el portapapeles como BBcode para foros como https://lemmasoft.renai.us/."
+
+    # _errorhandling.rpym:546
+    old "Copy Markdown"
+    new "Copiar Markdown"
+
+    # _errorhandling.rpym:548
+    old "Copies the traceback.txt file to the clipboard as Markdown for Discord."
+    new "Copia el archivo traceback.txt al portapapeles como Markdown paara Discord."
+
+    # _errorhandling.rpym:683
+    old "Copies the errors.txt file to the clipboard as BBcode for forums like https://lemmasoft.renai.us/."
+    new "Copia el archivo errors.txt en el portapapeles como BBcode para foros como https://lemmasoft.renai.us/."
+
+    # _errorhandling.rpym:687
+    old "Copies the errors.txt file to the clipboard as Markdown for Discord."
+    new "Copia el archivo errors.txt al portapapeles como Markdown para Discord."
+

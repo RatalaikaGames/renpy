@@ -21,7 +21,8 @@
 
 # This module handles the logging of messages to a file.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
+
 import os.path
 import codecs
 import traceback
@@ -33,7 +34,7 @@ import sys
 import encodings.latin_1  # @UnusedImport
 
 import renpy.config
-
+import renpy.six as six
 
 real_stdout = sys.stdout
 real_stderr = sys.stderr
@@ -153,10 +154,14 @@ class LogFile(object):
         if self.open():
 
             if not self.raw_write:
-                s = s % args
+                try:
+                    s = s % args
+                except:
+                    s = repr((s,) + args)
+
                 s += "\n"
 
-            if not isinstance(s, unicode):
+            if not isinstance(s, six.text_type):
                 s = s.decode("latin-1")
 
             s = s.replace("\n", "\r\n")
@@ -227,7 +232,7 @@ class StdioRedirector(object):
 
     def write(self, s):
 
-        if isinstance(s, unicode):
+        if isinstance(s, six.text_type):
             es = s.encode("utf-8")
         else:
             es = s

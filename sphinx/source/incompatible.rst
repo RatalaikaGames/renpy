@@ -12,6 +12,70 @@ features.
 Incompatible changes to the GUI are documented at :ref:`gui-changes`, as
 such changes only take effect when the GUI is regenerated.
 
+.. _incompatible-7.3.3:
+
+7.3.3
+-----
+
+Callbacks registered with :var:`config.start_callbacks` are now run
+after ``default`` statements in all cases. To restore the old behavior
+(where callbacks were run before ``default`` statements during game
+but not replay start), use::
+
+    define config.early_start_callbacks = True
+
+
+
+.. _incompatible-7.3.0:
+
+7.3.0
+-----
+
+Screen language now produces the error "a non-constant keyword argument ...
+is not allowed after a python block." when it encounters screens similar
+to the following::
+
+    screen test():
+
+        default a = 0
+
+        button:
+            $ a = 1
+            action Return(a)
+
+            text "Test"
+
+This is because the property `action` is run before the python assignment,
+meaning this was returning 0 when clicked, not 1. To disable this check, add ::
+
+    define config.keyword_after_python = True
+
+to a file named 01compat.rpy in your game's game directory. However, your
+game will have the old behavior.
+
+The order in which children of the ``side`` layout are drawn is now
+taken from the control string. To revert to the old fixed order, use::
+
+    define config.keep_side_render_order = False
+
+The interface of :var:`config.say_attribute_transition_callback` has
+been changed in an incompatible way, to allow sets of old and new tags
+to be given. To revert to the old interface, use::
+
+    define config.say_attribute_transition_callback_attrs = False
+
+It's mode parameter has also been slightly changed, and will now return
+a value of ``both`` when both a ``permanent`` and ``temporary``
+attribute transition is occuring.
+
+.. _incompatible-7.2.2:
+
+7.2.2
+-----
+
+:var:`config.say_attribute_transition_callback` has been changed to
+accept a new argument, the image being displayed.
+
 
 .. _incompatible-7.1.1:
 

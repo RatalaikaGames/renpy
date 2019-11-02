@@ -19,7 +19,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import renpy.display
 import renpy.style
 import renpy.sl2
@@ -46,6 +46,10 @@ def log_clock(s):
     renpy.display.log.write(s)
     if renpy.android and not renpy.config.log_to_stdout:
         print(s)
+
+    # Pump the presplash window to prevent marking
+    # our process as unresponsive by OS
+    renpy.display.presplash.pump_window()
 
     last_clock = now
 
@@ -146,7 +150,7 @@ def load_rpe(fn):
     zfn.close()
 
     sys.path.insert(0, fn)
-    exec autorun in dict()
+    exec(autorun, dict())
 
 
 def choose_variants():
@@ -228,8 +232,58 @@ def choose_variants():
             renpy.config.variants.insert(0, 'phone')
             renpy.config.variants.insert(0, 'small')
 
+    elif renpy.emscripten:
+        import emscripten
+        import re
+
+        # web
+        renpy.config.variants.insert(0, 'web')
+
+        # mobile
+        userAgent = emscripten.run_script_string(r'''navigator.userAgent''')
+        mobile = re.search('Mobile|Android|iPad|iPhone', userAgent)
+        if mobile:
+            renpy.config.variants.insert(0, 'mobile')
+        # Reserve android/ios for when the OS API is exposed
+        #if re.search('Android', userAgent):
+        #    renpy.config.variants.insert(0, 'android')
+        #if re.search('iPad|iPhone', userAgent):
+        #    renpy.config.variants.insert(0, 'ios')
+
+        # touch
+        touch = emscripten.run_script_int(r'''
+          ('ontouchstart' in window) ||
+            (navigator.maxTouchPoints > 0) ||
+            (navigator.msMaxTouchPoints > 0)''')
+        if touch == 1:
+            # mitigate hybrids (e.g. ms surface) by restricting touch to mobile
+            if mobile:
+                renpy.config.variants.insert(0, 'touch')
+
+        # large/medium/small
+        # tablet/phone
+        # screen.width/height is auto-adjusted by browser,
+        # so it can be used as a physical sizereference
+        # (see also window.devicePixelRatio)
+        # e.g. Galaxy S5:
+        # - physical / OpenGL: 1080x1920
+        # - web screen: 360x640 w/ devicePixelRatio=3
+        ref_width  = emscripten.run_script_int(r'''screen.width''')
+        ref_height = emscripten.run_script_int(r'''screen.height''')
+        # medium reference point: ipad 1024x768, ipad pro 1336x1024 (browser "pixels")
+        if mobile:
+            if (ref_width < 768 or ref_height < 768):
+                renpy.config.variants.insert(0, 'small')
+                renpy.config.variants.insert(0, 'phone')
+            else:
+                renpy.config.variants.insert(0, 'medium')
+                renpy.config.variants.insert(0, 'tablet')
+        else:
+            renpy.config.variants.insert(0, 'large')
+
     else:
         renpy.config.variants.insert(0, 'pc')
+
         renpy.config.variants.insert(0, 'large')
 
 
@@ -258,14 +312,6 @@ def main():
     game.basepath = renpy.config.gamedir
     renpy.config.searchpath = [ renpy.config.gamedir ]
 
-
-    if renpy.android and ("ANDROID_PUBLIC" in os.environ):
-
-        android_game = os.path.join(os.environ["ANDROID_PUBLIC"], "game")
-
-        if os.path.exists(android_game):
-            renpy.config.searchpath.insert(0, android_game)
-
     # Find the common directory.
     commondir = __main__.path_to_common(renpy.config.renpy_base)  # E1101 @UndefinedVariable
 
@@ -275,10 +321,21 @@ def main():
     else:
         renpy.config.commondir = None
 
+    # Add path from env variable, if any
+    if "RENPY_SEARCHPATH" in os.environ:
+        renpy.config.searchpath.extend(os.environ["RENPY_SEARCHPATH"].split("::"))
+
     if renpy.android:
         renpy.config.searchpath = [ ]
         renpy.config.commondir = None
 
+        if "ANDROID_PUBLIC" in os.environ:
+            android_game = os.path.join(os.environ["ANDROID_PUBLIC"], "game")
+
+            print("Android searchpath: ", android_game)
+
+            if os.path.exists(android_game):
+                renpy.config.searchpath.insert(0, android_game)
 
     # Load Ren'Py extensions.
     for dir in renpy.config.searchpath:  # @ReservedAssignment

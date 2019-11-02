@@ -160,6 +160,34 @@ These control transitions between various screens.
     If not None, a transition to use when the image is changed by a
     say statement with image attributes.
 
+.. var:: config.say_attribute_transition_callback = ...
+
+    This is a function that return a transition to apply and a layer to
+    apply it on
+
+    This should be a function that takes four arguments, the image tag
+    being shown, a `mode` parameter, a `set` containing pre-transition tags
+    and a `set` containing post-transition tags. Where the value of the
+    `mode` parameter is one of:
+
+    * "permanent", for permanent attribute change (one that lasts longer
+      than the current say statement).
+    * "temporary", for a temporary attribute change (one that is restored
+      at the end of the current say statement).
+    * "both", for a simultaneous permanent and temporary attribute change
+      (one that in part lasts longer than the current say statement, and in
+      part is restored at the end of the current say statement).
+    * "restore", for when a temporary (or both) change is being restored.
+
+    This should return a 2-component tuple, consisting of:
+
+    * The transition to use, or None if no transition should occur.
+    * The layer the transition should be on, either a string or None. This is
+      almost always None.
+
+    The default implementation of this returns (config.say_attribute_transition,
+    config.say_attribute_transition_layer).
+
 .. var:: config.say_attribute_transition_layer = None
 
     If not None, this must be a string giving the name of a layer. (Almost always
@@ -262,7 +290,7 @@ Occasionally Used
 
     The number of slots used by autosaves.
 
-.. var:: config.cache_surfaces = True
+.. var:: config.cache_surfaces = False
 
     If True, the underlying data of an image is stored in RAM, allowing
     image manipulators to be applied to that image without reloading it
@@ -288,8 +316,13 @@ Occasionally Used
 
 .. var:: config.context_callback = None
 
-    This is a callback that is called when Ren'Py enteres a new context,
+    This is a callback that is called when Ren'Py enters a new context,
     such as a menu context.
+
+.. var:: config.context_copy_remove_screens = [ 'notify' ]
+
+    Contains a list of screens that are removed when a context is copied
+    for rollback or saving.
 
 .. var:: config.debug = False
 
@@ -320,7 +353,7 @@ Occasionally Used
 
 .. var:: config.default_tag_layer = "master"
 
-    The layer an image is show on if its tag is not found in config.tag_layer.
+    The layer an image is shown on if its tag is not found in config.tag_layer.
 
 .. var:: config.default_transform = ...
 
@@ -328,7 +361,7 @@ Occasionally Used
     the transform properties are taken from this transform and used to
     initialize the values of the displayable's transform.
 
-    The default default transform is :var:`center`.
+    The default transform is :var:`center`.
 
 .. var:: config.defer_styles = False
 
@@ -349,6 +382,11 @@ Occasionally Used
     This can be True, False, or "auto". If "auto", Ren'Py will
     detect if the game has been packaged into a distribution, and
     set config.developer as appropriate.
+
+.. var:: config.disable_input = False
+
+    When true, :func:`renpy.input` terminates immediately and returns its
+    `default` argument.
 
 .. var:: config.displayable_prefix = { }
 
@@ -393,7 +431,7 @@ Occasionally Used
 
     If true, Ren'Py will attempt to determine the name of the language
     to use based on the locale of the player's system. If successful,
-    this languagfe will be used as the default language.
+    this language will be used as the default language.
 
 .. var:: config.enter_sound = None
 
@@ -526,11 +564,21 @@ Occasionally Used
     If not None, this should be a string giving the default language
     that the game is translated into by the translation framework.
 
+.. var:: config.load_failed_label = None
+
+    If a string, this is a label that is jumped to when a load fails because
+    the script has changed so much that Ren'Py can't recover.
+    Before performing the load, Ren'Py will revert to the start of the
+    last statement, then it will clear the call stack.
+
+    This may also be a function. If it is, the function is called with
+    no arguments, and is expected to return a string giving the label.
+
 .. var:: config.locale_to_language_function = ...
 
     A function that determines the language the game should use,
     based on the the user's locale.
-    It takes 2 arguments strings that give the the ISO code of the locale
+    It takes 2 string arguments that give the ISO code of the locale
     and the ISO code of the region.
 
     It should return a string giving the name of a translation to use, or
@@ -633,6 +681,13 @@ Occasionally Used
     Uses nearest-neighbor filtering by default, to support pixel art or
     melting players' eyes.
 
+.. var:: config.notify = ...
+
+    This is called by :func:`renpy.notify` or :func:`Notify` with a
+    single  `message` argument, to display the notification. The default
+    implementation is :func:`renpy.display_notify`. This is intended
+    to allow creators to intercept notifications.
+
 .. var:: config.optimize_texture_bounds = False
 
     When True, Ren'Py will scan images to find the bounding box of the
@@ -680,6 +735,12 @@ Occasionally Used
     a window. The default action prompts the user to see if he wants
     to quit the game.
 
+.. var:: config.reload_modules = [ ]
+
+    A list of strings giving the names of python modules that should be
+    reloaded along with the game. Any submodules of these modules
+    will also be reloaded.
+
 .. var:: config.replace_text = None
 
     If not None, a function that is called with a single argument, a text to
@@ -706,6 +767,11 @@ Occasionally Used
     A dictionary mapping variables in the default store to the values
     the variables will be given when entering a replay.
 
+.. var:: config.return_not_found_label = None
+
+    If not None, a label that is jumped to when a return site is not found.
+    The call stack is cleared before this jump occurs.
+
 .. var:: config.save_json_callbacks = [ ]
 
     A list of callback functions that are used to create the json object
@@ -725,7 +791,7 @@ Occasionally Used
 
     If not None, this should be a function that takes the speaking character,
     followed by positional and keyword arguments. It's called whenever a
-    say statement occurs with the arguments to that say statment. This
+    say statement occurs with the arguments to that say statement. This
     always includes an interact argument, and can include others provided
     in the say statement.
 
@@ -964,6 +1030,21 @@ Rarely or Internally Used
 
     A list of layers that are cleared when entering a new context.
 
+.. var:: config.exception_handler = None
+
+    If not None, this should be a function that takes three arguments:
+
+    * A string giving the text of a traceback, abbreviated so that it only includes
+      creator-written files.
+    * The full text of the traceback, including both creator-written and Ren'Py
+      files.
+    * The path to a file containing a traceback method.
+
+    This function can present the error to a user in any way fit. If it returns True,
+    the exception is ignored and control is transferred to the next statement. If it
+    returns False, the built-in exception handler is use. This function may also call
+    :func:`renpy.jump` to transfer control to some other label.
+
 .. var:: config.fade_music = 0.0
 
     This is the amount of time in seconds to spend fading the old
@@ -1010,18 +1091,18 @@ Rarely or Internally Used
     entirely, although we don't recommend that, as rollback is useful
     to let the user see text he skipped by mistake.
 
-.. var:: config.help = "README.html"
+.. var:: config.help = None
 
     This controls the functionality of the help system invoked by the
-    help button on the main and game menus, or by pressing f1 or
-    command-?.
+    help button on the main and game menus, or by pressing F1 or
+    Command-?.
 
     If None, the help system is disabled and does not show up on
     menus.  If a string corresponding to a label found in the script,
     that label is invoked in a new context. This allows you to define
     an in-game help-screen.  Otherwise, this is interpreted as a
     filename relative to the base directory, that is opened in a web
-    browser.
+    browser. If the file is not exist, the action is ignored.
 
 .. var:: config.hide = renpy.hide
 
@@ -1039,6 +1120,11 @@ Rarely or Internally Used
 
     The default implementation formats the `auto` property with
     the desired image, and then checks if the computed filename exists.
+
+.. var:: config.keep_side_render_order = True
+
+    If True, the order of substrings in the Side positions will be
+    determine the order of children render.
 
 .. var:: config.imagemap_cache = True
 
@@ -1129,7 +1215,7 @@ Rarely or Internally Used
 
 .. var:: config.longpress_duration = 0.5
 
-    The amount of time the player must press the screen for for a longpress
+    The amount of time the player must press the screen for a longpress
     to be recognized on a touch device.
 
 .. var:: config.longpress_radius = 15
@@ -1259,9 +1345,9 @@ Rarely or Internally Used
 
 .. var:: config.rollback_side_size = .2
 
-	If the rollback side is enabled, the fraction of of the screen on the
-	rollback side that, when clicked or touched, causes a rollback to
-	occur.
+    If the rollback side is enabled, the fraction of the screen on the
+    rollback side that, when clicked or touched, causes a rollback to
+    occur.
 
 .. var:: config.say_allow_dismiss = None
 
@@ -1489,8 +1575,7 @@ Ren'Py management of the Python garbage collector.
     reached a steady state. (The fourth frame or later after the screen has been
     updated.)
 
-.. var:: gc_print_unreachable = False
+.. var:: config.gc_print_unreachable = False
 
-    If True, Ren'Py will print to its console and logs informaton about the
+    If True, Ren'Py will print to its console and logs information about the
     objects that are triggering collections.
-

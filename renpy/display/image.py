@@ -229,7 +229,7 @@ def get_ordered_image_attributes(tag, attributes=(), sort=None):
 
     for attr in attrcount:
         if attr not in rv:
-            l.append((attrtotalpos[attr] / attrcount[attr], sort(attr), attr))
+            l.append((attrtotalpos[attr] // attrcount[attr], sort(attr), attr))
 
     l.sort()
     for i in l:
@@ -558,12 +558,6 @@ class DynamicImage(renpy.display.core.Displayable):
 
         self.name = name
 
-        if scope is not None:
-            self.find_target(scope)
-            self._uses_scope = True
-        else:
-            self._uses_scope = False
-
         if isinstance(name, basestring) and ("[prefix_" in name):
             self._duplicatable = True
 
@@ -571,6 +565,12 @@ class DynamicImage(renpy.display.core.Displayable):
             for i in name:
                 if ("[prefix_" in i):
                     self._duplicatable = True
+
+        if scope is not None:
+            self.find_target(scope)
+            self._uses_scope = True
+        else:
+            self._uses_scope = False
 
     def _scope(self, scope, update):
         return self.find_target(scope, update)
@@ -598,6 +598,9 @@ class DynamicImage(renpy.display.core.Displayable):
         if self.name != o.name:
             return False
 
+        if self._uses_scope and (self.target != o.target):
+            return False
+
         return True
 
     def _target(self):
@@ -606,13 +609,24 @@ class DynamicImage(renpy.display.core.Displayable):
         else:
             return self
 
+    def set_style_prefix(self, prefix, root):
+
+        if (prefix != self.style.prefix) and self._duplicatable:
+            self.target = None
+            self.raw_target = None
+
+        super(DynamicImage, self).set_style_prefix(prefix, root)
+
     def find_target(self, scope=None, update=True):
 
         if self.locked and (self.target is not None):
             return
 
         if self._args.prefix is None:
-            prefix = ""
+            if self._duplicatable:
+                prefix = self.style.prefix
+            else:
+                prefix = ""
         else:
             prefix = self._args.prefix
 
@@ -672,6 +686,7 @@ class DynamicImage(renpy.display.core.Displayable):
 
         rv = self._copy(args)
         rv.target = None
+        rv.raw_target = None
         # This does not set _duplicatable, since it should always remain the
         # same.
         return rv
@@ -786,6 +801,9 @@ class ShownImageInfo(renpy.object.Object):
         layer.
         """
 
+        if layer is None:
+            layer = renpy.config.tag_layer.get(tag, "master")
+
         return self.attributes.get((layer, tag), default)
 
     def showing(self, layer, name, exact=False):
@@ -796,6 +814,9 @@ class ShownImageInfo(renpy.object.Object):
 
         tag = name[0]
         rest = name[1:]
+
+        if layer is None:
+            layer = renpy.config.tag_layer.get(tag, "master")
 
         if (layer, tag) not in self.shown:
             return None
@@ -855,6 +876,9 @@ class ShownImageInfo(renpy.object.Object):
         tag = name[0]
         rest = name[1:]
 
+        if layer is None:
+            layer = renpy.config.tag_layer.get(tag, "master")
+
         self.attributes[layer, tag] = rest
 
         if show:
@@ -862,6 +886,9 @@ class ShownImageInfo(renpy.object.Object):
 
     def predict_hide(self, layer, name):
         tag = name[0]
+
+        if layer is None:
+            layer = renpy.config.tag_layer.get(tag, "master")
 
         if (layer, tag) in self.attributes:
             del self.attributes[layer, tag]
@@ -876,6 +903,9 @@ class ShownImageInfo(renpy.object.Object):
         with that name couldn't be found.
         """
 
+        if layer is None:
+            layer = renpy.config.tag_layer.get(tag, "master")
+
         # If the name matches one that exactly exists, return it.
         if (name in images) and not (wanted or remove):
             ca = getattr(images[name], "_choose_attributes", None)
@@ -885,17 +915,18 @@ class ShownImageInfo(renpy.object.Object):
 
         nametag = name[0]
 
-        # The set of attributes a matching image must have.
-        required = set(name[1:])
-
         # The set of attributes a matching image may have.
         optional = set(wanted) | set(self.attributes.get((layer, tag), [ ]))
 
-        # Deal with banned attributes..
+        # The set of attributes a matching image must have/not have.
+        # Evaluated in order.
+        required = set()
         for i in name[1:]:
             if i[0] == "-":
                 optional.discard(i[1:])
-                required.discard(i)
+                required.discard(i[1:])
+            else:
+                required.add(i)
 
         for i in remove:
             optional.discard(i)

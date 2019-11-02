@@ -19,10 +19,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE
 
-from __future__ import unicode_literals
+from __future__ import unicode_literals, absolute_import
 
 import copy
 import renpy.audio
+
+import renpy.six as six
+
+unicode = six.text_type  # @ReservedAssignment
 
 pad_bindings = {
     "pad_leftshoulder_press" : [ "rollback", ],
@@ -70,9 +74,6 @@ class Preference(object):
         self.name = name
         self.default = default
         self.types = types if types else type(default)
-
-        if self.types is unicode:
-            self.types = basestring
 
         all_preferences.append(self)
 
@@ -126,10 +127,10 @@ Preference("renderer", "auto")
 Preference("performance_test", True)
 
 # The language we use for translations.
-Preference("language", None, (basestring, type(None)) )
+Preference("language", None, (unicode, type(None)) )
 
 # Should we self-voice?
-Preference("self_voicing", False, (bool, basestring, type(None)))
+Preference("self_voicing", False, (bool, unicode, type(None)))
 
 # Should we emphasize audio?
 Preference("emphasize_audio", False)
@@ -152,6 +153,15 @@ Preference("gl_framerate", None, (int, type(None)))
 
 # Do we allow tearing?
 Preference("gl_tearing", False)
+
+# The font transformation used.
+Preference("font_transform", None, (type(None), unicode))
+
+# An adjustment applied to font size.
+Preference("font_size", 1.0)
+
+# An adjustment applied to font line spacing.
+Preference("font_line_spacing", 1.0)
 
 
 class Preferences(renpy.object.Object):
@@ -182,6 +192,9 @@ class Preferences(renpy.object.Object):
         for p in all_preferences:
 
             v = getattr(self, p.name, None)
+
+            if isinstance(v, bytes):
+                v = v.decode("utf-8")
 
             if not isinstance(v, p.types):
                 error = "Preference {} has wrong type. {!r} is not of type {!r}.".format(p.name, v, p.types)
@@ -232,6 +245,9 @@ class Preferences(renpy.object.Object):
 
     def __eq__(self, other):
         return vars(self) == vars(other)
+
+    def __ne__(self, other):
+        return not (self == other)
 
 
 renpy.game.Preferences = Preferences

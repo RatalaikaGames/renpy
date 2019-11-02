@@ -183,9 +183,33 @@ init -1900 python:
         if version <= (7, 1, 1):
             config.menu_actions = False
 
+        if version <= (7, 2, 2):
+            config.say_attribute_transition_callback_attrs = False
+            config.keep_side_render_order = False
+
+        if version <= (7, 3, 0):
+            config.force_sound = False
+
+        if version <= (7, 3, 2):
+            config.audio_directory = None
+            config.early_start_store = True
+
     # The version of Ren'Py this script is intended for, or
     # None if it's intended for the current version.
     config.script_version = None
+
+python early hide:
+    try:
+        import ast
+        script_version = renpy.file("script_version.txt").read()
+        script_version = ast.literal_eval(script_version)
+
+        if script_version <= (7, 2, 2):
+            config.keyword_after_python = True
+
+    except:
+        pass
+
 
 init -1000 python hide:
     try:
@@ -212,7 +236,7 @@ init -1000 python hide:
     except:
         pass
 
-init 1900 python hide::
+init 1900 python hide:
 
     # This returns true if the script_version is <= the
     # script_version supplied. Give it the last script version
@@ -276,5 +300,3 @@ init 1900 python hide::
         config.has_quicksave = False
         config.quit_action = ui.gamemenus("_confirm_quit")
         config.default_afm_enable = None
-
-

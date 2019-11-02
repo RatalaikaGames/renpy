@@ -54,6 +54,9 @@ class Action(renpy.object.Object):
     def get_selected(self):
         return False
 
+    def get_tooltip(self):
+        return None
+
     def periodic(self, st):
         return
 
@@ -72,6 +75,8 @@ class BarValue(renpy.object.Object):
     # Alt text.
     alt = "Bar"
 
+    force_step = False
+
     def replaces(self, other):
         return
 
@@ -83,6 +88,9 @@ class BarValue(renpy.object.Object):
 
     def get_style(self):
         return "bar", "vbar"
+
+    def get_tooltip(self):
+        return None
 
 
 ##############################################################################
@@ -811,8 +819,6 @@ def menu(menuitems,
          default=False,
          **properties):
 
-    # menu is now a conglomeration of other widgets. And bully for it.
-
     renpy.ui.vbox(style=style, **properties)
 
     for label, val in menuitems:
@@ -823,7 +829,10 @@ def menu(menuitems,
             text = choice_style
             button = choice_button_style
 
-            clicked = ChoiceReturn(label, val, location)
+            if isinstance(val, ChoiceReturn):
+                clicked = val
+            else:
+                clicked = ChoiceReturn(label, val, location)
 
             if clicked.get_chosen():
                 text = choice_chosen_style

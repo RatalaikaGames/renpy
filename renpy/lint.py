@@ -19,7 +19,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
+
 import renpy.display
 import renpy.text
 import codecs
@@ -29,9 +30,11 @@ import sys
 import collections
 import textwrap
 
-import __builtin__
 
-python_builtins = set(dir(__builtin__))
+import renpy.six.moves.builtins as builtins
+import renpy.six as six
+
+python_builtins = set(dir(builtins))
 renpy_builtins = set()
 
 image_prefixes = None
@@ -71,14 +74,33 @@ added = { }
 # occurs.
 
 
-def add(msg):
+def add(msg, *args):
     if not msg in added:
         added[msg] = True
-        print(unicode(msg).encode('utf-8'))
+        msg = six.text_type(msg) % args
+        print(msg.encode('utf-8'))
 
 
-# Trys to evaluate an expression, announcing an error if it fails.
+# Tries to evaluate an expression, announcing an error if it fails.
 def try_eval(where, expr, additional=None):
+    """
+    :doc: lint
+
+    Tries to evaluate an expression, and writes an error to lint.txt if
+    it fails.
+
+    `where`
+        A string giving the location the expression is found. Used to
+        generate an error message of the form "Could not evaluate `expr`
+        in `where`."
+
+    `expr`
+        The expression to try evaluating.
+
+    `additional`
+        If given, an additional line of information that is addded to the
+        error message.
+    """
 
     # Make sure the expression compiles.
     try_compile(where, expr)
@@ -105,6 +127,24 @@ def try_eval(where, expr, additional=None):
 
 
 def try_compile(where, expr, additional=None):
+    """
+    :doc: lint
+
+    Tries to compile an expression, and writes an error to lint.txt if
+    it fails.
+
+    `where`
+        A string giving the location the expression is found. Used to
+        generate an error message of the form "Could not evaluate `expr`
+        in `where`."
+
+    `expr`
+        The expression to try compiling.
+
+    `additional`
+        If given, an additional line of information that is addded to the
+        error message.
+    """
 
     try:
         renpy.python.py_compile_eval_bytecode(expr)
@@ -239,7 +279,7 @@ def image_exists(name, expression, tag, precise=True):
     if image_exists_precise(name):
         return
 
-    report("'{}' is not an image.".format(" ".join(name)) )
+    report("'%s' is not an image.", " ".join(name))
 
 
 # Only check each file once.
@@ -545,19 +585,18 @@ def check_style_property_displayable(name, property, d):
 def check_style(name, s):
 
     for p in s.properties:
-        for k, v in p.iteritems():
+        for k, v in six.iteritems(p):
 
             # Treat font specially.
             if k.endswith("font"):
                 if isinstance(v, renpy.text.font.FontGroup):
-                    for f in v.fonts:
+                    for f in set(v.map.values()):
                         check_file(name, f)
                 else:
                     check_file(name, v)
 
             if isinstance(v, renpy.display.core.Displayable):
                 check_style_property_displayable(name, k, v)
-#                check_displayable(kname, v)
 
 
 def check_label(node):
@@ -582,12 +621,12 @@ def check_label(node):
 def check_screen(node):
 
     if (node.screen.parameters is None) and renpy.config.lint_screens_without_parameters:
-        report("The screen {} has not been given a parameter list.".format(node.screen.name))
-        add("This can be fixed by writing 'screen {}():' instead.".format(node.screen.name))
+        report("The screen %s has not been given a parameter list.", node.screen.name)
+        add("This can be fixed by writing 'screen %s():' instead.", node.screen.name)
 
 
 def check_styles():
-    for full_name, s in renpy.style.styles.iteritems():  # @UndefinedVariable
+    for full_name, s in six.iteritems(renpy.style.styles):  # @UndefinedVariable
         name = "style." + full_name[0]
         for i in full_name[1:]:
             name += "[{!r}]".format(i)
@@ -677,7 +716,7 @@ def lint():
     renpy.game.lint = True
 
     print(codecs.BOM_UTF8)
-    print(unicode(renpy.version + " lint report, generated at: " + time.ctime()).encode("utf-8"))
+    print(six.text_type(renpy.version + " lint report, generated at: " + time.ctime()).encode("utf-8"))
 
     # This supports check_hide.
     global image_prefixes

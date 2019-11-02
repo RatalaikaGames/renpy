@@ -106,7 +106,7 @@ def set_focused(widget, arg, screen):
     if widget is None:
         new_tooltip = None
     else:
-        new_tooltip = widget._tooltip
+        new_tooltip = widget._get_tooltip()
 
     if tooltip != new_tooltip:
         tooltip = new_tooltip
@@ -179,9 +179,19 @@ def take_focuses():
     global default_focus
     default_focus = None
 
+    global grab
+
+    grab_found = False
+
     for f in focus_list:
         if f.x is None:
             default_focus = f
+
+        if f.widget is grab:
+            grab_found = True
+
+    if not grab_found:
+        grab = None
 
     if (default_focus is not None) and (get_focused() is None):
         change_focus(default_focus, True)
@@ -271,16 +281,26 @@ def before_interact(roots):
         else:
             current = None
 
-    # Otherwise, focus the default widget, or nothing.
+    # Otherwise, focus the default widget.
     if current is None:
+
+        defaults = [ ]
 
         for f, n, screen in fwn:
             if f.default:
-                current = f
-                set_focused(f, None, screen)
-                break
-        else:
-            set_focused(None, None, None)
+                defaults.append((f.default, f, screen))
+
+        if defaults:
+            if len(defaults) > 1:
+                defaults.sort()
+
+            _, f, screen = defaults[-1]
+
+            current = f
+            set_focused(f, None, screen)
+
+    if current is None:
+        set_focused(None, None, None)
 
     # Finally, mark the current widget as the focused widget, and
     # all other widgets as unfocused.

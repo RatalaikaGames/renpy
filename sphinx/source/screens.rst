@@ -118,6 +118,10 @@ expression. It takes the following properties:
     from interacting with displayables below it, except
     for the default keymap.
 
+`sensitive`
+    An expression that determines whether the screen is sensitive or not.
+    This expression is evaluated at least once per interaction.
+
 `tag`
     Parsed as a name, not an expression. This specifies a tag
     associated with this screen. Showing a screen replaces other
@@ -170,20 +174,18 @@ All user interface statements take the following common properties:
 
 `at`
     This can be a transform, or a list of transforms, or an anonymous
-    transform (a transform that is defined directly in at)
+    transform (a transform that is defined directly in at) ::
 
-::
+        transform hello_t:
+            align (0.7, 0.5) alpha 0.0
+            linear 0.5 alpha 1.0
 
-    transform hello_t:
-        align (0.7, 0.5) alpha 0.0
-        linear 0.5 alpha 1.0
-
-    screen hello_title():
-        text "Hello." at hello_t
-        text "Hello.":
-            at transform:
-                align (0.2, 0.5) alpha 0.0
-                linear 0.5 alpha 1.0
+        screen hello_title():
+            text "Hello." at hello_t
+            text "Hello.":
+                at transform:
+                    align (0.2, 0.5) alpha 0.0
+                    linear 0.5 alpha 1.0
 
     This transforms are used to wrap this displayable. The show, hide,
     replace, and replaced external events are delivered to a transform
@@ -194,9 +196,10 @@ All user interface statements take the following common properties:
     a transform wraps a textbutton that is added to the vbox, this
     second transform is not given events.
 
-`default`
-    If given and true, the displayable is focused by default. Only one
-    displayable should have this.
+`default_focus`
+    If given and true, the displayable is focused by default. When
+    multiple displayables have this, the values are compared and the
+    displayable with the greatest default focus becomes the default.
 
 `id`
     An identifier for the user-interface statement. When a screen is
@@ -207,9 +210,8 @@ All user interface statements take the following common properties:
     By default, the ``id`` is automatically-generated.
 
 `style`
-    The name of the style applied to this displayable. This may be a
-    string name, or a style object. The style gives default
-    values for style properties.
+    A string giving the name of the style applied to this displayable. The
+    style gives default values for style properties.
 
 `style_prefix`
     .. _style-prefix:
@@ -259,12 +261,27 @@ All user interface statements take the following common properties:
     :func:`GetTooltip` function. See the :ref:`tooltips` section for
     more details.
 
+    Objects passed to tooltip must support equality. If equality is
+    not supported, an infinite loop may occur.
+
+`arguments`
+    A tuple or list containing additional positional arguments that
+    are given to the displayable.
+
+`properties`
+    A dictionary containing additional properties given to the
+    displayable.
+
 Many user interface statements take classes of style properties, or
 transform properties. These properties can have a style prefix
 associated with them, that determines when they apply. For example, if
 text is given the ``hover_size`` property, it sets the text size when the
 text is hovered.
 
+User interface statements take an ``as`` clause, which takes a variable
+name, without any quotes. The displayable that the statement creates is
+assigned to the variable. (An example can be found in :ref:`the drag and drop
+documentation <as-example>`.)
 
 .. _sl-add:
 
@@ -647,6 +664,10 @@ The input statement takes no parameters, and the following properties:
     A string containing characters that are disallowed from being
     typed into this input. (By default, "{}".)
 
+`copypaste`
+    If True, it becomes possible to copy and paste
+    into this input. (By default, disabled.)
+
 `prefix`
     An immutable string to prepend to what the user has typed.
 
@@ -864,6 +885,10 @@ then the center. The corners and sides are rendered with an available
 area of 0, so it may be necessary to supply them a minimum size (using
 :propref:`xminimum` or :propref:`yminimum`) to ensure they render at
 all.
+The order of placing children is controlled from top to bottom when
+adding them (i.e. also in the order of substrings in the argument),
+the latter will be the highest. This is may be disabled by
+:var:`config.keep_side_render_order`.
 
 Children correspond to entries in the places list, so this must have
 the same number of children as there are entries in the places list.
@@ -1686,6 +1711,32 @@ is transfered from old to new.
         pause
         return
 
+Instead of the name of the screen, the keyword ``expression`` can be
+given, followed by an expression giving the name of the screen to use.
+If parameters are required, the ``pass`` keyword must be given to separate
+them from the expression.
+
+::
+
+    screen ed(num):
+        text "Ed"
+        text "Captain"
+
+    screen kelly(num):
+        text "Kelly"
+        text "First Officer"
+
+    screen bortus(num):
+        text "Bortus"
+        text "Second Officer"
+
+    screen crew():
+        hbox:
+            for i, member in enumerate(party):
+                vbox:
+                    use expression member.screen pass (i + 1)
+
+
 Use and Transclude
 ^^^^^^^^^^^^^^^^^^
 
@@ -1761,6 +1812,9 @@ When showif's children have transforms, it will supply them with ATL
 events to manage the show and hide process, so that Ren'Py can animate
 the show and hide process.
 
+The ``showif`` statement wraps its children in a displayable that manages
+the show and hide process.
+
 Multiple showif statements can be grouped together into a single
 ``showif``/``elif``/``else`` construct, similiar to an if statement.
 **Unlike the if statement, showif executes all of its blocks, including Python, even if the condition is false.**
@@ -1828,7 +1882,8 @@ Show Screen
 
 The ``show screen`` statement causes a screen to be shown. It takes an
 screen name, and an optional Python argument list. If present, the arguments
-are used to initialize the scope of the screen.
+are used to initialize the scope of the screen. There are also some
+specific keywords passed to :func:`show_screen` and :func:`call_screen`.
 
 The show screen statement takes an optional ``nopredict`` keyword, that
 prevents screen prediction from occurring. During screen prediction,
@@ -1852,17 +1907,24 @@ hidden. This allows them to be used for overlay purposes.
         show rare_screen nopredict
 
 
+The ``show screen`` statement takes a with clause, which is interpreted in the
+same way that the with clause of a ``show`` statement is. ::
+
+    show screen clock_screen with dissolve
+
 Hide Screen
 -----------
 
 The ``hide screen`` statement is used to hide a screen that is currently
-being shown. If the screen is not being shown, nothing happens.
+being shown. If the screen is not being shown, nothing happens. The with
+clause is interpreted the same way the ``with`` clause of a show statement
+is.
 
 ::
 
+    hide screen rare_screen
+    hide screen clock_screen with dissolve
     hide screen overlay_screen
-    hide screen clock
-
 
 Call Screen
 -----------
@@ -1973,12 +2035,15 @@ and choosing the entries that apply to the current platform.
    also defined).
 
 ``"mobile"``
-   Defined on mobile platforms, such as Android and iOS.
+   Defined on mobile platforms, such as Android, iOS and mobile web browsers.
 
 ``"pc"``
    Defined on Windows, Mac OS X, and Linux. A PC is expected to have
    a mouse and keyboard present, to allow buttons to be hovered, and
    to allow precise pointing.
+
+``"web"``
+   Defined when running inside a web browser.
 
 ``None``
    Always defined.

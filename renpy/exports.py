@@ -57,7 +57,7 @@ import pygame_sdl2
 
 from renpy.text.extras import ParameterizedText, filter_text_tags
 from renpy.text.font import register_sfont, register_mudgefont, register_bmfont
-from renpy.text.text import language_tailor
+from renpy.text.text import language_tailor, BASELINE
 from renpy.display.behavior import Keymap
 from renpy.display.behavior import run, run as run_action, run_unhovered, run_periodic
 from renpy.display.behavior import map_event, queue_event, clear_keymap_cache
@@ -92,7 +92,6 @@ from renpy.parser import unelide_filename, get_parse_errors
 from renpy.translation import change_language, known_languages
 from renpy.translation.generation import generic_filter as transform_text
 
-
 from renpy.persistent import register_persistent
 
 from renpy.character import show_display_say, predict_show_display_say, display_say
@@ -114,6 +113,10 @@ from renpy.sl2.slparser import CustomParser as register_sl_statement, register_s
 from renpy.ast import eval_who
 
 from renpy.loader import add_python_directory
+
+from renpy.lint import try_compile, try_eval
+
+from renpy.gl2.gl2shadercache import register_shader
 
 renpy_pure("ParameterizedText")
 renpy_pure("Keymap")
@@ -183,6 +186,7 @@ def public_api():
     eval_who
     is_selected, is_sensitive
     add_python_directory
+    try_compile, try_eval
 
 
 del public_api
@@ -229,7 +233,7 @@ def in_rollback():
     Returns true if the game has been rolled back.
     """
 
-    return renpy.game.log.in_rollback()
+    return renpy.game.log.in_rollback() or renpy.game.after_rollback
 
 
 def can_rollback():
@@ -265,6 +269,8 @@ def checkpoint(data=None, keep_rollback=None):
     this function has been called, there should be no more interaction with the
     user in the current statement.
 
+    This will also clear the current screenshot used by saved games.
+
     `data`
         This data is returned by :func:`renpy.roll_forward_info` when the
         game is being rolled back.
@@ -274,6 +280,9 @@ def checkpoint(data=None, keep_rollback=None):
         keep_rollback = renpy.config.keep_rollback_data
 
     renpy.game.log.checkpoint(data, keep_rollback=keep_rollback, hard=renpy.store._rollback)
+
+    if renpy.store._rollback and renpy.config.auto_clear_screenshot:
+        renpy.game.interface.clear_screenshot = True
 
 
 def block_rollback(purge=False):
@@ -462,7 +471,7 @@ def can_show(name, layer=None, tag=None):
         return None
 
 
-def showing(name, layer='master'):
+def showing(name, layer=None):
     """
     :doc: image_func
 
@@ -473,7 +482,6 @@ def showing(name, layer='master'):
         May be a string giving the image name or a tuple giving each
         component of the image name. It may also be a string giving
         only the image tag.
-
 
     `layer`
         The layer to check. If None, uses the default layer for `tag`.
@@ -512,20 +520,20 @@ def get_hidden_tags(layer='master'):
     return renpy.game.context().images.get_hidden_tags(layer)
 
 
-def get_attributes(tag, layer=None):
+def get_attributes(tag, layer=None, if_hidden=None):
     """
     :doc: image_func
 
     Return a tuple giving the image attributes for the image `tag`. If
     the image tag has not had any attributes associated since the last
-    time it was hidden, returns None.
+    time it was hidden, returns `if_hidden`.
 
     `layer`
         The layer to check. If None, uses the default layer for `tag`.
     """
 
     layer = default_layer(layer, tag)
-    return renpy.game.context().images.get_attributes(layer, tag, None)
+    return renpy.game.context().images.get_attributes(layer, tag, if_hidden)
 
 
 def predict_show(name, layer=None, what=None, tag=None, at_list=[ ]):
@@ -773,7 +781,7 @@ def scene(layer='master'):
         renpy.config.missing_scene(layer)
 
 
-def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None):  # @ReservedAssignment
+def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None, screen="input"):  # @ReservedAssignment
     """
     :doc: input
 
@@ -801,7 +809,17 @@ def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=N
     `pixel_width`
         If not None, the input is limited to being this many pixels wide,
         in the font used by the input to display text.
+
+    `screen`
+        The name of the screen that takes input. If not given, the ``input``
+        screen is used.
+
+    If :var:`config.disable_input` is True, this function only returns
+    `default`.
     """
+
+    if renpy.config.disable_input:
+        return default
 
     renpy.exports.mode('input')
 
@@ -815,13 +833,16 @@ def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=N
 
     fixed = in_fixed_rollback()
 
-    if has_screen("input"):
+    if has_screen(screen):
         widget_properties = { }
         widget_properties["input"] = dict(default=default, length=length, allow=allow, exclude=exclude, editable=not fixed, pixel_width=pixel_width)
 
-        show_screen("input", _transient=True, _widget_properties=widget_properties, prompt=prompt)
+        show_screen(screen, _transient=True, _widget_properties=widget_properties, prompt=prompt)
 
     else:
+
+        if screen != "input":
+            raise Exception("The '{}' screen does not exist.".format(screen))
 
         renpy.ui.window(style='input_window')
         renpy.ui.vbox()
@@ -870,6 +891,9 @@ def get_menu_args():
     (as a dict) passed to the current menu statement.
     """
 
+    if menu_args is None:
+        return tuple(), dict()
+
     return menu_args, menu_kwargs
 
 
@@ -887,6 +911,8 @@ def menu(items, set_expr, args=None, kwargs=None, item_arguments=None):
     args = args or tuple()
     kwargs = kwargs or dict()
 
+    nvl = kwargs.pop("nvl", False)
+
     if renpy.config.menu_arguments_callback is not None:
         args, kwargs = renpy.config.menu_arguments_callback(*args, **kwargs)
 
@@ -896,15 +922,26 @@ def menu(items, set_expr, args=None, kwargs=None, item_arguments=None):
     else:
         def substitute(s):
             return s
-    # Filter the list of items on the set_expr:
-    if set_expr:
-        set = renpy.python.py_eval(set_expr)  # @ReservedAssignment
-        items = [ i for i in items if (i[0] not in set) ]
-    else:
-        set = None  # @ReservedAssignment
 
     if item_arguments is None:
         item_arguments = [ (tuple(), dict()) ] * len(items)
+
+    # Filter the list of items on the set_expr:
+    if set_expr:
+        set = renpy.python.py_eval(set_expr)  # @ReservedAssignment
+
+        new_items = [ ]
+        new_item_arguments = [ ]
+
+        for i, ia in zip(items, item_arguments):
+            if i[0] not in set:
+                new_items.append(i)
+                new_item_arguments.append(ia)
+
+        items = new_items
+        item_arguments = new_item_arguments
+    else:
+        set = None  # @ReservedAssignment
 
     # Filter the list of items to only include ones for which the
     # condition is true.
@@ -948,7 +985,10 @@ def menu(items, set_expr, args=None, kwargs=None, item_arguments=None):
         menu_args = args
         menu_kwargs = kwargs
 
-        rv = renpy.store.menu(new_items)
+        if nvl:
+            rv = renpy.store.nvl_menu(new_items)  # @UndefinedVariable
+        else:
+            rv = renpy.store.menu(new_items)
 
     finally:
         menu_args = old_menu_args
@@ -1049,16 +1089,33 @@ def display_menu(items,
     `screen`
         The name of the screen used to display the menu.
 
+    Note that most Ren'Py games do not use menu captions, but use narration
+    instead. To display a menu using narration, write::
+
+        $ narrator("Which direction would you like to go?", interact=False)
+        $ result = renpy.display_menu([ ("East", "east"), ("West", "west") ])
+
     """
 
+    menu_args, menu_kwargs = get_menu_args()
+    screen = menu_kwargs.pop("screen", screen)
+    with_none = menu_kwargs.pop("_with_none", with_none)
+    mode = menu_kwargs.pop("_mode", type)
+
     if interact:
-        renpy.exports.mode(type)
+        renpy.exports.mode(mode)
         choice_for_skipping()
 
-    # The possible choices in the menu.
-    choices = [ val for label, val in items ]
-    while None in choices:
-        choices.remove(None)
+    choices = [ ]
+
+    for _, val in items:
+        if isinstance(val, renpy.ui.ChoiceReturn):
+            val = val.value
+
+        if val is None:
+            continue
+
+        choices.append(val)
 
     # Roll forward.
     roll_forward = renpy.exports.roll_forward_info()
@@ -1080,9 +1137,6 @@ def display_menu(items,
         renpy.ui.saybehavior()
 
     scope = dict(scope)
-
-    menu_args, menu_kwargs = get_menu_args()
-    screen = menu_kwargs.pop("screen", screen)
 
     scope.update(menu_kwargs)
 
@@ -1142,6 +1196,8 @@ def display_menu(items,
                 **scope)
 
     else:
+        renpy.exports.shown_window()
+
         renpy.ui.window(style=window_style, focus="menu")
         renpy.ui.menu(items,
                       location=renpy.game.context().current,
@@ -1358,6 +1414,7 @@ def imagemap(ground, selected, hotspots, unselected=None, overlays=False,
 def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
     """
     :doc: other
+    :args: (delay=None, hard=False)
 
     Causes Ren'Py to pause. Returns true if the user clicked to end the pause,
     or false if the pause timed out or was skipped.
@@ -1365,20 +1422,23 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
     `delay`
         If given, the number of seconds Ren'Py should pause for.
 
-    `music`
-        Retained for compatibility purposes.
-
-    `with_none`
-        Determines if a with None clause is executed at the end of the pause.
-
     `hard`
-        If true, a click will not interrupt the pause. Use this sparingly,
-        as it's hard to distinguish a hard pause from a crashing game.
+        This must be given as a keyword argument. When True, Ren'Py may prevent
+        the user from clicking to interrupt the pause. If the player enables
+        skipping, the hard pause will be skipped. There may be other circumstances
+        where the hard pause ends early or prevents Ren'Py from operating properly,
+        these will not be treated as bugs.
 
-    `checkpoint`
-        If true, a checkpoint will be set, and players will be able to roll
-        back to this statement. If false, no checkpoint will be set. If None,
-        a checkpoint will only be set if delay is set.
+        In general, using hard pauses is rude. When the user clicks to advance
+        the game, it's an explicit request - the user wishes the game to advance.
+        To override that request is to assume you understand what the player
+        wants more than the player does.
+
+        Calling renpy.pause guarantees that whatever is on the screen will be
+        displayed for at least one frame, and hence has been shown to the
+        player.
+
+        tl;dr - Don't use renpy.pause with hard=True.
     """
 
     if checkpoint is None:
@@ -1436,12 +1496,12 @@ def movie_cutscene(filename, delay=None, loops=0, stop_music=True):
     """
     :doc: movie_cutscene
 
-    This displays an MPEG-1 cutscene for the specified number of
+    This displays a movie cutscene for the specified number of
     seconds. The user can click to interrupt the cutscene.
     Overlays and Underlays are disabled for the duration of the cutscene.
 
     `filename`
-        The name of a file containing an MPEG-1 movie.
+        The name of a file containing any movie playable by Ren'Py.
 
     `delay`
         The number of seconds to wait before ending the cutscene.
@@ -1789,13 +1849,14 @@ def call(label, *args, **kwargs):
     raise renpy.game.CallException(label, args, kwargs, from_current=from_current)
 
 
-def return_statement():
+def return_statement(value=None):
     """
     :doc: se_call
 
     Causes Ren'Py to return from the current Ren'Py-level call.
     """
 
+    renpy.store._return = value
     jump("_renpy_return")
 
 
@@ -2204,7 +2265,6 @@ def notl_file(fn):  # @ReservedAssignment
     return renpy.loader.load(fn, tl=False)
 
 
-@renpy_pure
 def image_size(im):
     """
     :doc: file_rare
@@ -2278,8 +2338,10 @@ def free_memory():
     Attempts to free some memory. Useful before running a renpygame-based
     minigame.
     """
+
     force_full_redraw()
     renpy.display.interface.kill_textures_and_surfaces()
+    renpy.text.font.free_memory()
 
 
 @renpy_pure
@@ -2343,6 +2405,14 @@ def pop_error_handler():
 
 
 def error(msg):
+    """
+    :doc: lint
+
+    Reports `msg`, a string, as as error for the user. This is logged as a
+    parse or lint error when approprate, and otherwise it is raised as an
+    exception.
+    """
+
     _error_handlers[-1](msg)
 
 
@@ -2568,6 +2638,18 @@ class placement(renpy.python.RevertableObject):
         self.yoffset = p[5]
         self.subpixel = p[6]
 
+    @property
+    def pos(self):
+        return self.xpos, self.ypos
+
+    @property
+    def anchor(self):
+        return self.xanchor, self.yanchor
+
+    @property
+    def offset(self):
+        return self.xoffset, self.yoffset
+
 
 def get_placement(d):
     """
@@ -2580,11 +2662,14 @@ def get_placement(d):
     This returns an object with the following fields, each corresponding to a style
     property:
 
+    * pos
     * xpos
-    * xanchor
-    * xoffset
     * ypos
+    * anchor
+    * xanchor
     * yanchor
+    * offset
+    * xoffset
     * yoffset
     * subpixel
 
@@ -2594,7 +2679,7 @@ def get_placement(d):
     return placement(p)
 
 
-def get_image_bounds(tag, width=None, height=None, layer='master'):
+def get_image_bounds(tag, width=None, height=None, layer=None):
     """
     :doc: image_func
 
@@ -2792,14 +2877,20 @@ def call_screen(_screen_name, *args, **kwargs):
     to occur. The screen is hidden at the end of the interaction, and
     the result of the interaction is returned.
 
-    Keyword arguments not beginning with _ are passed to the scope of
-    the screen.
+    Positional arguments, and keyword arguments that do not begin with
+    _ are passed to the screen.
 
     If the keyword argument `_with_none` is false, "with None" is not
     run at the end of end of the interaction.
+
+    If the keyword argument `_mode` in kwargs, it will be mode of this
+    interaction, otherwise it will be "screen" mode.
     """
 
-    renpy.exports.mode('screen')
+    mode = "screen"
+    if "_mode" in kwargs:
+        mode = kwargs.pop("_mode")
+    renpy.exports.mode(mode)
 
     with_none = renpy.config.implicit_with_none
 
@@ -2948,6 +3039,19 @@ def notify(message):
 
     Only one notification is displayed at a time. If a second notification
     is displayed, the first notification is replaced.
+
+    This function just calls :var:`config.notify`, allowing its implementation
+    to be replaced by assigning a new function to that variable.
+    """
+
+    renpy.config.notify(message)
+
+
+def display_notify(message):
+    """
+    :doc: other
+
+    The default implementation of :func:`renpy.notify`.
     """
 
     hide_screen('notify')
@@ -3070,7 +3174,6 @@ def set_physical_size(size):
     renpy.game.preferences.fullscreen = False
 
     if get_renderer_info()["resizable"]:
-        renpy.display.draw.quit()
         renpy.display.interface.set_mode(size)
         renpy.display.interface.last_resize = size
 
@@ -3087,7 +3190,6 @@ def reset_physical_size():
     renpy.game.preferences.fullscreen = False
 
     if get_renderer_info()["resizable"]:
-        renpy.display.draw.quit()
         renpy.display.interface.set_mode((renpy.config.screen_width, renpy.config.screen_height))
 
 
@@ -3622,8 +3724,8 @@ def get_skipping():
     """
     :doc: other
 
-    Returns true if the Ren'Py is skipping, "fast" if Ren'Py is fast skipping,
-    and false if it is not skipping.
+    Returns "slow" if the Ren'Py is skipping, "fast" if Ren'Py is fast skipping,
+    and None if it is not skipping.
     """
 
     return renpy.config.skipping
@@ -3679,3 +3781,44 @@ def get_say_image_tag():
         return None
 
     return renpy.store._side_image_attributes[0]
+
+
+def is_skipping():
+    """
+    :doc: other
+
+    Returns True if Ren'Py is currently skipping (in fast or slow skip mode),
+    or False otherwise.
+    """
+
+    return not not renpy.config.skipping
+
+
+def is_init_phase():
+    """
+    :doc: other
+
+    Returns True if Ren'Py is currently executing init code, or False otherwise.
+    """
+
+    return renpy.game.context().init_phase
+
+
+def add_to_all_stores(name, value):
+    """
+    :doc: other
+
+    Adds the `value` by the `name` to all creator defined namespaces. If the name
+    already exist in that namespace - do nothing for it.
+
+    This function may only be run from inside an init block. It is an
+    error to run this function once the game has started.
+    """
+
+    if not is_init_phase():
+        raise Exception("add_to_all_stores is only allowed in init code.")
+
+    for _k, ns in renpy.python.store_dicts.iteritems():
+
+        if name not in ns:
+            ns[name] = value

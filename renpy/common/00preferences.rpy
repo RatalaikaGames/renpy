@@ -23,16 +23,32 @@ init -1500 python:
 
     @renpy.pure
     class __DisplayAction(Action, DictEquality):
+
+        factor = 1.0
+
         def __init__(self, factor):
-            self.width = int(factor * config.screen_width)
-            self.height = int(factor * config.screen_height)
+            self.factor = factor
+
+        def get_size(self):
+
+            w = int(self.factor * config.screen_width)
+            h = int(self.factor * config.screen_height)
+
+            rv = (w, h)
+
+            max_window_size = renpy.get_renderer_info().get("max_window_size", rv)
+
+            if w > max_window_size[0]:
+                rv = max_window_size
+
+            return rv
 
         def __call__(self):
-            renpy.set_physical_size((self.width, self.height))
+            renpy.set_physical_size(self.get_size())
             renpy.restart_interaction()
 
         def get_sensitive(self):
-            if self.width == config.screen_width and self.height == config.screen_height:
+            if self.factor == 1.0:
                 return True
 
             return renpy.get_renderer_info()["resizable"]
@@ -41,7 +57,7 @@ init -1500 python:
             if _preferences.fullscreen:
                 return False
 
-            return (self.width, self.height) == renpy.get_physical_size()
+            return self.get_size() == renpy.get_physical_size()
 
     _m1_00screen__DisplayAction = __DisplayAction
 
@@ -55,6 +71,7 @@ init -1500 python:
         """
 
         def __call__(self):
+            renpy.free_memory()
             renpy.display.interface.display_reset = True
 
 
@@ -182,6 +199,13 @@ init -1500 python:
          * Preference("gl tearing", True) - Tears rather than skipping frames.
          * Preference("gl tearing", False) - Skips frames rather than tearing.
 
+         * Preference("font transform", "opendyslexic") - Sets the accessibility font transform to opendyslexic.
+         * Preference("font transform", "dejavusans") - Sets the accessibility font transform to deja vu sans.
+         * Preference("font transform", None) - Disables the accessibility font transform.
+
+         * Preference("font size", 1.0) - Sets the accessibility font size scaling factor.
+         * Preference("font line spacing", 1.0) - Sets the accessibility font vertical spacing scaling factor.
+
          Values that can be used with bars are:
 
          * Preference("text speed")
@@ -190,6 +214,8 @@ init -1500 python:
          * Preference("sound volume")
          * Preference("voice volume")
          * Preference("mixer <mixer> volume")
+         * Preference("font size")
+         * Preference("font line spacing")
 
          The `range` parameter can be given to give the range of certain bars.
          For "text speed", it defaults to 200 cps. For "auto-forward time", it
@@ -400,6 +426,27 @@ init -1500 python:
 
             elif name == _("gl tearing"):
                 return [ SetField(_preferences, "gl_tearing", value), _DisplayReset() ]
+
+            elif name == _("font transform"):
+                return [ SetField(_preferences, "font_transform", value), _DisplayReset() ]
+
+            elif name == _("font size"):
+
+                if value is None:
+                    bar_range = range or 1.0
+                    return FieldValue(_preferences, "font_size", range=bar_range, style="slider", offset=.5, action=_DisplayReset())
+
+                return [ SetField(_preferences, "font_size", value), _DisplayReset() ]
+
+            elif name == _("font line spacing"):
+
+                if value is None:
+                    bar_range = range or 1.0
+                    return FieldValue(_preferences, "font_line_spacing", range=bar_range, style="slider", offset=.5, action=_DisplayReset())
+
+                return [ SetField(_preferences, "font_line_spacing", value), _DisplayReset() ]
+
+
 
             mixer_names = {
                 "music" : "music",

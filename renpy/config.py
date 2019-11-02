@@ -23,7 +23,7 @@
 # This includes both simple settings (like the screen dimensions) and
 # methods that perform standard tasks, like the say and menu methods.
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import collections
 import os
@@ -372,8 +372,8 @@ rtl = False
 file_open_callback = None
 
 # The size of screenshot thumbnails. (Redefined in common/)
-thumbnail_width = None
-thumbnail_height = None
+thumbnail_width = 256
+thumbnail_height = 144
 
 # The end game transition.
 end_game_transition = None
@@ -521,6 +521,9 @@ statement_callbacks = [ ]
 # A list of file extensions that are blacklisted by autoreload.
 autoreload_blacklist = [ ".rpyc", ".rpymc", ".rpyb", ".pyc", ".pyo" ]
 
+# A list of python modules that should be reloaded when appropriate.
+reload_modules = [ ]
+
 # The layer dialogue is shown on.
 say_layer = "screens"
 
@@ -583,6 +586,9 @@ log_to_stdout = False
 
 # new-style custom text tags.
 custom_text_tags = { }
+
+# Same, but for ones that are empty.
+self_closing_custom_text_tags = { }
 
 # A function that given the text from a TEXT token, returns a replacement text.
 replace_text = None
@@ -940,6 +946,78 @@ lint_screens_without_parameters = True
 # If not None, a function that's used to process and modify menu arguments.
 menu_arguments_callback = None
 
+# Should Ren'PY automatically clear the screenshot?
+auto_clear_screenshot = True
+
+# Should Ren'Py allow duplicate labels.
+allow_duplicate_labels = False
+
+# A map of font transform name to font transform function.
+font_transforms = { }
+
+# A scaling factor that is applied to a truetype font.
+ftfont_scale = { }
+
+# This is used to scale the ascent and descent of a font.
+ftfont_vertical_extent_scale = { }
+
+# The default shader.
+default_shader = "renpy.geometry"
+
+
+def say_attribute_transition_callback(*args):
+    """
+    :args: (tag, attrs, mode)
+
+    Returns the say attribute transition to use, and the layer the transition
+    should be applied to (with None being a valid layer.
+
+    Attrs is the list of tags/attributes of the incoming image.
+
+    Mode is one of "permanent", "temporary", or "restore".
+    """
+
+    return renpy.config.say_attribute_transition, renpy.config.say_attribute_transition_layer
+
+
+# Should say_attribute_transition_callback take attrs?
+say_attribute_transition_callback_attrs = True
+
+# The function used by renpy.notify
+notify = None
+
+# Should Ren'Py support a SL2 keyword after a Python statement?
+keyword_after_python = False
+
+# A label Ren'Py should jump to if a load fails.
+load_failed_label = None
+
+# If true, Ren'Py distributes mono to both stereo channels. If false,
+# it splits it 50/50.
+equal_mono = True
+
+# If True, renpy.input will always return the default.
+disable_input = False
+
+# If True, the order of substrings in the Side positions will
+# also determine the order of their render.
+keep_side_render_order = True
+
+# Should this game enable and require gl2?
+gl2 = False
+
+# Does this game use the depth buffer? If so, how many bits of depth should
+# it use?
+depth_size = None
+
+# A list of screens to remove when the context is copied.
+context_copy_remove_screens = [ "notify" ]
+
+# An exception handling callback.
+exception_handler = None
+
+# A label that is jumped to if return fails.
+return_not_found_label = None
 
 del os
 del collections
@@ -962,4 +1040,5 @@ def init():
     global tts_function
     tts_function = renpy.display.tts.default_tts_function
 
-    import os
+    global notify
+    notify = renpy.exports.display_notify

@@ -42,6 +42,7 @@ init -1600 python:
         help = [ 'K_F1', 'meta_shift_/' ],
         choose_renderer = [ 'G', 'alt_shift_K_g' ],
         progress_screen = [ 'alt_shift_K_p', 'meta_shift_K_p', 'K_F2' ],
+        accessibility = [ "K_a" ],
 
         # Accessibility.
         self_voicing = [ 'v', 'V', 'alt_K_v'  ],
@@ -78,6 +79,8 @@ init -1600 python:
         input_delete = [ 'K_DELETE', 'repeat_K_DELETE' ],
         input_home = [ 'K_HOME' ],
         input_end = [ 'K_END' ],
+        input_copy = [ 'ctrl_K_INSERT', 'ctrl_K_c' ],
+        input_paste = [ 'shift_K_INSERT', 'ctrl_K_v' ],
 
         # Viewport.
         viewport_leftarrow = [ 'K_LEFT', 'repeat_K_LEFT' ],
@@ -226,7 +229,13 @@ init -1600 python:
 
         try:
             import webbrowser
-            webbrowser.open_new("file:///" + config.basedir + "/" + help)
+            import os
+
+            file_path = os.path.join(config.basedir, help)
+            if not os.path.isfile(file_path):
+                return
+
+            webbrowser.open_new("file:///" + file_path)
         except:
             pass
 
@@ -308,8 +317,12 @@ init -1600 python:
         renpy.restart_interaction()
 
     def _profile_once():
+
+        if not config.profile:
+            config.profile_time = 10.0
+            config.profile = True
+
         renpy.display.interface.profile_once = True
-        renpy.restart_interaction()
 
     def _memory_profile():
         import os
@@ -376,6 +389,7 @@ init -1100 python:
         progress_screen = _progress_screen,
         director = director.Start(),
         performance = ToggleScreen("_performance"),
+        accessibility = ToggleScreen("_accessibility"),
         )
 
     config.underlay = [ _default_keymap ]

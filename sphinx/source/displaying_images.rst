@@ -82,7 +82,7 @@ overlay
 
 Additional layers can be defined by updating :var:`config.layers`, and
 the various other layer-related config variables. Using
-:func:`renpy.layer_at_list`, one or more transforms can be applied to
+:func:`renpy.show_layer_at`, one or more transforms can be applied to
 a layer.
 
 Defining Images
@@ -104,7 +104,7 @@ Images Directory
 
 The image directory is named "images", and is placed under the game directory.
 When a file with the .jpg or .png extension is placed underneath this directory,
-the extension is stripped, the rest of the filename is forced to lower case,
+the extension is stripped, the rest of the filename is forced to lowercase,
 and the resulting filename is used as the image name if an image with that
 name has not been previously defined.
 
@@ -222,7 +222,7 @@ Some example show statements are::
     # Basic show.
     show mary night sad
 
-    # Since 'mary night happy' is showing, the following statement is
+    # Since 'mary night sad' is showing, the following statement is
     # equivalent to:
     # show mary night happy
     show mary happy

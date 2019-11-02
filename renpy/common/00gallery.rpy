@@ -41,6 +41,9 @@ init -1500 python:
 
         def check(self, all_prior):
             for i in self.images:
+
+                print(i, renpy.seen_image(i))
+
                 if not renpy.seen_image(i):
                     return False
 
@@ -91,6 +94,8 @@ init -1500 python:
                     d = transform(d)
                 else:
                     d = config.default_transform(d)
+
+                d = renpy.display.layout.AdjustTimes(d, None, None)
 
                 displayables.append(d)
 
@@ -220,6 +225,8 @@ init -1500 python:
             self.span_buttons = False
 
             self.slideshow_delay = 5
+
+            self.slideshow = False
 
         def button(self, name):
             """

@@ -327,9 +327,14 @@ init 1050 python:
 
             return True
 
-        config.missing_scene = __missing_scene_callback
-        config.missing_show = __missing_show_callback
-        config.missing_hide = __missing_hide_callback
+        if config.missing_scene is None:
+            config.missing_scene = __missing_scene_callback
+
+        if config.missing_show is None:
+            config.missing_show = __missing_show_callback
+
+        if config.missing_hide is None:
+            config.missing_hide = __missing_hide_callback
 
 
 init -1050 python:
@@ -482,7 +487,6 @@ init python:
                     text = repr((x, y))
                     self.clipboard = __("Position copied to clipboard.")
 
-                import pygame.scrap
                 pygame.scrap.put(pygame.scrap.SCRAP_TEXT, text)
 
 screen _image_location_picker(image_files):
@@ -654,10 +658,11 @@ screen _image_load_log():
 
     timer 10.0 action SetScreenVariable("show_help", False)
 
-init python:
+init 1000 python hide:
     if config.transparent_tile:
-        config.underlay.append(Frame("_transparent_tile.png", tile=True))
-        renpy.start_predict("_transparent_tile.png")
+        tile = im.Tile("_transparent_tile.png", (config.screen_width, config.screen_height))
+        config.underlay.append(tile)
+        renpy.start_predict(tile)
 
     config.per_frame_screens.append("_image_load_log")
 

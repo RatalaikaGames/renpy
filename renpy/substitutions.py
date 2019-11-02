@@ -183,6 +183,15 @@ class Formatter(string.Formatter):
 
             value = value.replace("{", "{{")
 
+        if "u" in conversion:
+            value = value.upper()
+
+        if "l" in conversion:
+            value = value.lower()
+
+        if "c" in conversion and value:
+            value = value[0].upper() + value[1:]
+
         return value
 
 
@@ -241,6 +250,10 @@ def substitute(s, scope=None, force=False, translate=True):
     else:
         kwargs = renpy.store.__dict__  # @UndefinedVariable
 
-    s = formatter.vformat(s, (), kwargs)
+    try:
+        s = formatter.vformat(s, (), kwargs)
+    except:
+        if renpy.display.predict.predicting:  # @UndefinedVariable
+            return " ", True
 
     return s, (s != old_s)

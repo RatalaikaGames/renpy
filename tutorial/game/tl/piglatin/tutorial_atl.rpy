@@ -312,10 +312,10 @@ translate piglatin tutorial_atl_1dd345c6:
     e "Henway Tlaay isay useday asay artpay ofay aay owshay atementstay, aluesvay ofay ropertiespay existay evenay henway hetay ansformtray isay angedchay. Osay evenay houghtay aay ickclay ouryay ickclay oppedstay hetay otionmay, hetay imageay emainsray inay hetay amesay aceplay."
 
 # game/tutorial_atl.rpy:488
-translate piglatin tutorial_atl_c21bc1d1:
+translate piglatin tutorial_atl_98047789:
 
-    # e "The key to ATL is what we call composeability. ATL is made up of relatively simple commands, which can be combined together to create complicated transforms."
-    e "Hetay eykay otay Tlaay isay hatway eway allcay omposeabilitycay. Tlaay isay ademay upay ofay elativelyray implesay ommandscay, hichway ancay ebay ombinedcay ogethertay otay reatecay omplicatedcay ansformstray."
+    # e "The key to ATL is what we call composability. ATL is made up of relatively simple commands, which can be combined together to create complicated transforms."
+    e "Hetay eykay otay Tlaay isay hatway eway allcay omposabilitycay. Tlaay isay ademay upay ofay elativelyray implesay ommandscay, hichway ancay ebay ombinedcay ogethertay otay reatecay omplicatedcay ansformstray."
 
 # game/tutorial_atl.rpy:490
 translate piglatin tutorial_atl_ed82983f:
@@ -637,15 +637,15 @@ translate piglatin transform_properties_bfa3b139:
 
 translate piglatin strings:
 
-    # tutorial_atl.rpy:267
+    # game/tutorial_atl.rpy:267
     old "xpos 1.0 ypos .5"
     new "posxay 1ay.0ay posyay .5ay"
 
-    # tutorial_atl.rpy:267
+    # game/tutorial_atl.rpy:267
     old "xpos .75 ypos .25"
     new "posxay .57ay posyay .52ay"
 
-    # tutorial_atl.rpy:267
+    # game/tutorial_atl.rpy:267
     old "xpos .25 ypos .33"
     new "posxay .52ay posyay .33ay"
 

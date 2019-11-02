@@ -19,85 +19,56 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-cimport renpy.display.render as render
-from gl2draw cimport Environ
+from uguugl cimport *
+from renpy.gl2.gl2shader cimport Program
+from renpy.gl2.gl2geometry cimport Mesh
+from renpy.gl2.gl2draw cimport GL2Draw
 
-cdef class TextureCore:
+cdef class TextureLoader:
+
+    # The draw object associated with this TextureLoader
+    cdef GL2Draw draw
+
+    # All the texture number currently allocated by this loader.
+    cdef set allocated
+
+    # A list of (number, generation) pairs for textures that need to be freed.
+    cdef list free_list
+
+    # The total size (in bytes) of all the textures that have been allocated
+    # but not deallocated.
+    cdef int total_texture_size
+
+    # The program used for fast texture loading
+    cdef Program ftl_program
+
+    # The queue of textures that need to be loaded.
+    cdef object texture_load_queue
+
+    # The maximum size of a texture.
+    cdef GLint max_texture_width
+    cdef GLint max_texture_height
+
+
+cdef class GLTexture:
+
+    # The size of the texture, in pixels.
     cdef public int width
     cdef public int height
-    cdef public int generation
+
+    # The number of the texture in OpenGL.
     cdef public unsigned int number
-    cdef bint loaded
-    cdef double xmul
-    cdef double xadd
-    cdef double ymul
-    cdef double yadd
-    cdef object premult
-    cdef tuple premult_size
-    cdef int premult_left
-    cdef int premult_right
-    cdef int premult_top
-    cdef int premult_bottom
-    cdef bint nearest
-    cdef public list free_list
 
-    cdef void make_ready(TextureCore)
-    cdef void make_nearest(TextureCore)
-    cdef void make_linear(TextureCore)
-    cpdef int allocate(TextureCore)
+    # Has this texture been loaded yet?
+    cdef public bint loaded
 
-    cdef public object debug
+    # If we are doing in-place loading, this is the data that's used for
+    # that.
+    cdef object surface
 
-cdef class TextureGrid:
+    # If we're not doing in-place loading, this is the data that's used for
+    # that.
+    cdef unsigned char *data
 
-
-    cdef object __weakref__
-
-    cdef public int width
-    cdef public int height
-    cdef list rows
-    cdef list columns
-    cdef list tiles # list of lists.
-    cdef public TextureGrid half_cache
-
-    cpdef void make_ready(self, bint nearest)
-
-    cdef public object debug
-    cdef public bint ready
-
-
-cpdef blit(
-    TextureGrid tg,
-    double sx,
-    double sy,
-    render.Matrix2D transform,
-    double alpha,
-    double over,
-    Environ environ,
-    bint nearest)
-
-cpdef blend(
-    TextureGrid tg0,
-    TextureGrid tg1,
-    double sx,
-    double sy,
-    render.Matrix2D transform,
-    double alpha,
-    double over,
-    double fraction,
-    Environ environ,
-    bint nearest)
-
-cpdef imageblend(
-    TextureGrid tg0,
-    TextureGrid tg1,
-    TextureGrid tg2,
-    double sx,
-    double sy,
-    render.Matrix2D transform,
-    double alpha,
-    double over,
-    double fraction,
-    int ramp,
-    Environ environ,
-    bint nearest)
+    # The texture loader associated with this texture.
+    cdef TextureLoader loader

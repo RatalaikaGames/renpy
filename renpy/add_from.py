@@ -19,8 +19,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from __future__ import print_function
-
+from __future__ import print_function, absolute_import
 import collections
 import renpy
 import os
@@ -34,9 +33,6 @@ def report_missing(target, filename, position):
     """
     Reports that the call statement ending at `position` in `filename`
     is missing a from clause.
-
-    `target`
-        The string
     """
 
     missing[filename].append((position, target))
@@ -50,6 +46,8 @@ def generate_label(target):
     """
     Generate a reasonable and unique new label for a call to `target`.
     """
+
+    target = target.replace(".", "_")
 
     n = 0
 
@@ -117,5 +115,6 @@ def add_from():
             process_file(fn)
 
     return False
+
 
 renpy.arguments.register_command("add_from", add_from)

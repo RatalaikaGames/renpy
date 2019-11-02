@@ -55,6 +55,9 @@ init -1700 python:
 
                 return False
 
+        def __ne__(self, o):
+            return not (self == o)
+
     class FieldEquality(object):
         """
         Declares two objects equal if their types are the same, and
@@ -91,6 +94,9 @@ init -1700 python:
                     raise
 
                 return False
+
+        def __ne__(self, o):
+            return not (self == o)
 
 
 init -1700 python:
@@ -152,40 +158,14 @@ init -1700 python:
         what = _last_say_what + config.extend_interjection + _last_raw_what
 
         args = args + _last_say_args
-        kw = dict(kwargs)
-        kw.update(_last_say_kwargs)
+        kw = dict(_last_say_kwargs)
+        kw.update(kwargs)
+        kw["interact"] = interact and kw.get("interact", True)
 
-        renpy.exports.say(who, what, interact=interact, *args, **kw)
+        renpy.exports.say(who, what, *args, **kw)
         store._last_say_what = what
 
     extend.record_say = False
-
-
-    ##########################################################################
-    # Self-voicing
-
-    # Strings used internally in Ren'Py.
-    _("Self-voicing disabled.")
-    _("Clipboard voicing enabled. ")
-    _("Self-voicing enabled. ")
-
-    _("bar")
-    _("selected")
-    _("viewport")
-    _("horizontal scroll")
-    _("vertical scroll")
-    _("activate")
-    _("deactivate")
-    _("increase")
-    _("decrease")
-
-    def sv(what, interact=True):
-        """
-        Uses the narrator to speak `what` iff self-voicing is enabled.
-        """
-
-        if _preferences.self_voicing:
-            return narrator(what, interact=interact)
 
 
     ##########################################################################
@@ -319,6 +299,7 @@ init -1000 python:
 
     for i in """
 adv
+alt
 anim
 blinds
 center
@@ -412,9 +393,9 @@ init 1700 python hide:
 
 
 
-# Used by renpy.return() to return.
+# Used by renpy.return_statement() to return.
 label _renpy_return:
-    return
+    return _return
 
 # Entry point for the developer screen. The rest of it is loaded from
 # _developer.rpym

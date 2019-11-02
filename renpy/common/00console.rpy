@@ -140,6 +140,8 @@ init -1500 python in _console:
     aRepr.repr_RevertableList = aRepr.repr_list
     aRepr.repr_RevertableDict = aRepr.repr_dict
     aRepr.repr_RevertableSet = aRepr.repr_set
+    aRepr.repr_defaultdict = aRepr.repr_dict
+    aRepr.repr_OrderedDict = aRepr.repr_dict
 
     # The list of traced expressions.
     class TracedExpressionsList(NoRollback, list):
@@ -418,7 +420,7 @@ init -1500 python in _console:
                     l.advance()
 
                     # Command can be None, but that's okay, since the lookup will fail.
-                    command = l.name()
+                    command = l.word()
 
                     command_fn = config.console_commands.get(command, None)
 
@@ -666,7 +668,10 @@ init -1500 python in _console:
 
     @command(_("jump <label>: jumps to label"))
     def jump(l):
-        label = l.name()
+        label = l.label_name()
+
+        if label is None:
+            raise Exception("Could not parse label. (Unqualified local labels are not allowed.)")
 
         if not console.can_renpy():
             raise Exception("Ren'Py script not enabled. Not jumping.")
@@ -763,7 +768,7 @@ screen _console:
                 else:
                     text "... " style "_console_prompt"
 
-                input default default style "_console_input_text" exclude ""
+                input default default style "_console_input_text" exclude "" copypaste True
 
 
     key "game_menu" action Jump("_console_return")

@@ -1,5 +1,4 @@
-﻿
-translate spanish strings:
+﻿translate spanish strings:
 
     # _developer/developer.rpym:38
     old "Developer Menu"
@@ -188,3 +187,12 @@ translate spanish strings:
     # 00console.rpy:639
     old "jump <label>: jumps to label"
     new "jump <label>: salta a la etiqueta"
+
+    # 00console.rpy:680
+    old "short: Shorten the representation of objects on the console (default)."
+    new "short: Acorta la representación de los objetos en la consola (predeterminado)."
+
+    # 00console.rpy:685
+    old "long: Print the full representation of objects on the console."
+    new "long: imprime la representación completa de los objetos en la consola."
+

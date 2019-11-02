@@ -19,16 +19,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from renpy.display.matrix cimport Matrix, Matrix2D
 cimport renpy.display.render as render
-
-cdef class Environ
+from renpy.gl2.gl2texture cimport TextureLoader
+from uguugl cimport *
 
 cdef class GL2Draw:
 
     cdef bint did_init
-    cdef bint did_texture_test
-    cdef Environ environ
-    cdef public object rtt
     cdef object window
     cdef tuple virtual_size
     cdef public tuple physical_size
@@ -45,54 +43,38 @@ cdef class GL2Draw:
     cdef public object fullscreen_surface
     cdef object display_info
     cdef tuple clip_cache
-    cdef bint fast_dissolve
-    cdef bint always_opaque
     cdef tuple default_clip
-    cdef bint did_render_to_texture
     cdef float dpi_scale
-    cdef object ready_texture_queue
+    cdef object shader_cache
 
     cdef public tuple clip_rtt_box
 
-    # The number of drawable pixels per virtual pixel.
-    cdef public object draw_per_virt
+    cdef public float draw_per_phys
+    cdef public tuple drawable_viewport
 
-    # Matrices that transform drawable to virtual, and vice versa.
-    cdef public render.Matrix2D virt_to_draw
-    cdef public render.Matrix2D draw_to_virt
+    cdef public object draw_per_virt
+    cdef public Matrix virt_to_draw
+    cdef public Matrix draw_to_virt
 
     cdef public int fast_redraw_frames
-
     cdef public bint gles
 
-    cpdef set_clip(GL2Draw self, tuple clip)
+    # The color texture object used for offscreen rendering.
+    cdef GLuint color_texture
 
-    cpdef int draw_render_textures(
-        GL2Draw self,
-        object what,
-        bint non_aligned) except 1
+    # The depth renderbuffer object used for offscreen rendering.
+    cdef GLuint depth_renderbuffer
 
-    cpdef int draw_transformed(
-        GL2Draw self,
-        object what,
-        tuple clip,
-        double xo,
-        double yo,
-        double alpha,
-        double over,
-        render.Matrix2D reverse,
-        bint nearest,
-        bint subpixel) except 1
+    # The framebuffer object used for offscreen rendering.
+    cdef GLuint fbo
 
-cdef class Environ:
-    cdef void blit(self)
-    cdef void blend(self, double fraction)
-    cdef void imageblend(self, double fraction, int ramp)
-    cdef void set_vertex(self, float *vertices)
-    cdef void set_texture(self, int unit, float *coords)
-    cdef void set_color(self, float r, float g, float b, float a)
-    cdef void set_clip(self, tuple clip_box, GL2Draw draw)
-    cdef void unset_clip(self, GL2Draw draw)
-    cdef void ortho(self, double left, double right, double bottom, double top, double near, double far)
-    cdef void viewport(self, int x, int y, int width, int height)
+    # The texture_loader singleton.
+    cdef public TextureLoader texture_loader
 
+    # The default FBO.
+    cdef public GLuint default_fbo
+
+    # The current FBO.
+    cdef public GLuint current_fbo
+
+    cdef void change_fbo(self, GLuint fbo)

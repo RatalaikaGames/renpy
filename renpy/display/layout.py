@@ -1038,7 +1038,7 @@ class SizeGroup(renpy.object.Object):
         maxwidth = 0
 
         for i in self.members:
-            rend = i.render(width, height, st, at)
+            rend = renpy.display.render.render_for_size(i, width, height, st, at)
             maxwidth = max(rend.width, maxwidth)
 
         self._width = maxwidth
@@ -1095,6 +1095,9 @@ class Window(Container):
         size_group = self.style.size_group
         if size_group and size_group in size_groups:
             xminimum = max(xminimum, size_groups[size_group].width(width, height, st, at))
+
+        width = max(xminimum, width)
+        height = max(yminimum, height)
 
         left_margin = scale(style.left_margin, width)
         left_padding = scale(style.left_padding, width)
@@ -1227,6 +1230,8 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
     nosave = [ 'child' ]
 
+    _duplicatable = True
+
     def after_setstate(self):
         self.child = None
 
@@ -1245,12 +1250,25 @@ class DynamicDisplayable(renpy.display.core.Displayable):
         self.args = args
         self.kwargs = kwargs
 
+    def _duplicate(self, args):
+        rv = self._copy(args)
+
+        if rv.child is not None and rv.child._duplicateable:
+            rv.child = rv.child._duplicate(args)
+
+        return rv
+
     def visit(self):
         return [ ]
 
     def update(self, st, at):
         child, redraw = self.function(st, at, *self.args, **self.kwargs)
         child = renpy.easy.displayable(child)
+
+        if child._duplicatable:
+            child = child._duplicate(self._args)
+            child._unique()
+
         child.visit_all(lambda c : c.per_interact())
 
         self.child = child
@@ -1520,7 +1538,13 @@ class Side(Container):
         super(Side, self)._clear()
         self.sized = False
 
+    def per_interact(self):
+        self.sized = False
+
     def render(self, width, height, st, at):
+
+        if renpy.config.developer and len(self.positions) != len(self.children):
+            raise Exception("A side has the wrong number of children.")
 
         pos_d = { }
         pos_i = { }
@@ -1564,10 +1588,8 @@ class Side(Container):
                 if pos not in pos_d:
                     return owidth, oheight
 
-                rend = render(pos_d[pos], width, height, st, at)
-                rv = max(owidth, rend.width), max(oheight, rend.height)
-                rend.kill()
-                return rv
+                rend = renpy.display.render.render_for_size(pos_d[pos], width, height, st, at)
+                return max(owidth, rend.width), max(oheight, rend.height)
 
             cwidth, cheight = sizeit('c', width, height, 0, 0)
             cwidth, top = sizeit('t', cwidth, height, cwidth, top)
@@ -1638,17 +1660,35 @@ class Side(Container):
         row2 = top + tops
         row3 = top + tops + cheight + bottoms
 
-        place('c', col2, row2, cwidth, cheight)
+        place_order = [
+            ('c', col2, row2, cwidth, cheight),
 
-        place('t', col2, row1, cwidth, top)
-        place('r', col3, row2, right, cheight)
-        place('b', col2, row3, cwidth, bottom)
-        place('l', col1, row2, left, cheight)
+            ('t', col2, row1, cwidth, top),
+            ('r', col3, row2, right, cheight),
+            ('b', col2, row3, cwidth, bottom),
+            ('l', col1, row2, left, cheight),
 
-        place('tl', col1, row1, left, top)
-        place('tr', col3, row1, right, top)
-        place('br', col3, row3, right, bottom)
-        place('bl', col1, row3, left, bottom)
+            ('tl', col1, row1, left, top),
+            ('tr', col3, row1, right, top),
+            ('br', col3, row3, right, bottom),
+            ('bl', col1, row3, left, bottom),
+        ]
+
+        # This sorts the children for placement according to
+        # their order in positions.
+        if renpy.config.keep_side_render_order:
+            def sort(elem):
+                pos, x, y, w, h = elem
+
+                if pos not in pos_d:
+                    return
+
+                return self.positions.index(pos)
+
+            place_order.sort(key=sort)
+
+        for pos, x, y, w, h in place_order:
+            place(pos, x, y, w, h)
 
         return rv
 
@@ -1831,18 +1871,20 @@ class Flatten(Container):
         cr = renpy.display.render.render(self.child, width, height, st, at)
         cw, ch = cr.get_size()
 
-        tex = cr.render_to_texture(True)
-
         rv = renpy.display.render.Render(cw, ch)
-        rv.blit(tex, (0, 0))
-        rv.depends_on(cr, focus=True)
+        rv.blit(cr, (0, 0))
 
-        rv.reverse = renpy.display.draw.draw_to_virt
-        rv.forward = renpy.display.render.IDENTITY
+        rv.operation = renpy.display.render.FLATTEN
+
+        rv.mesh = True
+        rv.shaders = ( "renpy.texture", )
 
         self.offsets = [ (0, 0) ]
 
         return rv
+
+    def get_placement(self):
+        return self.child.get_placement()
 
 
 class AlphaMask(Container):
