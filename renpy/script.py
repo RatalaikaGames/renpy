@@ -33,7 +33,6 @@ import time
 import marshal
 import struct
 import zlib
-import binascii
 
 from cPickle import loads, dumps
 import shutil
@@ -60,10 +59,6 @@ class ScriptError(Exception):
     or otherwise wrong.
     """
 
-def rename_rpy_to_rpyc(rpyname):
-    return '/renpygame/game/cache/' + rpyname.replace('/','-').replace('.','-') + ".rpyc"
-def rename_rpym_to_rpymc(rpyname):
-    return '/renpygame/game/cache/' + rpyname.replace('/','-').replace('.','-') + ".rpymc"
 
 def collapse_stmts(stmts):
     """
@@ -565,24 +560,14 @@ class Script(object):
         renpy.translation.restructure(stmts)
 
     def load_file(self, dir, fn):  # @ReservedAssignment
-    
-        fullfn = dir + "/" + fn
-    
-        #mbg hacks
-        if fn.endswith(".rpy") and os.exists(rename_rpy_to_rpyc(fullfn)):
-            fn = rename_rpy_to_rpyc(fullfn)
-        if fn.endswith(".rpym") and os.exists(rename_rpym_to_rpymc(fullfn)):
-            fn = rename_rpym_to_rpymc(fullfn)
 
         if fn.endswith(".rpy") or fn.endswith(".rpym"):
 
             if not dir:
                 raise Exception("Cannot load rpy/rpym file %s from inside an archive." % fn)
 
-            if fn.endswith(".rpy"):
-                rpycfn = rename_rpy_to_rpyc(fullfn)
-            if fn.endswith(".rpym"):
-                rpycfn = rename_rpym_to_rpymc(fullfn)
+            fullfn = dir + "/" + fn
+            rpycfn = fullfn + "c"
 
             stmts = renpy.parser.parse(fullfn)
 
@@ -710,6 +695,7 @@ class Script(object):
             f.close()
 
         else:
+
             # Otherwise, we're loading from disk. So we need to decide if
             # we want to load the rpy or the rpyc file.
             rpyfn = dir + "/" + fn + source
@@ -722,7 +708,6 @@ class Script(object):
                     rpydigest = hashlib.md5(f.read()).digest()
             else:
                 rpydigest = None
-
 
             try:
                 if os.path.exists(rpycfn):
@@ -829,13 +814,9 @@ class Script(object):
 
             key = i.get_hash() + MAGIC
 
-            #print("Checking key ", binascii.hexlify(key), " with code ", str(i.location[0]), ":", str(i.location[1]))
-
             code = self.bytecode_oldcache.get(key, None)
 
             if code is None:
-                
-                #print("MISS oldcache")
 
                 self.bytecode_dirty = True
 
@@ -875,8 +856,7 @@ class Script(object):
                     continue
 
                 renpy.game.exception_info = old_ei
-            
-            #print("Writing key ", binascii.hexlify(key), " with code ", str(i.location[0]), ":", str(i.location[1]))
+
             self.bytecode_newcache[key] = code
             i.bytecode = marshal.loads(code)
 
@@ -889,6 +869,7 @@ class Script(object):
         if self.bytecode_dirty:
             try:
                 fn = renpy.loader.get_path(BYTECODE_FILE)
+
                 with open(fn, "wb") as f:
                     data = (BYTECODE_VERSION, self.bytecode_newcache)
                     f.write(zlib.compress(dumps(data, 2), 3))
