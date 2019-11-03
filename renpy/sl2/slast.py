@@ -31,6 +31,7 @@ from __future__ import print_function
 import ast
 import collections
 import linecache
+import traceback
 from cPickle import loads, dumps
 import zlib
 import weakref
@@ -2021,6 +2022,8 @@ class SLScreen(SLBlock):
         if self.const_ast:
             return
 
+        print("ANALYZE: ", self.name);
+
         key = (self.name, self.variant)
 
         if key in scache.const_analyzed:
@@ -2050,6 +2053,7 @@ class SLScreen(SLBlock):
 
         scache.const_analyzed[key] = self.const_ast
         scache.not_const_analyzed[key] = self.not_const_ast
+        print("## scache.updated = True");
         scache.updated = True
 
     def unprepare_screen(self):
@@ -2177,27 +2181,34 @@ def load_cache():
         return
 
     try:
+        print("## TRYING TO LOAD ", CACHE_FILENAME);
         f = renpy.loader.load(CACHE_FILENAME)
 
         digest = f.read(hashlib.md5().digest_size)
+        # print("## DIGEST MISMATCH ", digest.hexdigest(), " ", renpy.game.script.digest.digest().hexdigest());
         if digest != renpy.game.script.digest.digest():
+            print("## TRUE DIGEST MISMATCH ")
             return
 
         s = loads(zlib.decompress(f.read()))
         f.close()
 
         if s.version == scache.version:
+            print("## DO UPDATE BYTECODE");
             renpy.game.script.update_bytecode()
             scache.const_analyzed.update(s.const_analyzed)
             scache.not_const_analyzed.update(s.not_const_analyzed)
 
-    except:
-        pass
+    except Exception as e: 
+        print(e)
+        traceback.print_exc()
 
 
 def save_cache():
     if not scache.updated:
         return
+
+    print("## save_cache UPDATED: ", scache.updated);
 
     if renpy.macapp:
         return
