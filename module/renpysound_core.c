@@ -445,6 +445,9 @@ static void pan_audio(struct Channel *c, Uint8 *stream, int length) {
 
 static void callback(void *userdata, Uint8 *stream, int length) {
 
+	//MBG - use this instead
+	Uint8* buffer = (Uint8*)alloca(length);
+
     int channel = 0;
 
     memset(stream, 0, length);
@@ -464,9 +467,8 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
         while (mixed < length && c->playing) {
             int mixleft = length - mixed;
-						//MBG - removed VLA
+            //MBG - removed VLA
             //Uint8 buffer[mixleft];
-						Uint8* buffer = (Uint8*)alloca(mixleft);
             int bytes;
 
             // Decode some amount of data.
