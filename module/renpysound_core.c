@@ -219,6 +219,7 @@ struct Channel {
 struct Dying {
     struct MediaState *stream;
     struct Dying *next;
+    PyObject* name;
 };
 
 static struct Dying *dying = NULL;
@@ -512,7 +513,7 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
                 LOCK_NAME();
 
-                decref(c->playing_name);
+                d->name = c->playing_name;
 
                 c->playing = c->queued;
                 c->playing_name = c->queued_name;
@@ -1304,6 +1305,7 @@ void RPS_periodic() {
     while (dying) {
         struct Dying *d = dying;
         media_close(d->stream);
+        decref(d->name);
         dying = d->next;
         free(d);
     }
