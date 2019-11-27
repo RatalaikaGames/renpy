@@ -80,26 +80,6 @@ void media_wait_ready(struct MediaState *ms);
 PyInterpreterState* interp;
 PyThreadState* thread = NULL;
 
-static void incref(PyObject *ref) {
-    PyThreadState *oldstate;
-
-    EVAL_LOCK();
-    oldstate = PyThreadState_Swap(thread);
-    Py_INCREF(ref);
-    PyThreadState_Swap(oldstate);
-    EVAL_UNLOCK();
-}
-
-static void decref(PyObject *ref) {
-    PyThreadState *oldstate;
-
-    EVAL_LOCK();
-    oldstate = PyThreadState_Swap(thread);
-    Py_DECREF(ref);
-    PyThreadState_Swap(oldstate);
-    EVAL_UNLOCK();
-}
-
 /* A mutex that protects the shared data structures. */
 SDL_mutex *name_mutex;
 
@@ -223,6 +203,28 @@ struct Dying {
 };
 
 static struct Dying *dying = NULL;
+
+/*
+ * list of python names to decref under GIL and NOT SDL mutex
+ * It must be controlled by the SDL mixer lock!
+*/ 
+
+static PyObject** names_to_decref = NULL;
+static int names_to_decref_count = 0;
+static int names_to_decref_reserved = 0;
+static void names_to_decref_require(int amount)
+{
+  if(amount < names_to_decref_reserved)
+    return;
+  names_to_decref_reserved = amount * 2 + 1; /* avoid growing too much */
+  names_to_decref = realloc(names_to_decref, names_to_decref_reserved * sizeof(void*));
+}
+static void names_to_decref_push(PyObject* name)
+{
+	names_to_decref_require(names_to_decref_count+1);
+  names_to_decref[names_to_decref_count++] = name;
+}
+
 
 /*
  * The number of channels the system knows about.
@@ -587,7 +589,6 @@ struct MediaState *load_sample(SDL_RWops *rw, const char *ext, double start, dou
     	media_want_video(rv, video);
     }
 
-    media_start(rv);
     return rv;
 }
 
@@ -597,12 +598,18 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
     BEGIN();
 
     struct Channel *c;
+    struct MediaState * newMedia;
 
     if (check_channel(channel)) {
         return;
     }
 
+    Py_INCREF(name);
+
     c = &channels[channel];
+
+    newMedia = load_sample(rw, ext, start, end, c->video);
+
     ENTER();
 
     LOCK_NAME();
@@ -611,7 +618,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
     if (c->playing) {
         free_sample(c->playing);
         c->playing = NULL;
-        decref(c->playing_name);
+        names_to_decref_push(c->playing_name);
         c->playing_name = NULL;
         c->playing_tight = 0;
         c->playing_start_ms = 0;
@@ -620,7 +627,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
     if (c->queued) {
         free_sample(c->queued);
         c->queued = NULL;
-        decref(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_tight = 0;
         c->queued_start_ms = 0;
@@ -628,16 +635,17 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
 
     /* Allocate playing sample. */
 
-    c->playing = load_sample(rw, ext, start, end, c->video);
+    c->playing = newMedia;
+    media_start(newMedia);
 
     if (! c->playing) {
-    	UNLOCK_NAME();
-    	EXIT();
+      UNLOCK_NAME();
+      EXIT();
+      Py_DECREF(name);
         error(SOUND_ERROR);
         return;
     }
 
-    incref(name);
     c->playing_name = name;
 
     c->playing_fadein = fadein;
@@ -661,6 +669,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     BEGIN();
 
     struct Channel *c;
+    struct MediaState *newMedia;
 
     if (check_channel(channel)) {
         return;
@@ -668,11 +677,16 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 
     c = &channels[channel];
 
+    newMedia = load_sample(rw, ext, start, end, c->video);
+    
+    Py_INCREF(name);
+
     ENTER();
 
     /* If we're not playing, then we should play instead of queue. */
     if (!c->playing) {
         EXIT();
+        Py_DECREF(name);
         RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end);
         return;
     }
@@ -682,13 +696,14 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     if (c->queued) {
         free_sample(c->queued);
         c->queued = NULL;
-        decref(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_tight = 0;
     }
 
     /* Allocate queued sample. */
-    c->queued = load_sample(rw, ext, start, end, c->video);
+    c->queued = newMedia;
+    media_start(newMedia);
 
     if (! c->queued) {
         EXIT();
@@ -696,7 +711,6 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
         return;
     }
 
-    incref(name);
     c->queued_name = name;
     c->queued_fadein = fadein;
     c->queued_tight = tight;
@@ -735,7 +749,7 @@ void RPS_stop(int channel) {
     if (c->playing) {
         free_sample(c->playing);
         c->playing = NULL;
-        decref(c->playing_name);
+        names_to_decref_push(c->playing_name);
         c->playing_name = NULL;
         c->playing_start_ms = 0;
     }
@@ -743,7 +757,7 @@ void RPS_stop(int channel) {
     if (c->queued) {
         free_sample(c->queued);
         c->queued = NULL;
-        decref(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_start_ms = 0;
     }
@@ -780,7 +794,7 @@ void RPS_dequeue(int channel, int even_tight) {
     if (c->queued && (! c->playing_tight || even_tight)) {
         free_sample(c->queued);
         c->queued = NULL;
-        decref(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
     } else {
         c->queued_tight = 0;
@@ -1222,6 +1236,10 @@ void RPS_init(int freq, int stereo, int samples, int status, int equal_mono) {
         return;
     }
 
+    /* arbitrarily assumes 16 channels. it can expand later. */
+    names_to_decref_require(16);
+
+
     name_mutex = SDL_CreateMutex();
 
 #ifndef __EMSCRIPTEN__
@@ -1296,19 +1314,19 @@ void RPS_quit() {
 void RPS_periodic() {
     BEGIN();
 
-    if (!dying) {
-        return;
-    }
-
     ENTER();
 
     while (dying) {
         struct Dying *d = dying;
         media_close(d->stream);
-        decref(d->name);
+        Py_DECREF(d->name);
         dying = d->next;
         free(d);
     }
+
+    for (int i = 0; i<names_to_decref_count; i++)
+      Py_DECREF(names_to_decref[i]);
+    names_to_decref_count = 0;
 
     EXIT();
 }
