@@ -341,6 +341,9 @@ init -1500 python in achievement:
         other backends. (For example, Steam.)
         """
 
+        # MBG: doesn't exist in our engine since there's no backends and persistent._achievements isn't set
+        return
+
         for a in persistent._achievements:
             for i in backends:
                 if not i.has(a):
