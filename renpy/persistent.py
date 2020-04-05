@@ -467,6 +467,11 @@ def MultiPersistent(name):
 
     if "RENPY_MULTIPERSISTENT" in os.environ:
         files = [ os.environ["RENPY_MULTIPERSISTENT"] ]
+        
+    # MBG - need to be creating directories...
+    # and may as well hardcode this here
+    files = [ "/saves/multipersistent" ]
+    os.makedirs(files[0])
 
     fn = ""  # prevent a warning from happening.
 
@@ -476,6 +481,8 @@ def MultiPersistent(name):
         fn = fn + "/" + name
         if os.path.exists(fn):
             break
+            
+
 
     try:
         rv = loads(open(fn, "rb").read())
