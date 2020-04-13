@@ -32,6 +32,7 @@ import cStringIO
 import threading
 import time
 import io
+import _ratapy;
 
 
 # This is an entry in the image cache.
@@ -446,6 +447,8 @@ class Cache(object):
 
     def preload_thread_pass(self):
 
+        _ratapy.loading_images()
+
         while self.preloads and self.keep_preloading:
 
             # If the size of the current generation is bigger than the
@@ -509,6 +512,8 @@ class Cache(object):
                     renpy.display.draw.load_texture(surf)
                 except:
                     self.preload_blacklist.add(image)
+
+        _ratapy.done_loading_images()
 
     def add_load_log(self, filename):
 
