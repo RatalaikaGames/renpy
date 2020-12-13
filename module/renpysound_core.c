@@ -592,8 +592,7 @@ struct MediaState *load_sample(SDL_RWops *rw, const char *ext, double start, dou
     return rv;
 }
 
-
-void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, int paused, double start, double end) {
+void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, int paused, double start, double end, void* maybeAlreadyMediaState) {
 
     BEGIN();
 
@@ -608,7 +607,9 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
 
     c = &channels[channel];
 
-    newMedia = load_sample(rw, ext, start, end, c->video);
+		if(maybeAlreadyMediaState)
+			newMedia = (struct MediaState*) maybeAlreadyMediaState;
+    else newMedia = load_sample(rw, ext, start, end, c->video);
 
     ENTER();
 
@@ -687,7 +688,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     if (!c->playing) {
         EXIT();
         Py_DECREF(name);
-        RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end);
+        RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end, newMedia);
         return;
     }
 
