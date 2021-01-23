@@ -604,7 +604,7 @@ class FileCurrentScreenshot(renpy.display.core.Displayable):
         if ss is None:
             return renpy.display.render.render(self.empty, width, height, st, at)
 
-        tex = renpy.display.draw.load_texture(ss)
+        tex = renpy.display.draw.load_texture(ss, False, False)
         w, h = tex.get_size()
 
         rv = renpy.display.render.Render(w, h)

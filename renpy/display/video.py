@@ -174,7 +174,7 @@ def get_movie_texture(channel, mask_channel=None, side_mask=False):
 
     if surf is not None:
         renpy.display.render.mutated_surface(surf)
-        tex = renpy.display.draw.load_texture(surf, True)
+        tex = renpy.display.draw.load_texture(surf, True, False)
         texture[channel] = tex
         new = True
     else:

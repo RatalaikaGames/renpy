@@ -818,7 +818,7 @@ class Layout(object):
                 ts.draw(glyphs, di, self.add_left, self.add_top, self)
 
             renpy.display.draw.mutated_surface(surf)
-            tex = renpy.display.draw.load_texture(surf)
+            tex = renpy.display.draw.load_texture(surf, False, True)
 
             self.textures[key] = tex
 
