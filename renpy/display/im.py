@@ -204,9 +204,10 @@ class Cache(object):
             self.first_preload_in_tick = True
             self.added.clear()
 
-        print("----")
-        filename, line = renpy.exports.get_filename_line()
-        print("%s %d", filename, line)
+        if renpy.config.debug_image_cache:
+            renpy.display.ic_log.write("----")
+            filename, line = renpy.exports.get_filename_line()
+            renpy.display.ic_log.write("%s %d", filename, line)
 
     # The preload thread can deal with this update, so we don't need
     # to lock things.
@@ -288,10 +289,11 @@ class Cache(object):
                 # Indicate that this surface had changed.
                 renpy.display.render.mutated_surface(ce.surf)
 
-                if predict:
-                    print("Added %r (%.02f%%)", ce.what, 100.0 * self.get_total_size() / self.cache_limit)
-                else:
-                    print("Total Miss %r", ce.what)
+                if renpy.config.debug_image_cache:
+                    if predict:
+                        renpy.display.ic_log.write("Added %r (%.02f%%)", ce.what, 100.0 * self.get_total_size() / self.cache_limit)
+                    else:
+                        renpy.display.ic_log.write("Total Miss %r", ce.what)
 
         # Move it into the current generation.
 
@@ -346,7 +348,8 @@ class Cache(object):
 
         del self.cache[ce.what]
 
-        print("Removed %r", ce.what)
+        if renpy.config.debug_image_cache:
+            renpy.display.ic_log.write("Removed %r", ce.what)
 
     def cleanout(self):
         """
@@ -421,7 +424,8 @@ class Cache(object):
             with self.preload_lock:
                 self.preload_lock.notify()
 
-        print("Kept %r", im)
+        if in_cache and renpy.config.debug_image_cache:
+            renpy.display.ic_log.write("Kept %r", im)
 
     def start_prediction(self):
         """
@@ -455,8 +459,9 @@ class Cache(object):
                 # If the cache is overfull, clean it out.
                 if not self.cleanout():
 
-                    for i in self.preloads:
-                        print("Overfull %r", i)
+                    if renpy.config.debug_image_cache:
+                        for i in self.preloads:
+                            renpy.display.ic_log.write("Overfull %r", i)
 
                     self.preloads = [ ]
 
