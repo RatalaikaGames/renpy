@@ -68,7 +68,8 @@ class CacheEntry(object):
             rv += self.width * self.height
 
         if self.texture is not None:
-            rv += self.bounds[2] * self.bounds[3]
+            #rv += self.bounds[2] * self.bounds[3]
+            rv += renpy.display.draw.texels_size(self.texture)
 
         return rv
 
