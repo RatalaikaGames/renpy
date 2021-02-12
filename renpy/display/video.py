@@ -174,7 +174,7 @@ def get_movie_texture(channel, mask_channel=None, side_mask=False):
 
     if surf is not None:
         renpy.display.render.mutated_surface(surf)
-        tex = renpy.display.draw.load_texture(surf, True, False)
+        tex = renpy.display.draw.load_texture(surf, True, True) # Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
         texture[channel] = tex
         new = True
     else:
