@@ -26,7 +26,7 @@ import os
 import renpy.audio
 import subprocess
 import pygame_sdl2 as pygame
-
+import _ratapy;
 
 class TTSRoot(Exception):
     """
@@ -56,7 +56,8 @@ def periodic():
 
 def is_active():
 
-    return process is not None
+    #return process is not None
+    return _ratapy.tts_is_active()
 
 
 def default_tts_function(s):
@@ -95,7 +96,16 @@ def default_tts_function(s):
 
     fsencode = renpy.exports.fsencode
 
-    if "RENPY_TTS_COMMAND" in os.environ:
+    if True:
+
+        if renpy.config.tts_voice is None:
+            voice = "default voice"  # something that is unlikely to match.
+        else:
+            voice = renpy.config.tts_voice
+
+        _ratapy.tts_play(voice,s)
+
+    elif "RENPY_TTS_COMMAND" in os.environ:
 
         process = subprocess.Popen([ os.environ["RENPY_TTS_COMMAND"], fsencode(s) ])
 
