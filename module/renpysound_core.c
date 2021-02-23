@@ -583,6 +583,9 @@ static int check_channel(int c) {
 struct MediaState *load_sample(SDL_RWops *rw, const char *ext, double start, double end, int video) {
     struct MediaState *rv;
     rv = media_open(rw, ext);
+    if(!rv)
+        return NULL;
+
     media_start_end(rv, start, end);
 
     if (video) {
@@ -603,13 +606,16 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
         return;
     }
 
-    Py_INCREF(name);
-
     c = &channels[channel];
 
 		if(maybeAlreadyMediaState)
 			newMedia = (struct MediaState*) maybeAlreadyMediaState;
     else newMedia = load_sample(rw, ext, start, end, c->video);
+
+        if(!newMedia)
+            return;
+
+    Py_INCREF(name);
 
     ENTER();
 
