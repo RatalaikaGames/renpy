@@ -164,17 +164,19 @@ def get_movie_texture(channel, mask_channel=None, side_mask=False):
     else:
         mask_surf = None
 
+    alp = None
     if mask_surf is not None:
-
-        # Something went wrong with the mask video.
-        if surf:
-            renpy.display.module.alpha_munge(mask_surf, surf, renpy.display.im.identity)
-        else:
-            surf = None
+        renpy.display.render.mutated_surface(mask_surf)
+        # Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
+        alp = renpy.display.draw.load_texture(mask_surf, True, True)
 
     if surf is not None:
+        # TEST
+        #surf = surf.subsurface((100,100,200,200))
         renpy.display.render.mutated_surface(surf)
-        tex = renpy.display.draw.load_texture(surf, True, True) # Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
+        # Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
+        tex = renpy.display.draw.load_texture(surf, True, True)
+        tex.alphamask = alp
         texture[channel] = tex
         new = True
     else:
