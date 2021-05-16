@@ -116,8 +116,10 @@ def surface(rect, alpha):
     if sample is None:
         sample = pygame.Surface((4, 4), pygame.SRCALPHA, 32)
 
-    surf = Surface((width + 4, height + 4), 0, sample)
-    return surf.subsurface((2, 2, width, height))  # E1101
+    # MBG _ skip padding (for now)
+    #surf = Surface((width + 4, height + 4), 0, sample)
+    #return surf.subsurface((2, 2, width, height))  # E1101
+    return Surface((width, height), 0, sample)
 
 surface_unscaled = surface
 
