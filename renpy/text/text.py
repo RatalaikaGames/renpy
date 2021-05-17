@@ -542,12 +542,12 @@ class Layout(object):
         # make up the paragraphs. This is used to copy break and timing
         # data from one Layout to another.
         self.paragraph_glyphs = [ ]
-
-        width = self.scale_int(width)
-        height = self.scale_int(height)
-
+        
         self.width = width
         self.height = height
+        
+        width = self.scale_int(width)
+        height = self.scale_int(height)
 
         # Figure out outlines and other info.
         outlines, xborder, yborder, xoffset, yoffset = self.figure_outlines(style)
