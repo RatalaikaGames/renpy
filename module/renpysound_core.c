@@ -43,11 +43,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #else
 
+static void myLockAudio()
+{
+    SDL_LockAudio();
+}
+
+static void myUnlockAudio()
+{
+    SDL_UnlockAudio();
+}
+
 #define EVAL_LOCK() { PyEval_AcquireLock(); }
 #define EVAL_UNLOCK() { PyEval_ReleaseLock(); }
 #define BEGIN() PyThreadState *_save;
-#define ENTER() { _save = PyEval_SaveThread(); SDL_LockAudio(); }
-#define EXIT() { SDL_UnlockAudio(); PyEval_RestoreThread(_save); }
+#define ENTER() { _save = PyEval_SaveThread(); myLockAudio(); }
+#define EXIT() { myUnlockAudio(); PyEval_RestoreThread(_save); }
 #define ALTENTER() { _save = PyEval_SaveThread(); }
 #define ALTEXIT() { PyEval_RestoreThread(_save); }
 
@@ -962,7 +972,9 @@ void RPS_unpause_all(void) {
 
     for (i = 0; i < num_channels; i++) {
         if (channels[i].playing && channels[i].paused) {
+            EXIT();
             media_wait_ready(channels[i].playing);
+            ENTER();
         }
     }
 
