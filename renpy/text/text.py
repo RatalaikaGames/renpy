@@ -500,6 +500,8 @@ class Layout(object):
                     return g.y + self.yoffset
 
             return 0
+            
+        textsupport.begin_text()
 
         width = min(32767, width)
         height = min(32767, height)
@@ -765,6 +767,7 @@ class Layout(object):
 
         # If we only care about the size, we're done.
         if size_only:
+            textsupport.end_text()
             return
 
         # Place ruby.
@@ -846,6 +849,8 @@ class Layout(object):
                 renpy.display.to_log.write("File \"%s\", line %d, text overflow:", filename, line)
                 renpy.display.to_log.write("     Available: (%d, %d) Laid-out: (%d, %d)", width, height, sw, sh)
                 renpy.display.to_log.write("     Text: %r", text.text)
+                
+        textsupport.end_text()
 
     def scale(self, n):
         if n is None:

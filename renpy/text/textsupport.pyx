@@ -21,7 +21,15 @@
 
 from __future__ import print_function
 
+cdef extern void r3api_set_textmode(int flag);
+
 include "linebreak.pxi"
+
+def begin_text():
+    r3api_set_textmode(1)
+    
+def end_text():
+    r3api_set_textmode(0)
 
 cdef class Glyph:
 
