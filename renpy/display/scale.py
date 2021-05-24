@@ -92,7 +92,7 @@ def real_smoothscale(src, size, dest=None):
     iwidth, iheight = srcwidth, srcheight
 
     if dest is None:
-        dest = pgrender.surface_unscaled(size, src)
+        dest = pgrender.surface_unscaled(size, src, True) # MBG - we have to clear it because we do some kind of blit onto the existing presumed clear surface
 
     if width == 0 or height == 0:
         return dest
