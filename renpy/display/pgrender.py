@@ -95,7 +95,7 @@ class Surface(pygame.Surface):
         return rv
 
 
-def surface(rect, alpha):
+def surface(rect, alpha, clear = False):
     """
     Constructs a new surface. The allocated surface is actually a subsurface
     of a surface that has a 2 pixel border in all directions.
@@ -119,7 +119,10 @@ def surface(rect, alpha):
     # MBG _ skip padding (for now)
     #surf = Surface((width + 4, height + 4), 0, sample)
     #return surf.subsurface((2, 2, width, height))  # E1101
-    return Surface((width, height), 0, sample)
+    if clear:
+        return Surface((width, height), 1337, sample)
+    else:
+        return Surface((width, height), 0, sample)
 
 surface_unscaled = surface
 

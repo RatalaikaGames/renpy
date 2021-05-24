@@ -799,7 +799,7 @@ class Layout(object):
                 continue
 
             # Create the texture.
-            surf = renpy.display.pgrender.surface((sw + o, sh + o), True)
+            surf = renpy.display.pgrender.surface((sw + o, sh + o), True, True)
 
             di.surface = surf
             di.override_color = color
@@ -911,6 +911,7 @@ class Layout(object):
         ts.cps = style.slow_cps
         if ts.cps is None or ts.cps is True:
             ts.cps = renpy.game.preferences.text_cps
+        #ts.cps = 1 # MBG TEST
 
         ts.take_style(style, self)
 
