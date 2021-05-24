@@ -732,6 +732,10 @@ class Layout(object):
             maxx = min_width - self.xborder
 
         maxx = math.ceil(maxx)
+        
+        #MBG - at some point when I was removing my +2 padding all over, this broke on some empty strings which have a width of 0
+        #width of 0 freaks things out. this fixes it
+        maxx = max(maxx,1)
 
         textsupport.align_and_justify(lines, maxx, style.text_align, style.justify)
 
