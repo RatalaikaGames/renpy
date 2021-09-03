@@ -62,6 +62,7 @@ python early hide:
         channel = None
         loop = None
         if_changed = False
+        volume = "1.0"
 
         while True:
 
@@ -101,6 +102,10 @@ python early hide:
                 if_changed = True
                 continue
 
+            if l.keyword('volume'):
+                volume = l.simple_expression()
+                continue
+
             renpy.error('could not parse statement.')
 
         return dict(file=file,
@@ -108,7 +113,8 @@ python early hide:
                     fadein=fadein,
                     channel=channel,
                     loop=loop,
-                    if_changed=if_changed)
+                    if_changed=if_changed,
+                    volume=volume)
 
     def execute_play_music(p):
 
@@ -122,7 +128,8 @@ python early hide:
                          fadein=eval(p["fadein"]),
                          channel=channel,
                          loop=p.get("loop", None),
-                         if_changed=p.get("if_changed", False))
+                         if_changed=p.get("if_changed", False),
+                         relative_volume=eval(p.get("volume", "1.0")))
 
     def predict_play_music(p):
         return [ ]
@@ -163,6 +170,8 @@ python early hide:
 
         channel = None
         loop = None
+        volume = "1.0"
+        fadein = "0"
 
         while not l.eol():
 
@@ -170,6 +179,8 @@ python early hide:
                 channel = l.simple_expression()
                 if channel is None:
                     renpy.error('expected simple expression')
+
+                continue
 
             if l.keyword('loop'):
                 loop = True
@@ -179,9 +190,20 @@ python early hide:
                 loop = False
                 continue
 
+            if l.keyword('volume'):
+                volume = l.simple_expression()
+                continue
+
+            if l.keyword('fadein'):
+                fadein = l.simple_expression()
+                if fadein is None:
+                    renpy.error('expected simple expression')
+
+                continue
+
             renpy.error('expected end of line')
 
-        return dict(file=file, channel=channel, loop=loop)
+        return dict(file=file, channel=channel, loop=loop, volume=volume, fadein=fadein)
 
     def execute_queue_music(p):
         if p["channel"] is not None:
@@ -192,7 +214,10 @@ python early hide:
         renpy.music.queue(
             _audio_eval(p["file"]),
             channel=channel,
-            loop=p.get("loop", None))
+            loop=p.get("loop", None),
+            relative_volume=eval(p.get("volume", "1.0")),
+            fadein=eval(p.get("fadein", "0")),
+            )
 
 
     renpy.register_statement('queue music',
@@ -269,7 +294,8 @@ python early hide:
                          fadeout=fadeout,
                          fadein=eval(p["fadein"]),
                          loop=loop,
-                         channel=channel)
+                         channel=channel,
+                         relative_volume=eval(p.get("volume", "1.0")))
 
     def lint_play_sound(p, lint_play_music=lint_play_music):
         return lint_play_music(p, channel="sound")

@@ -32,7 +32,7 @@ from renpy.audio.audio import register_channel, alias_channel
 register_channel; alias_channel
 
 
-def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=False, fadein=0, tight=None, if_changed=False):
+def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=False, fadein=0, tight=None, if_changed=False, relative_volume=1.0):
     """
     :doc: audio
 
@@ -117,7 +117,7 @@ def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=Fals
                 enqueue = True
 
             if enqueue:
-                c.enqueue(filenames, loop=loop, synchro_start=synchro_start, fadein=fadein, tight=tight, loop_only=loop_only)
+                c.enqueue(filenames, loop=loop, synchro_start=synchro_start, fadein=fadein, tight=tight, loop_only=loop_only, relative_volume=relative_volume)
 
             t = get_serial()
             ctx.last_changed = t
@@ -137,7 +137,7 @@ def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=Fals
                 raise
 
 
-def queue(filenames, channel="music", loop=None, clear_queue=True, fadein=0, tight=None):
+def queue(filenames, channel="music", loop=None, clear_queue=True, fadein=0, tight=None, relative_volume=1.0):
     """
     :doc: audio
 
@@ -205,7 +205,7 @@ def queue(filenames, channel="music", loop=None, clear_queue=True, fadein=0, tig
                 enqueue = True
 
             if enqueue:
-                c.enqueue(filenames, loop=loop, fadein=fadein, tight=tight)
+                c.enqueue(filenames, loop=loop, fadein=fadein, tight=tight, relative_volume=relative_volume)
 
             t = get_serial()
             ctx.last_changed = t
