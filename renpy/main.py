@@ -26,6 +26,7 @@ import renpy.sl2
 import renpy.test
 
 import renpy.game as game
+import renpy_rata;
 
 import os
 import sys
@@ -301,6 +302,7 @@ def main():
 
     # Init the config after load.
     renpy.config.init()
+    renpy_rata.post_config_init()
 
     # Set up variants.
     choose_variants()
