@@ -764,7 +764,7 @@ class Composite(ImageBase):
         else:
             size = cache.get(self.images[0]).get_size()
 
-        rv = renpy.display.pgrender.surface(size, True)
+        rv = renpy.display.pgrender.surface(size, True, True)
 
         for pos, im in zip(self.positions, self.images):
             rv.blit(cache.get(im), pos)
