@@ -408,6 +408,14 @@ class Channel(object):
             if depth == 0:
                 self.wait_stop = False
                 self.playing = False
+            
+            # hack for nutty game
+            if 'RENPY_DO_NOT_ENQUEUE_LOOPING_MOVIES' in os.environ:
+               if self.movie and depth >= 1:
+                  break
+               else:
+                  pass
+
 
             # Need to check this, so we don't do pointless work.
             if not self.queue:
