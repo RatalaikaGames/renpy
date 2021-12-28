@@ -1226,6 +1226,7 @@ int transform32_std(PyObject *pysrc, PyObject *pydst,
     int srcpitch, dstpitch;
     int srcw, srch;
     int dstw, dsth;
+    unsigned int pal, pbl, pcl, pdl;
 
     // The x and y source pixel coordinates, times 65536. And their
     // delta-per-dest-x-pixel.
@@ -1356,11 +1357,24 @@ int transform32_std(PyObject *pysrc, PyObject *pydst,
             unsigned int yfrac = (syi >> 8) & 0xff; // ((short) sy) & 0xff;
             unsigned int xfrac = (sxi >> 8) & 0xff; // ((short) sx) & 0xff;
 
-            unsigned int pal = *(unsigned int *) sp;
-            unsigned int pbl = *(unsigned int *) (sp + 4);
+            pal = *(unsigned int *) sp;
+            if(px<srcw-1)
+                pbl = *(unsigned int *) (sp + 4);
+            else pbl = 0;
+
             sp += srcpitch;
-            unsigned int pcl = *(unsigned int *) sp;
-            unsigned int pdl = *(unsigned int *) (sp + 4);
+
+            if(py<srch-1)
+            {
+                pcl = *(unsigned int *) sp;
+                if(px<srcw-1)
+                    pdl = *(unsigned int *) (sp + 4);
+                else pdl = 0;
+            }
+            else
+            {
+                pcl = pdl = 0;
+            }
 
             unsigned int pah = (pal >> 8) & 0xff00ff;
             unsigned int pbh = (pbl >> 8) & 0xff00ff;
