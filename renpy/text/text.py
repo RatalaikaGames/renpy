@@ -1984,9 +1984,6 @@ class Text(renpy.display.core.Displayable):
         return layout.max_time
 
     def render(self, width, height, st, at):
-        
-        traceback.print_stack()
-        print("FOMO", width, height)
 
         if self.style.vertical:
             height, width = width, height
