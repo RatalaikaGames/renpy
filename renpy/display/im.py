@@ -509,7 +509,7 @@ class Cache(object):
                 try:
                     surf = image.load()
                     self.pin_cache[image] = surf
-                    renpy.display.draw.load_texture(surf, False, False)
+                    renpy.display.draw.load_texture(surf)
                 except:
                     self.preload_blacklist.add(image)
 
