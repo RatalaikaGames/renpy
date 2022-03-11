@@ -15,11 +15,6 @@
 #undef GCC_MMX
 #endif
 
-//useless without a switch version, and hard to adapt now that the padding is removed.
-#ifdef RENPY_RATA
-#undef GCC_MMX
-#endif
-
 // Shows how to do this.
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 #endif
