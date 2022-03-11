@@ -329,11 +329,9 @@ def read_video(channel):
     if rv is None:
         return rv
 
-    # MBG - 2 pixels? 4? who knows? why? who knows.
     # Remove padding from the edges of the surface.
-    #w, h = rv.get_size()
-    #return rv.subsurface((4, 4, w-8, h-8))
-    return rv
+    w, h = rv.get_size()
+    return rv.subsurface((4, 4, w-8, h-8))
 
 # No video will be played from this channel.
 NO_VIDEO = 0
