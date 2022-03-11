@@ -162,10 +162,8 @@ def load_image(f, filename):
     except Exception as e:
         raise Exception("Could not load image {!r}: {!r}".format(filename, e))
 
-    # MBG - skip this copying, I accept responsibility for problems
-    #rv = copy_surface_unscaled(surf)
-    #return rv
-    return surf
+    rv = copy_surface_unscaled(surf)
+    return rv
 
 load_image_unscaled = load_image
 
