@@ -23,7 +23,6 @@ from __future__ import print_function
 
 import math
 import renpy.display
-import traceback
 
 from renpy.text.textsupport import TAG, TEXT, PARAGRAPH, DISPLAYABLE
 
@@ -765,8 +764,7 @@ class Layout(object):
         # Figure out the size of the texture. (This is a little over-sized,
         # but it simplifies the code to not have to care about borders on a
         # per-outline basis.)
-        # MBG - added another max(1 to make sure the texture size is never 0
-        sw, sh = size = (max(1,maxx + self.xborder), y + self.yborder)
+        sw, sh = size = (maxx + self.xborder, y + self.yborder)
         self.size = size
 
         self.baseline = find_baseline()
@@ -800,10 +798,6 @@ class Layout(object):
         self.textures = { }
 
         di = DrawInfo()
-
-        if sw == 0:
-            print("ZAGGA", width, height, sw, sh)
-            traceback.print_stack()
 
         for o, color, _xo, _yo in self.outlines:
             key = (o, color)
