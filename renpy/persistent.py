@@ -436,7 +436,7 @@ class _MultiPersistent(object):
     def save(self):
 
         fn = self._filename
-        f = open(fn + ".new", "wb")
+        f = open(fn, "wb")
         dump(self, f)
         f.close()
 
