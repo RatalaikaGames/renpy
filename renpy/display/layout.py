@@ -1191,7 +1191,9 @@ class DynamicDisplayable(renpy.display.core.Displayable):
     :doc: disp_dynamic
 
     A displayable that can change its child based on a Python
-    function, over the course of an interaction.
+    function, over the course of an interaction. It does not
+    take any properties, as its layout is controlled by the
+    properties of the child displayable it returns.
 
     `function`
         A function that is called with the arguments:
@@ -1203,8 +1205,8 @@ class DynamicDisplayable(renpy.display.core.Displayable):
         and should return a (d, redraw) tuple, where:
 
         * `d` is a displayable to show.
-        * `redraw` is the amount of time to wait before calling the
-          function again, or None to not call the function again
+        * `redraw` is the maximum amount of time to wait before calling the
+          function again, or None to not require the function be called again
           before the start of the next interaction.
 
         `function` is called at the start of every interaction.
@@ -1231,9 +1233,13 @@ class DynamicDisplayable(renpy.display.core.Displayable):
     nosave = [ 'child' ]
 
     _duplicatable = True
+    raw_child = None
+    last_st = 0
+    last_at = 0
 
     def after_setstate(self):
         self.child = None
+        self.raw_child = None
 
     def __init__(self, function, *args, **kwargs):
 
@@ -1241,7 +1247,7 @@ class DynamicDisplayable(renpy.display.core.Displayable):
         self.child = None
 
         if isinstance(function, basestring):
-            args = ( function, )
+            args = (function,)
             kwargs = { }
             function = dynamic_displayable_compat
 
@@ -1252,26 +1258,45 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
     def _duplicate(self, args):
         rv = self._copy(args)
-
-        if rv.child is not None and rv.child._duplicateable:
-            rv.child = rv.child._duplicate(args)
+        rv.child = None
+        rv.raw_child = None
 
         return rv
 
     def visit(self):
-        return [ ]
+        self.update(self.last_st, self.last_at)
+
+        if self.child:
+            return [ self.child ]
+        else:
+            return [ ]
 
     def update(self, st, at):
-        child, redraw = self.function(st, at, *self.args, **self.kwargs)
-        child = renpy.easy.displayable(child)
+        self.last_st = st
+        self.last_at = at
 
-        if child._duplicatable:
-            child = child._duplicate(self._args)
-            child._unique()
+        raw_child, redraw = self.function(st, at, *self.args, **self.kwargs)
 
-        child.visit_all(lambda c : c.per_interact())
+        if raw_child != self.raw_child:
 
-        self.child = child
+            print('doing new raw_child')
+
+            self.raw_child = raw_child
+            raw_child = renpy.easy.displayable(raw_child)
+
+            if raw_child._duplicatable:
+                child = raw_child._duplicate(self._args)
+                child._unique()
+            else:
+                child = raw_child
+
+            if isinstance(self.child, renpy.display.transform.Transform) and isinstance(child, renpy.display.transform.Transform):
+                child.take_state(self.child)
+                child.take_execution_state(self.child)
+
+            child.visit_all(lambda c : c.per_interact())
+
+            self.child = child
 
         if redraw is not None:
             renpy.display.render.redraw(self, redraw)
@@ -1282,7 +1307,10 @@ class DynamicDisplayable(renpy.display.core.Displayable):
     def render(self, w, h, st, at):
         self.update(st, at)
 
-        return renpy.display.render.render(self.child, w, h, st, at)
+        cr = renpy.display.render.render(self.child, w, h, st, at)
+        rv = renpy.display.render.Render(cr.width, cr.height)
+        rv.blit(cr, (0, 0))
+        return rv
 
     def predict_one(self):
         try:
@@ -1298,7 +1326,7 @@ class DynamicDisplayable(renpy.display.core.Displayable):
             else:
                 renpy.display.predict.displayable(child)
 
-        except:
+        except Exception:
             pass
 
     def get_placement(self):
