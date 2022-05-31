@@ -1279,8 +1279,6 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
         if raw_child != self.raw_child:
 
-            print('doing new raw_child')
-
             self.raw_child = raw_child
             raw_child = renpy.easy.displayable(raw_child)
 
