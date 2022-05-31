@@ -136,13 +136,13 @@ class Cache(object):
         cache, in pixels.
         """
 
-        rv = sum(i.size() for i in self.cache.values())
+        #rv = sum(i.size() for i in self.cache.values())
+        rv = renpy.display.draw.all_texels_size()
 
-#         print("Total cache size: {:.1f}/{:.1f} MB (Textures {:.1f} MB)".format(
-#             4.0 * rv / 1024 / 1024,
-#             4.0 * self.cache_limit / 1024 / 1024,
-#             1.0 * renpy.exports.get_texture_size()[0] / 1024 / 1024,
-#             ))
+        #print("Total cache size: {:.1f}/{:.1f} MB".format(
+        #    4.0 * rv / 1024 / 1024,
+        #    4.0 * self.cache_limit / 1024 / 1024
+        #    ))
 
         return rv
 
@@ -376,8 +376,10 @@ class Cache(object):
             self.kill(ce)
 
             # If we're in the limit, we're done.
-            if self.get_total_size() <= self.cache_limit:
-                break
+            #if self.get_total_size() <= self.cache_limit:
+            #    break
+            # MBG - dont nuke more than one per frame
+            return False
 
         return True
 
