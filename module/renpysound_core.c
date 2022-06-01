@@ -29,6 +29,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <pygame_sdl2/pygame_sdl2.h>
 
+#ifdef _MSC_VER
+#define alloca _alloca
+#endif
+
 #define MAXVOLUME 16384
 
 #ifdef __EMSCRIPTEN__
