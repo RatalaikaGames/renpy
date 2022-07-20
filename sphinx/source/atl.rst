@@ -150,10 +150,14 @@ The interpolation statement can then contain a number of other clauses. When a
 property and value are present, then the value is the value the property will
 obtain at the end of the statement. The value can be obtained in several ways:
 
-* If the value is followed by one or two knots, then spline motion is used.
+* If the value is followed by one or more knots, then spline motion is used.
   The starting point is the value of the property at the start of the
   interpolation, the end point is the property value, and the knots are used
-  to control the spline.
+  to control the spline. A quadratic curve is used for a single knot, Bezier
+  is used when there are two and Catmull-Rom is used for three or more knots.
+  In the former two cases, the knot or knots are simply control nodes. For
+  Catmull-Rom, the first and last knot are control nodes (often outside the
+  displayed path) and the other knots are points the path passes through.
 
 * If the interpolation statement contains a "clockwise" or
   "counterclockwise" clause, circular motion is used, as described below.
@@ -313,7 +317,7 @@ This can be used to group statements that will repeat.
 
 ::
 
-    label logo base:
+    show logo base:
         alpha 0.0 xalign 0.0 yalign 0.0
         linear 1.0 alpha 1.0
 
@@ -683,7 +687,6 @@ both horizontal and vertical positions.
     The number of pixels the displayable is offset by in the vertical
     direction. Positive values offset toward the bottom.
 
-
 .. transform-property:: xcenter
 
     :type: float
@@ -883,6 +886,56 @@ both horizontal and vertical positions.
     If not None, causes the displayable to be scaled to the given
     size.
 
+    This is affected by the :tpref:`fit` property.
+
+.. transform-property:: xsize
+
+    :type: None or int
+    :default: None
+
+    If not None, causes the displayable to be scaled to the given width.
+
+    This is affected by the :tpref:`fit` property.
+
+.. transform-property:: ysize
+
+    :type: None or int
+    :default: None
+
+    If not None, causes the displayable to be scaled to the given height.
+
+    This is affected by the :tpref:`fit` property.
+
+.. transform-property:: fit
+
+   :type: None or string
+   :default: None
+
+   If not None, causes the displayable to be sized according to the
+   table below. In this context "dimensions" refers to one or more of ``xsize`` and
+   ``ysize`` that are not None.
+
+   .. list-table::
+      :widths: 15 85
+      :header-rows: 1
+
+      * - Value
+        - Description
+      * - ``contain``
+        - As large as possible, without exceeding any dimensions.
+          Maintains aspect ratio.
+      * - ``cover``
+        - As small as possible, while matching or exceeding all
+          dimensions. Maintains aspect ratio.
+      * - None or ``fill``
+        - Stretches/squashes displayable to exactly match dimensions.
+      * - ``scale-down``
+        - As for ``contain``, but will never increase the size of the
+          displayable.
+      * - ``scale-up``
+        - As for ``cover``, but will never decrease the size of the
+          displayable.
+
 .. transform-property:: maxsize
 
     :type: None or (int, int)
@@ -892,6 +945,11 @@ both horizontal and vertical positions.
     within a box of this size, while preserving aspect ratio. (Note that
     this means that one of the dimensions may be smaller than the size
     of this box.)
+
+    .. warning::
+
+        This property is deprecated. Consider using :tpref:`size` in
+        conjuction with :tpref:`fit` and the value ``contain``.
 
 .. transform-property:: subpixel
 
@@ -954,6 +1012,26 @@ both horizontal and vertical positions.
     The number of times to tile the image vertically. (This is ignored when
     ypan is given.)
 
+.. transform-property:: matrixcolor
+
+    :type: None or Matrix or MatrixColor
+    :default: None
+
+    If not None, the value of this property is used to recolor everything
+    that children of this transform draw. See :ref:`matrixcolor` for more
+    information.
+
+.. transform-property:: blur
+
+    :type: None or float
+    :default: None
+
+    This blurs the child of this image by `blur` pixels, up to the border
+    of the displayable. The precise details of the blurring may change
+    between Ren'Py versions, and the blurring may exhibit artifactsm,
+    especially when the image being blurred is changing.
+
+
 These properties are applied in the following order:
 
 #. tile
@@ -963,6 +1041,7 @@ These properties are applied in the following order:
 #. pan
 #. rotate
 #. position properties
+#. matrixcolor
 
 
 Circular Motion

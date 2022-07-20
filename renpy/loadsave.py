@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -21,14 +21,11 @@
 
 # This file contains functions that load and save the game state.
 
-from __future__ import print_function
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from renpy.compat import *
+from future.utils import reraise
 
-from __future__ import absolute_import
-import pickle
-import renpy.six.moves.cPickle as cPickle
-
-from cStringIO import StringIO
-
+import io
 import zipfile
 import re
 import threading
@@ -38,7 +35,9 @@ import os
 import sys
 
 import renpy
-import renpy.six as six
+
+import pickle
+import renpy.compat.pickle as cPickle
 
 from json import dumps as json_dumps
 
@@ -90,7 +89,7 @@ def save_dump(roots, log):
         if isinstance(o, (int, float, type(None), types.ModuleType, type)):
             o_repr = repr(o)
 
-        elif isinstance(o, (str, bytes, six.text_type)):
+        elif isinstance(o, basestring):
             if len(o) <= 80:
                 o_repr = repr(o).encode("utf-8")
             else:
@@ -116,7 +115,7 @@ def save_dump(roots, log):
         if isinstance(o, (int, float, type(None), types.ModuleType, type)):
             size = 1
 
-        elif isinstance(o, (str, six.text_type)):
+        elif isinstance(o, bytes):
             size = len(o) // 40 + 1
 
         elif isinstance(o, (tuple, list)):
@@ -127,7 +126,7 @@ def save_dump(roots, log):
 
         elif isinstance(o, dict):
             size = 2
-            for k, v in six.iteritems(o):
+            for k, v in o.items():
                 size += 2
                 size += visit(v, "{0}[{1!r}]".format(path, k))
 
@@ -156,7 +155,7 @@ def save_dump(roots, log):
 
             state = get(2, { })
             if isinstance(state, dict):
-                for k, v in six.iteritems(state):
+                for k, v in state.items():
                     size += 2
                     size += visit(v, path + "." + k)
             else:
@@ -182,12 +181,10 @@ def save_dump(roots, log):
 
     f, _ = renpy.error.open_error_file("save_dump.txt", "w")
 
-    visit(roots, "roots")
-    visit(log, "log")
-
-    f.close()
-
-
+    with f:
+        visit(roots, "roots")
+        visit(log, "log")
+    
 def find_bad_reduction(roots, log):
     """
     Finds objects that can't be reduced properly.
@@ -213,7 +210,7 @@ def find_bad_reduction(roots, log):
                     return rv
 
         elif isinstance(o, dict):
-            for k, v in six.iteritems(o):
+            for k, v in o.items():
                 rv = visit(v, "{0}[{1!r}]".format(path, k))
                 if rv is not None:
                     return rv
@@ -251,7 +248,7 @@ def find_bad_reduction(roots, log):
 
             state = get(2, { })
             if isinstance(state, dict):
-                for k, v in six.iteritems(state):
+                for k, v in state.items():
                     rv = visit(v, path + "." + k)
                     if rv is not None:
                         return rv
@@ -284,7 +281,6 @@ def find_bad_reduction(roots, log):
             return rv
 
     return visit(log, "renpy.game.log")
-
 
 ################################################################################
 # Saving
@@ -366,7 +362,7 @@ def save(slotname, extra_info='', mutate_flag=False):
     if renpy.config.save_dump:
         save_dump(roots, renpy.game.log)
 
-    logf = StringIO()
+    logf = io.BytesIO()
     try:
         dump((roots, renpy.game.log), logf)
     except:
@@ -374,18 +370,18 @@ def save(slotname, extra_info='', mutate_flag=False):
         t, e, tb = sys.exc_info()
 
         if mutate_flag:
-            six.reraise(t, e, tb)
+            reraise(t, e, tb)
 
         try:
             bad = find_bad_reduction(roots, renpy.game.log)
         except:
-            six.reraise(t, e, tb)
+            reraise(t, e, tb)
 
         if bad is None:
-            six.reraise(t, e, tb)
+            reraise(t, e, tb)
 
-        e.args = ( e.args[0] + ' (perhaps {})'.format(bad), ) + e.args[1:]
-        six.reraise(t, e, tb)
+        e.args = (e.args[0] + ' (perhaps {})'.format(bad),) + e.args[1:]
+        reraise(t, e, tb)
 
     if mutate_flag and renpy.python.mutate_flag:
         raise SaveAbort()
@@ -472,6 +468,9 @@ def autosave():
     if renpy.store.main_menu:
         return
 
+    if not renpy.store._autosave:
+        return
+
     force_autosave(True)
 
 
@@ -541,10 +540,10 @@ def force_autosave(take_screenshot=False, block=False):
     else:
         autosave_thread_function(take_screenshot)
 
-
 ################################################################################
 # Loading and Slot Manipulation
 ################################################################################
+
 
 def scan_saved_game(slotname):
 
@@ -858,7 +857,6 @@ class Cache(object):
         self.get_mtime()
         self.get_json()
         self.get_screenshot()
-
 
 
 # A map from slotname to cache object. This is used to cache savegame scan

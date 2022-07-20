@@ -54,6 +54,7 @@ Text, Displayables, Transforms, and Transitions
    transforms
    transitions
    atl
+   matrixcolor
    layeredimage
 
 Customizing Ren'Py
@@ -97,6 +98,9 @@ Other Functionality
    achievement
    history
    multiple
+   splashscreen_presplash
+   matrixcolor
+   live2d
 
 Python and Ren'Py
 -----------------
@@ -117,6 +121,8 @@ Python and Ren'Py
    character_callbacks
    file_python
    color_class
+   matrix
+   model
    other
 
 Building, Updating, and Other Platforms

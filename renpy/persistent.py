@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -19,7 +19,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from __future__ import print_function, absolute_import
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from renpy.compat import *
 
 import os
 import copy
@@ -27,7 +28,6 @@ import time
 import zlib
 
 import renpy
-import renpy.six as six
 
 from renpy.loadsave import dump, dumps, loads
 
@@ -233,7 +233,7 @@ def init():
     # Create the backup of the persistent data.
     v = vars(persistent)
 
-    for k, v in six.iteritems(vars(persistent)):
+    for k, v in vars(persistent).items():
         backup[k] = safe_deepcopy(v)
 
     return persistent
@@ -337,7 +337,7 @@ def merge(other):
 
 
 # The mtime of the most recently processed savefile.
-persistent_mtime = None
+persistent_mtime = 0
 
 
 def check_update():
@@ -370,7 +370,7 @@ def update(force_save=False):
     # A list of (mtime, other) pairs, where other is a persistent file
     # we might want to merge in.
     pairs = renpy.loadsave.location.load_persistent()
-    pairs.sort()
+    pairs.sort(key=lambda a : a[0])
 
     # Deals with the case where we don't have any persistent data for
     # some reason.
@@ -447,11 +447,11 @@ def MultiPersistent(name):
     if not renpy.game.context().init_phase:
         raise Exception("MultiPersistent objects must be created during the init phase.")
 
-    if renpy.android:
-        files = [ os.path.join(os.environ['ANDROID_OLD_PUBLIC'], '../RenPy/Persistent') ]
-
-    elif renpy.ios:
-        raise Exception("MultiPersistent is not supported on iOS.")
+    if renpy.android or renpy.ios:
+        # Due to the security policy of mobile devices, we store MultiPersistent
+        # in the same place as common persistent.
+        # This is better than not working at all.
+        files = [ renpy.config.savedir ]
 
     elif renpy.windows:
         files = [ os.path.expanduser("~/RenPy/Persistent") ]

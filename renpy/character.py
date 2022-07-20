@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -21,7 +21,8 @@
 
 # The Character object (and friends).
 
-from __future__ import print_function, absolute_import
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from renpy.compat import *
 
 import renpy.display
 
@@ -31,7 +32,7 @@ import collections
 import renpy.six as six
 
 # This matches the dialogue-relevant text tags.
-TAG_RE = re.compile(r'(\{\{)|(\{(p|w|nw|fast)(?:\=([^}]*))?\})', re.S)
+TAG_RE = re.compile(r'(\{\{)|(\{(p|w|nw|fast|done)(?:\=([^}]*))?\})', re.S)
 
 less_pauses = ("RENPY_LESS_PAUSES" in os.environ)
 
@@ -58,6 +59,9 @@ class DialogueTextTags(object):
 
         # True if we've encountered the no-wait tag.
         self.no_wait = False
+
+        # Does this statement have a done tag?
+        self.has_done = False
 
         i = iter(TAG_RE.split(s))
 
@@ -92,6 +96,10 @@ class DialogueTextTags(object):
                     self.pause_end = [ ]
                     self.pause_delay = [ ]
                     self.no_wait = False
+
+                elif tag == "done":
+                    self.has_done = True
+                    break
 
                 self.text += full_tag
 
@@ -163,7 +171,7 @@ def compute_widget_properties(who_args, what_args, window_args, properties, vari
 
         d = d.copy()
 
-        if isinstance(style, six.string_types):
+        if isinstance(style, basestring):
 
             if multiple is not None:
                 style = "block{}_multiple{}_{}".format(multiple[0], multiple[1], style)
@@ -252,7 +260,7 @@ def show_display_say(who, what, who_args={}, what_args={}, window_args={},
 
     def merge_style(style, properties):
 
-        if isinstance(style, six.string_types):
+        if isinstance(style, basestring):
             style = getattr(renpy.store.style, style)
 
         if variant is not None:
@@ -344,7 +352,7 @@ class SlowDone(object):
     delay = None
     ctc_kwargs = { }
 
-    def __init__(self, ctc, ctc_position, callback, interact, type, cb_args, delay, ctc_kwargs):  # @ReservedAssignment
+    def __init__(self, ctc, ctc_position, callback, interact, type, cb_args, delay, ctc_kwargs): # @ReservedAssignment
         self.ctc = ctc
         self.ctc_position = ctc_position
         self.callback = callback
@@ -379,7 +387,6 @@ class SlowDone(object):
         for c in self.callback:
             c("slow_done", interact=self.interact, type=self.type, **self.cb_args)
 
-
 # This function takes care of repeatably showing the screen as part of
 # an interaction.
 
@@ -398,12 +405,13 @@ def display_say(
         cb_args,
         with_none,
         callback,
-        type,  # @ReservedAssignment
+        type, # @ReservedAssignment
         checkpoint=True,
         ctc_timedpause=None,
         ctc_force=False,
         advance=True,
-        multiple=None):
+        multiple=None,
+        dtt=None):
 
     # Final is true if this statement should perform an interaction.
 
@@ -474,7 +482,8 @@ def display_say(
     if not interact or renpy.game.preferences.self_voicing:
         all_at_once = True
 
-    dtt = DialogueTextTags(what)
+    if dtt is None:
+        dtt = DialogueTextTags(what)
 
     if all_at_once:
         pause_start = [ dtt.pause_start[0] ]
@@ -552,7 +561,7 @@ def display_say(
                 if isinstance(what_text, tuple):
                     what_text = renpy.display.screen.get_widget(what_text[0], what_text[1], what_text[2])
 
-                if not isinstance(what_text, renpy.text.text.Text):  # @UndefinedVariable
+                if not isinstance(what_text, renpy.text.text.Text): # @UndefinedVariable
                     raise Exception("The say screen (or show_function) must return a Text object.")
 
                 if what_ctc:
@@ -653,7 +662,6 @@ class HistoryEntry(renpy.object.Object):
 
 # This is used to flag values that haven't been set by the user.
 NotSet = renpy.object.Sentinel("NotSet")
-
 
 # The number of multiple characters we've seen during the current
 # interaction.
@@ -875,7 +883,7 @@ class ADVCharacter(object):
         else:
             attrs = tuple(attrs)
 
-        tagged_attrs = ( self.image_tag,) + attrs
+        tagged_attrs = (self.image_tag,) + attrs
         images = renpy.game.context().images
 
         layer = renpy.config.tag_layer.get(self.image_tag, "master")
@@ -891,7 +899,7 @@ class ADVCharacter(object):
             if images.showing(layer, new_image, exact=True):
                 return
 
-            show_image = (self.image_tag,) + attrs + tuple(wanted) + tuple( "-" + i for i in remove)
+            show_image = (self.image_tag,) + attrs + tuple(wanted) + tuple("-" + i for i in remove)
 
             if predict:
                 images.predict_show(layer, show_image)
@@ -1024,10 +1032,21 @@ class ADVCharacter(object):
         return renpy.substitutions.substitute(who)[0]
 
     def __str__(self):
-        return six.text_type(self).encode("utf-8")
+
+        who = self.name
+
+        if self.dynamic:
+            who = renpy.python.py_eval(who)
+
+        rv = renpy.substitutions.substitute(who)[0]
+
+        if PY2:
+            rv = rv.encode("utf-8")
+
+        return rv
 
     def __format__(self, spec):
-        return format(six.text_type(self), spec)
+        return format(str(self), spec)
 
     def __repr__(self):
         return "<Character: {!r}>".format(self.name)
@@ -1051,7 +1070,7 @@ class ADVCharacter(object):
         if not (self.condition is None or renpy.python.py_eval(self.condition)):
             return True
 
-        if not isinstance(what, six.string_types):
+        if not isinstance(what, basestring):
             raise Exception("Character expects its what argument to be a string, got %r." % (what,))
 
         # Figure out multiple and final. Multiple is None if this is not a multiple
@@ -1120,13 +1139,13 @@ class ADVCharacter(object):
 
             if who is not None:
                 if renpy.config.new_substitutions:
-                    who_pattern = sub(self.who_prefix + "[[who]" + self.who_suffix)
+                    who_pattern = sub(sub(self.who_prefix) + "[[who]" + sub(self.who_suffix))
                     who = who_pattern.replace("[who]", sub(who))
                 else:
                     who = self.who_prefix + who + self.who_suffix
 
             if renpy.config.new_substitutions:
-                what_pattern = sub(self.what_prefix + "[[what]" + self.what_suffix)
+                what_pattern = sub(sub(self.what_prefix) + "[[what]" + sub(self.what_suffix))
                 what = what_pattern.replace("[what]", sub(what, translate=True))
             else:
                 what = self.what_prefix + what + self.what_suffix
@@ -1139,11 +1158,13 @@ class ADVCharacter(object):
             else:
                 self.do_add(who, what)
 
+            dtt = DialogueTextTags(what)
+
             # Now, display the damned thing.
-            self.do_display(who, what, cb_args=self.cb_args, **display_args)
+            self.do_display(who, what, cb_args=self.cb_args, dtt=dtt, **display_args)
 
             # Indicate that we're done.
-            if _call_done:
+            if _call_done and not dtt.has_done:
 
                 if multiple is not None:
                     self.do_done(who, what, multiple=multiple)
@@ -1151,7 +1172,7 @@ class ADVCharacter(object):
                     self.do_done(who, what)
 
                 # Finally, log this line of dialogue.
-                if who and isinstance(who, (str, six.text_type)):
+                if who and isinstance(who, basestring):
                     renpy.exports.log(who)
 
                 renpy.exports.log(what)
@@ -1177,7 +1198,7 @@ class ADVCharacter(object):
         old_side_image_attributes = renpy.store._side_image_attributes
 
         if self.image_tag:
-            attrs = ( self.image_tag, ) + renpy.game.context().images.get_attributes("master", self.image_tag)
+            attrs = (self.image_tag,) + renpy.game.context().images.get_attributes("master", self.image_tag)
         else:
             attrs = None
 
@@ -1214,10 +1235,10 @@ class ADVCharacter(object):
         if history_length is None:
             return
 
-        if not renpy.store._history:  # @UndefinedVariable
+        if not renpy.store._history: # @UndefinedVariable
             return
 
-        history = renpy.store._history_list  # @UndefinedVariable
+        history = renpy.store._history_list # @UndefinedVariable
 
         h = HistoryEntry()
 
@@ -1262,10 +1283,10 @@ class ADVCharacter(object):
         if history_length is None:
             return
 
-        if not renpy.store._history:  # @UndefinedVariable
+        if not renpy.store._history: # @UndefinedVariable
             return
 
-        renpy.store._history_list.pop()  # @UndefinedVariable
+        renpy.store._history_list.pop() # @UndefinedVariable
 
 
 def Character(name=NotSet, kind=None, **properties):

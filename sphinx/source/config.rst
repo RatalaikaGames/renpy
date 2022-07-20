@@ -226,6 +226,10 @@ Occasionally Used
     If not None, a function that is called with no arguments after a
     replay completes.
 
+.. var:: config.allow_underfull_grids = False
+
+    If True, Ren'Py will not require grids to be full in order to display.
+
 .. var:: config.auto_channels = { "audio" : ( "sfx", "", ""  ) }
 
     This is used to define automatic audio channels. It's a map the
@@ -1072,14 +1076,6 @@ Rarely or Internally Used
     the selected direction of motion, when moving focus with the
     keyboard.
 
-.. var:: config.gl_enable = True
-
-    Set this to False to disable OpenGL acceleration. OpenGL acceleration
-    will automatically be disabled if it's determined that the system
-    cannot support it, so it usually isn't necessary to set this.
-
-    OpenGL can also be disabled by holding down shift at startup.
-
 .. var:: config.gl_resize = True
 
     Determines if the user is allowed to resize an OpenGL-drawn window.
@@ -1246,9 +1242,10 @@ Rarely or Internally Used
 .. var:: config.missing_label_callback = None
 
     If not None, this function is called when Ren'Py attempts to access
-    a label that does not exist in the game. It should return the name of
-    a label to use as a replacement for the missing label, or None to cause
-    Ren'Py to raise an exception.
+    a label that does not exist in the game. The callback should take a
+    single parameter, the name of the missing label. It should return the
+    name of a label to use as a replacement for the missing label, or None
+    to cause Ren'Py to raise an exception.
 
 .. var:: config.mouse_hide_time = 30
 
@@ -1310,7 +1307,7 @@ Rarely or Internally Used
     The name of the audio channel used by :func:`renpy.play`,
     :propref:`hover_sound`, and :propref:`activate_sound`.
 
-.. var:: config.predict_statements = 10
+.. var:: config.predict_statements = 32
 
     This is the number of statements, including the current one, to
     consider when doing predictive image loading. A breadth-first

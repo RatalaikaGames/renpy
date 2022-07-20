@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -24,7 +24,8 @@
 #
 # The current save location is stored in the location variable in loadsave.py.
 
-from __future__ import print_function
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from renpy.compat import *
 
 import os
 import zipfile
@@ -102,7 +103,7 @@ class FileLocation(object):
 
             self.mtimes = new_mtimes
 
-            for slotname, mtime in new_mtimes.iteritems():
+            for slotname, mtime in new_mtimes.items():
                 if old_mtimes.get(slotname, None) != mtime:
                     clear_slot(slotname)
 
@@ -160,29 +161,23 @@ class FileLocation(object):
 
             try:
                 filename = self.filename(slotname)
-                zf = zipfile.ZipFile(filename, "r")
+                with zipfile.ZipFile(filename, "r") as zf:
+                    try:
+                        data = zf.read("json")
+                        data = json.loads(data)
+                        return data
+                    except:
+                        pass
+
+                    try:
+                        extra_info = zf.read("extra_info").decode("utf-8")
+                        return { "_save_name" : extra_info }
+                    except:
+                        pass
+
+                    return { }
             except:
                 return None
-
-            try:
-
-                try:
-                    data = zf.read("json")
-                    data = json.loads(data)
-                    return data
-                except:
-                    pass
-
-                try:
-                    extra_info = zf.read("extra_info").decode("utf-8")
-                    return { "_save_name" : extra_info }
-                except:
-                    pass
-
-                return { }
-
-            finally:
-                zf.close()
 
     def screenshot(self, slotname):
         """
@@ -200,18 +195,15 @@ class FileLocation(object):
 
             try:
                 filename = self.filename(slotname)
-                zf = zipfile.ZipFile(filename, "r")
+                with zipfile.ZipFile(filename, "r") as zf:
+                    try:
+                        png = False
+                        zf.getinfo('screenshot.tga')
+                    except:
+                        png = True
+                        zf.getinfo('screenshot.png')
             except:
                 return None
-
-            try:
-                png = False
-                zf.getinfo('screenshot.tga')
-            except:
-                png = True
-                zf.getinfo('screenshot.png')
-
-            zf.close()
 
             if png:
                 screenshot = renpy.display.im.ZipFileImage(filename, "screenshot.png", mtime)
@@ -230,9 +222,8 @@ class FileLocation(object):
 
             filename = self.filename(slotname)
 
-            zf = zipfile.ZipFile(filename, "r")
-            rv = zf.read("log")
-            zf.close()
+            with zipfile.ZipFile(filename, "r") as zf:
+                rv = zf.read("log")
 
             return rv
 
@@ -316,6 +307,175 @@ class FileLocation(object):
             return False
 
         return self.directory == other.directory
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
+class MultiLocation(object):
+    """
+    A location that saves in multiple places. When loading or otherwise
+    accessing a file, it loads the newest file found for the given slotname.
+    """
+
+    def __init__(self):
+        self.locations = [ ]
+
+    def active_locations(self):
+        return [ i for i in self.locations if i.active ]
+
+    def newest(self, slotname):
+        """
+        Returns the location containing the slotname with the newest
+        mtime. Returns None of the slot is empty.
+        """
+
+        mtime = -1
+        location = None
+
+        for l in self.locations:
+            if not l.active:
+                continue
+
+            slot_mtime = l.mtime(slotname)
+
+            if slot_mtime is not None:
+                if slot_mtime > mtime:
+                    mtime = slot_mtime
+                    location = l
+
+        return location
+
+    def add(self, location):
+        """
+        Adds a new location.
+        """
+
+        if location in self.locations:
+            return
+
+        self.locations.append(location)
+
+    def save(self, slotname, record):
+
+        saved = False
+
+        for l in self.active_locations():
+            l.save(slotname, record)
+            saved = True
+
+        if not saved:
+            raise Exception("Not saved - no valid save locations.")
+
+    def list(self):
+        rv = set()
+
+        for l in self.active_locations():
+            rv.update(l.list())
+
+        return list(rv)
+
+    def mtime(self, slotname):
+        l = self.newest(slotname)
+
+        if l is None:
+            return None
+
+        return l.mtime(slotname)
+
+    def json(self, slotname):
+        l = self.newest(slotname)
+
+        if l is None:
+            return None
+
+        return l.json(slotname)
+
+    def screenshot(self, slotname):
+        l = self.newest(slotname)
+
+        if l is None:
+            return None
+
+        return l.screenshot(slotname)
+
+    def load(self, slotname):
+        l = self.newest(slotname)
+        return l.load(slotname)
+
+    def unlink(self, slotname):
+        for l in self.active_locations():
+            l.unlink(slotname)
+
+    def rename(self, old, new):
+        for l in self.active_locations():
+            l.rename(old, new)
+
+    def copy(self, old, new):
+        for l in self.active_locations():
+            l.copy(old, new)
+
+    def load_persistent(self):
+        rv = [ ]
+
+        for l in self.active_locations():
+            rv.extend(l.load_persistent())
+
+        return rv
+
+    def save_persistent(self, data):
+
+        for l in self.active_locations():
+            l.save_persistent(data)
+
+    def unlink_persistent(self):
+
+        for l in self.active_locations():
+            l.unlink_persistent()
+
+    def scan(self):
+        # This should scan everything, as a scan can help decide if a
+        # location should become active or inactive.
+
+        for l in self.locations:
+            l.scan()
+
+    def __eq__(self, other):
+        if not isinstance(other, MultiLocation):
+            return False
+
+        return self.locations == other.locations
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
+
+# The thread that scans locations every few seconds.
+scan_thread = None
+
+# True if we should quit the scan thread.
+quit_scan_thread = False
+
+# The condition we wait on.
+scan_thread_condition = threading.Condition()
+
+
+def run_scan_thread():
+    global quit_scan_thread
+
+    quit_scan_thread = False
+
+    while not quit_scan_thread:
+
+        try:
+            renpy.loadsave.location.scan()  # @UndefinedVariable
+        except:
+            pass
+
+        with scan_thread_condition:
+            scan_thread_condition.wait(5.0)
+
 
 def quit():  # @ReservedAssignment
     pass

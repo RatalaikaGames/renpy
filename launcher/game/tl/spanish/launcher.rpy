@@ -310,7 +310,7 @@
 
     # distribute_gui.rpy:194
     old "Add from clauses to calls, once"
-    new "Añadir desde cláusulas a las llamadas, una vez"
+    new "Añadir cláusulas 'from' a 'calls', una vez"
 
     # distribute_gui.rpy:195
     old "Refresh"
@@ -334,7 +334,7 @@
 
     # distribute_gui.rpy:241
     old "Add from clauses to calls"
-    new "Añadir cláusulas 'from' a las llamadas"
+    new "Añadir cláusulas 'from' a 'calls'"
 
     # distribute_gui.rpy:242
     old "Force Recompile"
@@ -1523,8 +1523,8 @@ translate spanish strings:
     new "Puedo crear una clave de firma de la aplicación para usted. Firmar una aplicación con esta clave le permite ubicarla en Android Market y otras tiendas de aplicaciones. \ N \ n¿Desea crear una clave?"
 
     # game/androidstrings.rpy:67
-    old "I will create the key in the android.keystore file.\n\nYou need to back this file up. If you lose it, you will not be able to upgrade your application.\n\n\\You also need to keep the key safe. If evil people get this file, they could make fake versions of your application, and potentially steal your users' data.\n\nWill you make a backup of android.keystore, and keep it in a safe place?"
-    new "Crearé la clave en el archivo android.keystore.\n\nTienes que hacer una copia de seguridad de este archivo. Si lo pierdes, no podrás actualizar tu aplicación.\n\n\\También debes mantener la clave segura. Si la gente malvada obtiene este archivo, podrían crear versiones falsas de su aplicación y, posiblemente, robar los datos de sus usuarios.\n\n¿Harás una copia de seguridad de android.keystore y la mantendrás en un lugar seguro?"
+    old "I will create the key in the android.keystore file.\n\nYou need to back this file up. If you lose it, you will not be able to upgrade your application.\n\nYou also need to keep the key safe. If evil people get this file, they could make fake versions of your application, and potentially steal your users' data.\n\nWill you make a backup of android.keystore, and keep it in a safe place?"
+    new "Crearé la clave en el archivo android.keystore.\n\nTienes que hacer una copia de seguridad de este archivo. Si lo pierdes, no podrás actualizar tu aplicación.\n\nTambién debes mantener la clave segura. Si la gente malvada obtiene este archivo, podrían crear versiones falsas de su aplicación y, posiblemente, robar los datos de sus usuarios.\n\n¿Harás una copia de seguridad de android.keystore y la mantendrás en un lugar seguro?"
 
     # game/androidstrings.rpy:68
     old "Please enter your name or the name of your organization."
@@ -1650,3 +1650,54 @@ translate spanish strings:
     old "Open build directory"
     new "Abrir directorio de construcción"
 
+    # game/front_page.rpy:198
+    old "audio"
+    new "audio"
+
+    # game/androidstrings.rpy:47
+    old "Do you want to automatically update the Java source code?"
+    new "¿Quiere actualizar automáticamente el código fuente de Java?"
+
+    # game/choose_directory.rpy:93
+    old "Ren'Py was unable to run python with tkinter to choose the directory. Please install the python3-tk or tkinter package."
+    new "Ren'Py no pudo ejecutar Python con tkinter para elegir el directorio. Instale el paquete python3-tk o tkinter."
+
+    # game/install.rpy:33
+    old "Could not install [name!t], as a file matching [zipglob] was not found in the Ren'Py SDK directory."
+    new "No se pudo instalar [name!t], ya que no se encontró un archivo que coincida con [zipglob] en el directorio del SDK de Ren'Py."
+
+    # game/install.rpy:76
+    old "Successfully installed [name!t]."
+    new "[name!t] se instaló correctamente."
+
+    # game/install.rpy:104
+    old "Install Libraries"
+    new "Instalar bibliotecas"
+
+    # game/install.rpy:119
+    old "This screen allows you to install libraries that can't be distributed with Ren'Py. Some of these libraries may require you to agree to a third-party license before being used or distributed."
+    new "Esta pantalla le permite instalar bibliotecas que no se pueden distribuir con Ren'Py. Algunas de estas bibliotecas pueden requerir que acepte una licencia de terceros antes de ser utilizadas o distribuidas."
+
+    # game/install.rpy:134
+    old "The {a=https://www.live2d.com/en/download/cubism-sdk/download-native/}Cubism SDK for Native{/a} adds support for displaying Live2D models. Place CubismSdkForNative-4-{i}version{/i}.zip in the Ren'Py SDK directory, and then click Install. Distributing a game with Live2D requires you to accept a license from Live2D, Inc."
+    new "{a=https://www.live2d.com/en/download/cubism-sdk/download-native/}Cubism SDK for Native{/a} agrega soporte para mostrar modelos Live2D. Coloque CubismSdkForNative-4-{i}version{/i}.zip en el directorio Ren'Py SDK y luego haga clic en Instalar. La distribución de un juego con Live2D requiere que acepte una licencia de Live2D, Inc."
+
+    # game/install.rpy:138
+    old "Open Ren'Py SDK Directory"
+    new "Abrir el directorio del SDK de Ren'Py"
+
+    # game/preferences.rpy:138
+    old "Install libraries"
+    new "Instalar bibliotecas"
+
+    # game/preferences.rpy:140
+    old "Reset window size"
+    new "Restablecer el tamaño de la ventana"
+
+    # game/web.rpy:242
+    old "Preparing progressive download"
+    new "Preparando descarga progresiva"
+
+    # game/web.rpy:341
+    old "Images and musics can be downloaded while playing. A 'progressive_download.txt' file will be created so you can configure this behavior."
+    new "Las imágenes y las músicas se pueden descargar mientras juega. Se creará un archivo 'progress_download.txt' para que pueda configurar este comportamiento."

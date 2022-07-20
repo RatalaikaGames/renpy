@@ -111,6 +111,13 @@ The ``!t`` flag will translate the interpolated string::
 
     g "I'm [mood!t] to see you."
 
+The ``!i`` flag will make additional interpolate for the interpolated string::
+
+    define earned_points_info = _("[points]{image=points.png} earned points")
+    g "I'm happy to see you you have [earned_points_info!ti]."
+
+This should be used to substitute the text that has a substitution inside.
+It's often useful in screen language, see :ref:`Const Text <const-text>`.
 
 The ``!u`` flag forces the text to uppercase and the ``!l`` flag forces the
 text to lowercase. The ``!c`` flag acts only on the first character,
@@ -169,6 +176,11 @@ Tags that apply to all text are:
     * When the argument begins with ``call_in_new_context:``, the rest of the argument
       is a label to call in a new context (using :func:`renpy.call_in_new_context`).
 
+    * When the argument begins with ``show:``, the rest of the argument is a screen to show.
+
+    * When the argument begins with ``showmenu:``, the rest of the argument is a game menu
+      screen to show.
+
     * Otherwise, the argument is a URL that is opened by the system web browser.
 
     If there is no protocol section in the argument, :var:`config.hyperlink_protocol`
@@ -208,6 +220,15 @@ Tags that apply to all text are:
         "{alpha=0.1}This text is barely readable!{/alpha}"
         "{alpha=-0.1}This text is 10 percent more transparent than the default.{/alpha}"
         "{alpha=*0.5}This text is half as opaque as the default.{/alpha}"
+
+.. text-tag:: alt
+
+    The alt tag prevents text from being rendered, while still maing the
+    text available for the text-to-speech system. ::
+
+       g "Good to see you! {image=heart.png}{alt}heart{/alt}"
+
+    See also the :var:`alt` character.
 
 .. text-tag:: art
 
@@ -262,7 +283,7 @@ Tags that apply to all text are:
    argument should be either the image filename, or the name of an
    image defined with the image statement. ::
 
-       g "Good to see you! {image=heart.png}"
+       g "Good to see you! {image=heart.png}{alt}heart{/alt}"
 
 .. text-tag:: k
 
@@ -274,6 +295,13 @@ Tags that apply to all text are:
 
        "{k=-.5}Negative{/k} Normal {k=.5}Positive{/k}"
 
+.. text-tag:: noalt
+
+    The noalt tag prevents text from being spoken by the text-to-speech
+    system. This is often used in conjuction with the alt tag, to provide
+    accessible and visual optiopns  ::
+
+       g "Good to see you! {noalt}<3{/noalt}{alt}heart{/alt}"
 
 .. text-tag:: outlinecolor
 
@@ -353,6 +381,20 @@ Dialogue Text Tags
 ------------------
 
 Text tags that only apply to dialogue are:
+
+.. text-tag:: done
+
+    Text after the done tag is not displayed. Why would you want this?
+    It's to allow text to avoid jumping around when :propref:`adjust_spacing`
+    is True.
+
+    When the done tag is present, the line of dialogue is not added to the
+    history buffer. If the nw tag is present, it should be before the done
+    tag.::
+
+        g "Looks like they're{nw}{done} playing with their trebuchet again."
+        show trebuchet
+        g "Looks like they're{fast} playing with their trebuchet again."
 
 .. text-tag:: fast
 
@@ -447,7 +489,7 @@ Non-English Languages
 The default font for Ren'Py contains characters for English and many
 other languages. For size reasons, it doesn't contain the characters
 required to render other languages, including Chinese, Japanese, and
-Korean. In order to support these language, a project must first
+Korean. In order to support these languages, a project must first
 change the fonts it uses.
 
 Ren'Py should then support most world languages without further

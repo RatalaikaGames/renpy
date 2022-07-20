@@ -1,3 +1,15 @@
+# macOS-related files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows-related files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+
 *.rpyc
 *.rpyb
 *.rpymc
@@ -31,8 +43,12 @@ styles.txt
 /*testing*
 /screenshot*
 /renpy.exe
+/renpy-32.exe
+/renpy.sh
 /lib
 /lib.old
+/lib2
+/lib3
 /doc
 /.pydevproject
 /.pydevproject.bak
@@ -84,3 +100,12 @@ tutorial/game/tutorial_director.rpy
 launcher/theme
 module/emscripten-static/
 web/
+
+cubism
+glexperiment
+live2d
+rapt2
+rapt3
+renios2
+renios3
+notarized

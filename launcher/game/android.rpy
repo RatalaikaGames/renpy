@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -162,7 +162,7 @@ init python:
 
         filename = os.path.join(p.path, ".android.json")
 
-        with open(filename, "r") as f:
+        with open(filename, "rb") as f:
             android_json = json.load(f)
 
         old_android_json = dict(android_json)
@@ -183,7 +183,7 @@ init python:
 
         if android_json != old_android_json:
 
-            with open(filename, "w") as f:
+            with open(filename, "wb") as f:
                 json.dump(android_json, f)
 
 

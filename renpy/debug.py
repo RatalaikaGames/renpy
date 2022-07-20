@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -22,17 +22,21 @@
 # This file contains debugging code that isn't enabled in normal Ren'Py
 # operation.
 
-from __future__ import print_function, absolute_import
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from renpy.compat import *
 
 import renpy
 import threading
 import datetime
 import traceback
 import os
+import builtins
+import io
 
-import renpy.six.moves.builtins as builtins
-
-real_open = builtins.open  # @UndefinedVariable
+if PY2:
+    real_open = io.open
+else:
+    real_open = builtins.open
 
 report = True
 

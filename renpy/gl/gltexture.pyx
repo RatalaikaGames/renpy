@@ -1,6 +1,6 @@
 #@PydevCodeAnalysisIgnore
 #cython: profile=False
-# Copyright 2004-2019 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,16 +23,14 @@
 
 from __future__ import print_function
 
-DEF ANGLE = False
-
-from gl cimport *
+from renpy.uguu.gl cimport *
 from gldraw cimport *
 
 from sdl2 cimport *
 from pygame_sdl2 cimport *
 import_pygame_sdl2()
 
-from cpython.string cimport PyString_FromStringAndSize
+from cpython.bytes cimport PyBytes_FromStringAndSize
 from libc.stdlib cimport calloc, free
 
 import sys
@@ -87,15 +85,9 @@ def use_gl():
     global rtt_internalformat
     global rtt_type
 
-    # Optimize for the case of little-endian systems that use ARGB.
-    if sys.byteorder == 'little':
-        tex_format = GL_BGRA
-        tex_internalformat = GL_RGBA
-        tex_type = GL_UNSIGNED_INT_8_8_8_8_REV
-    else:
-        tex_format = GL_RGBA
-        tex_internalformat = GL_RGBA
-        tex_type = GL_UNSIGNED_BYTE
+    tex_format = GL_RGBA
+    tex_internalformat = GL_RGBA
+    tex_type = GL_UNSIGNED_BYTE
 
     rtt_format = GL_RGBA
     rtt_internalformat = GL_RGBA
@@ -124,7 +116,7 @@ def test_texture_sizes(Environ environ, draw):
 
     # There could be an error queued up from an ANGLE reset. Purge it before we do the
     # texture testing.
-    error = realGlGetError()
+    error = glGetError()
     if error != GL_NO_ERROR:
         renpy.display.log.write("- Ignored error at start of testing: {0:x}".format(error))
 
@@ -164,7 +156,7 @@ def test_texture_sizes(Environ environ, draw):
                     bitmap[i * 4 + 3] = 0xff # a
 
         # Create a texture of the given size.
-        glActiveTextureARB(GL_TEXTURE0)
+        glActiveTexture(GL_TEXTURE0)
         glGenTextures(1, &tex)
         glBindTexture(GL_TEXTURE_2D, tex)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -174,7 +166,7 @@ def test_texture_sizes(Environ environ, draw):
         # Free the bitmap.
         free(bitmap)
 
-        error = realGlGetError()
+        error = glGetError()
         if error != GL_NO_ERROR:
             renpy.display.log.write("- Error loading {0}px bitmap: {1:x}".format(size, error))
             glDeleteTextures(1, &tex)
@@ -214,7 +206,7 @@ def test_texture_sizes(Environ environ, draw):
         # Delete the texture.
         glDeleteTextures(1, &tex)
 
-        error = realGlGetError()
+        error = glGetError()
         if error != GL_NO_ERROR:
             renpy.display.log.write("- Error drawing {0}px texture: {1:x}".format(size, error))
             break
@@ -222,7 +214,7 @@ def test_texture_sizes(Environ environ, draw):
         # Check the pixel color.
         glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel)
 
-        error = realGlGetError()
+        error = glGetError()
         if error != GL_NO_ERROR:
             renpy.display.log.write("- Error reading {0}px texture: {1:x}".format(size, error))
             break
@@ -673,7 +665,7 @@ def compute_subrow(row, offset, width):
     outtile = 0
 
     try:
-        ioff, iwidth, itile = rowi.next()
+        ioff, iwidth, itile = next(rowi)
 
         # Consume the offset.
         while True:
@@ -684,7 +676,7 @@ def compute_subrow(row, offset, width):
 
 
             offset -= iwidth
-            ioff, iwidth, itile = rowi.next()
+            ioff, iwidth, itile = next(rowi)
 
         # Consume the width.
         while True:
@@ -701,7 +693,7 @@ def compute_subrow(row, offset, width):
 
             width -= iwidth
 
-            ioff, iwidth, itile = rowi.next()
+            ioff, iwidth, itile = next(rowi)
 
     except StopIteration:
         pass
@@ -1224,7 +1216,7 @@ def premultiply(
         alpha = False
 
     # Allocate an uninitialized string.
-    rv = PyString_FromStringAndSize(<char *>NULL, w * h * 4)
+    rv = PyBytes_FromStringAndSize(<char *>NULL, w * h * 4)
 
     # Out is where we put the output.
     cdef unsigned char *out = rv
@@ -1487,7 +1479,7 @@ cdef void draw_rectangle(
 
         has_tex0 = 1
 
-        glActiveTextureARB(GL_TEXTURE0)
+        glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, tex0.number)
 
         xadd = tex0.xadd
@@ -1507,7 +1499,7 @@ cdef void draw_rectangle(
 
         has_tex1 = 1
 
-        glActiveTextureARB(GL_TEXTURE1)
+        glActiveTexture(GL_TEXTURE1)
         glBindTexture(GL_TEXTURE_2D, tex1.number)
 
         xadd = tex1.xadd
@@ -1523,26 +1515,25 @@ cdef void draw_rectangle(
     else:
         has_tex1 = 0
 
-    if RENPY_THIRD_TEXTURE:
-        if tex2 is not None:
+    if tex2 is not None:
 
-            has_tex2 = 1
+        has_tex2 = 1
 
-            glActiveTextureARB(GL_TEXTURE2)
-            glBindTexture(GL_TEXTURE_2D, tex2.number)
+        glActiveTexture(GL_TEXTURE2)
+        glBindTexture(GL_TEXTURE_2D, tex2.number)
 
-            xadd = tex2.xadd
-            yadd = tex2.yadd
-            xmul = tex2.xmul
-            ymul = tex2.ymul
+        xadd = tex2.xadd
+        yadd = tex2.yadd
+        xmul = tex2.xmul
+        ymul = tex2.ymul
 
-            t2u0 = xadd + xmul * (tex2x + 0)
-            t2u1 = xadd + xmul * (tex2x + w)
-            t2v0 = yadd + ymul * (tex2y + 0)
-            t2v1 = yadd + ymul * (tex2y + h)
+        t2u0 = xadd + xmul * (tex2x + 0)
+        t2u1 = xadd + xmul * (tex2x + w)
+        t2v0 = yadd + ymul * (tex2y + 0)
+        t2v1 = yadd + ymul * (tex2y + h)
 
-        else:
-            has_tex2 = 0
+    else:
+        has_tex2 = 0
 
 
     # Now, actually draw the textured rectangle.
@@ -1581,21 +1572,20 @@ cdef void draw_rectangle(
     else:
         environ.set_texture(1, NULL)
 
-    if RENPY_THIRD_TEXTURE:
-        if has_tex2:
+    if has_tex2:
 
-            tex2coords[0] = t2u0
-            tex2coords[1] = t2v0
-            tex2coords[2] = t2u1
-            tex2coords[3] = t2v0
-            tex2coords[4] = t2u0
-            tex2coords[5] = t2v1
-            tex2coords[6] = t2u1
-            tex2coords[7] = t2v1
+        tex2coords[0] = t2u0
+        tex2coords[1] = t2v0
+        tex2coords[2] = t2u1
+        tex2coords[3] = t2v0
+        tex2coords[4] = t2u0
+        tex2coords[5] = t2v1
+        tex2coords[6] = t2u1
+        tex2coords[7] = t2v1
 
-            environ.set_texture(2, tex2coords)
-        else:
-            environ.set_texture(2, NULL)
+        environ.set_texture(2, tex2coords)
+    else:
+        environ.set_texture(2, NULL)
 
     vcoords[0] = x0
     vcoords[1] = y0

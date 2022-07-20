@@ -79,7 +79,7 @@ string so computed is used as the name of the label to call. If the
 ``expression`` keyword is not present, the name of the statement to call must be
 explicitly given.
 
-If the optional from clause is present, it has the effect of including a label
+If the optional ``from`` clause is present, it has the effect of including a label
 statement with the given name as the statement immediately following the call
 statement. An explicit label helps to ensure that saved games with return
 stacks can return to the proper place when loaded on a changed script. ::
@@ -139,7 +139,7 @@ The following labels are used by Ren'Py:
 
 ``splashscreen``
     If it exists, this label is called when the game is first run, before
-    showing the main menu.
+    showing the main menu. Please see :ref:`Adding a Splashscreen <adding-a-splashscreen>`.
 
 ``before_main_menu``
     If it exists, this label is called before the main menu. It is used in

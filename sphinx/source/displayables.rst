@@ -38,8 +38,8 @@ string is given, a dynamic image is created. A dynamic image has
 of each interaction (such as say statements and menus). The resulting
 string is processed according to the rules above.
 
-When a string has "[prefix_"] in it, that iso replaced with each of the
-style prefixes associated with the current displayable.
+When a string has "[prefix\_]" in it, that substitution is replaced with
+each of the style prefixes associated with the current displayable.
 
 .. _images:
 
@@ -108,8 +108,8 @@ Image-Like Displayables
 We call these displayables image-like because they take up a
 rectangular area of the screen, and do not react to input.  These
 differ from normal images by varying their size to fill an area
-(Frame, LiveTile, and Solid), or by allowing the user to specify their
-size (LiveComposite, LiveCrop, Null). They are not image manipulators.
+(Frame, Tile, and Solid), or by allowing the user to specify their
+size (Composite, Crop, Null). They are not image manipulators.
 
 Image-like displayables take :ref:`position-style-properties`.
 
@@ -233,6 +233,9 @@ first desaturates the image, and then tints it blue. When the
 intermediate image is not needed, multiplying matrices is far
 more efficient, in both time and image cache space, than using
 two im.MatrixColors.
+
+The im.MatrixColor image manipulator has been replaced by Transforms
+and ATL transforms that specify the matrixcolor property.
 
 .. include:: inc/im_matrixcolor
 
