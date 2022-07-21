@@ -652,14 +652,14 @@ def load_from_apk(name):
         except IOError:
             pass
 
-   
-    # MBG - try opening absolute path...
-    try:
-        return open_file(name, "rb")
-    except:
-        pass
-        
-    # Look for it in archive files.
+if renpy.android:
+    file_open_callbacks.append(load_from_apk)
+
+def load_from_archive(name):
+    """
+    Returns an open python file object of the given type from an archive file.
+    """
+
     for prefix, index in archives:
         if not name in index:
             continue
