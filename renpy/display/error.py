@@ -160,6 +160,9 @@ def report_parse_errors(errors, error_fn):
     the appropriate exception.
     """
 
+    #MBG MODIFICATION (quickly prints parse errors in a simpler form which doesn't require spinning up huge amounts of display apparatus)
+    print('report_parse_errors',errors)
+
     global error_handled
     error_handled = True
 
