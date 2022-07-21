@@ -561,6 +561,7 @@ def main():
         log_clock("Dump and make backups.")
 
         # Initialize image cache.
+        renpy.display.im.cache = renpy.display.im.Cache()
         renpy.display.im.cache.init()
         log_clock("Cleaning cache")
 

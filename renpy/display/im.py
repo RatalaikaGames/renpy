@@ -548,8 +548,9 @@ class Cache(object):
             self.load_log.pop()
 
 
+# MBG - moved this to a later point after the display system starts
 # The cache object.
-cache = Cache()
+#cache = Cache()
 
 
 def free_memory():
