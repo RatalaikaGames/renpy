@@ -902,7 +902,7 @@ class ADVCharacter(object):
             show_image = (self.image_tag,) + attrs + tuple(wanted) + tuple("-" + i for i in remove)
 
             if predict:
-                images.predict_show(layer, show_image)
+                renpy.exports.predict_show(new_image)
             else:
                 renpy.exports.show(show_image)
                 return True
@@ -1017,7 +1017,7 @@ class ADVCharacter(object):
                 renpy.exports.show(image_with_attrs)
                 return True
             else:
-                images.predict_show(None, image_with_attrs)
+                renpy.exports.predict_show(image_with_attrs)
 
         else:
             images.predict_show(None, image_with_attrs, show=False)
@@ -1057,6 +1057,21 @@ class ADVCharacter(object):
             return
 
         self("", interact=False, _call_done=False)
+
+    def has_character_arguments(self, **kwargs):
+        """
+        Returns True if `kwargs` contains any keyword arguments that will
+        cause the creation of a new Character object and the proxying of a
+        call to that Character object, and False otherwise.
+        """
+
+        safe_kwargs_keys = { "interact", "_mode", "_call_done", "multiple", "_with_none" }
+
+        for i in kwargs:
+            if i not in safe_kwargs_keys:
+                return False
+
+        return True
 
     def __call__(self, what, interact=True, _call_done=True, multiple=None, **kwargs):
 
