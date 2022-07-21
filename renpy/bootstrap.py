@@ -361,14 +361,18 @@ You may be using a system install of python. Please run {0}.sh,
         if "RENPY_SHUTDOWN_TRACE" in os.environ:
             enable_trace(int(os.environ["RENPY_SHUTDOWN_TRACE"]))
 
-        renpy.display.im.cache.quit()
+        # MBG - interferes with my debugging
+        #renpy.display.im.cache.quit()
 
-        if renpy.display.draw:
-            renpy.display.draw.quit()
+        # MBG - interferes with my debugging
+        #if renpy.display.draw:
+        #    renpy.display.draw.quit()
 
-        renpy.audio.audio.quit()
+        # MBG - noisy crashes on shutdown
+        #renpy.audio.audio.quit()
 
+        # MBG - removed due to, I don't know why "module object has no attribute Popen". maybe i removed it or something
         # Prevent subprocess from throwing errors while trying to run it's
         # __del__ method during shutdown.
-        if not renpy.emscripten:
-            subprocess.Popen.__del__ = popen_del
+        #if not renpy.emscripten:
+        #    subprocess.Popen.__del__ = popen_del
