@@ -42,30 +42,30 @@ progress_bar = None
 # The start time.
 start_time = time.time()
 
-
-class ProgressBar(pygame_sdl2.sprite.Sprite):
-
-    def __init__(self, foreground, background):
-        super(ProgressBar, self).__init__()
-        self.foreground = pygame_sdl2.image.load(foreground)
-        self.background = pygame_sdl2.image.load(background)
-        self.width, self.height = self.background.get_size()
-        self.image = pygame_sdl2.Surface((self.width, self.height))
-        self.counter = 0.0
-
-    def convert_alpha(self, surface=None):
-        self.foreground = self.foreground.convert_alpha(surface)
-        self.background = self.background.convert_alpha(surface)
-
-    def get_size(self):
-        return (self.width, self.height)
-
-    def update(self, total):
-        self.counter += 1
-        width = self.width * min(self.counter / total, 1)
-        foreground = self.foreground.subsurface(0, 0, width, self.height)
-        self.image.blit(self.background, (0, 0))
-        self.image.blit(foreground, (0, 0))
+# MBG - we can't use pygame_sdl2.sprite because it's GPL
+#class ProgressBar(pygame_sdl2.sprite.Sprite):
+#
+#    def __init__(self, foreground, background):
+#        super(ProgressBar, self).__init__()
+#        self.foreground = pygame_sdl2.image.load(foreground)
+#        self.background = pygame_sdl2.image.load(background)
+#        self.width, self.height = self.background.get_size()
+#        self.image = pygame_sdl2.Surface((self.width, self.height))
+#        self.counter = 0.0
+#
+#    def convert_alpha(self, surface=None):
+#        self.foreground = self.foreground.convert_alpha(surface)
+#        self.background = self.background.convert_alpha(surface)
+#
+#    def get_size(self):
+#        return (self.width, self.height)
+#
+#    def update(self, total):
+#        self.counter += 1
+#        width = self.width * min(self.counter / total, 1)
+#        foreground = self.foreground.subsurface(0, 0, width, self.height)
+#        self.image.blit(self.background, (0, 0))
+#        self.image.blit(foreground, (0, 0))
 
 
 def find_file(base_name, root):
