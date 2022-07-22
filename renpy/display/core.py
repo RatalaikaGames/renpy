@@ -2014,8 +2014,9 @@ class Interface(object):
         if self.started:
             return
 
+        # MBG - did this earlier
         # Initialize audio.
-        renpy.audio.audio.init()
+        #renpy.audio.audio.init()
 
         # Initialize pygame.
         try:

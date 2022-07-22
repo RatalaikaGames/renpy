@@ -59,6 +59,10 @@ from __future__ import division, absolute_import, with_statement, print_function
 import renpy
 renpy.update_path()
 
+#MBG - I dont know why I'm having to do this. first I did it in my very first bootstrap but it needs to be here for cython, too
+from future.utils.surrogateescape import register_surrogateescape
+register_surrogateescape()
+
 import future.standard_library
 import future.utils
 import builtins
@@ -108,14 +112,16 @@ from future.builtins import chr
 ################################################################################
 # Dictionary views.
 
-# The try block solves a chicken-and-egg problem when dictviews is not
-# compiled yet, as part of the Ren'Py build process.
-try:
-    if PY2:
-        import renpy.compat.dictviews # @UnresolvedImport
-except ImportError:
-    import sys
-    print("Could not import renpy.compat.dictviews.", file=sys.stderr)
+# MBG NOTE - this is really weird. dictviews is a pyx file. how does cython include it? it doesnt exist unless it's linked in by C
+# I just commented it out entirely and had no big problems
+## The try block solves a chicken-and-egg problem when dictviews is not
+## compiled yet, as part of the Ren'Py build process.
+#try:
+#    if PY2:
+#        import renpy.compat.dictviews # @UnresolvedImport
+#except ImportError:
+#    import sys
+#    print("Could not import renpy.compat.dictviews.", file=sys.stderr)
 
 ################################################################################
 # Range.

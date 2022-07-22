@@ -67,6 +67,9 @@ def run(restart):
     This is called during a single run of the script. Restarting the script
     will cause this to change.
     """
+    
+    #MBG - added this to get things started sooner
+    renpy.audio.audio.init()
 
     reset_clock()
 
