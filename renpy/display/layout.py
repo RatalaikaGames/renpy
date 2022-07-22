@@ -507,6 +507,23 @@ class IgnoreLayers(Exception):
     pass
 
 
+def check_modal(modal, ev, x, y, w, h):
+    """
+    This evaluates the modal property of frames and screens.
+    """
+
+    if not modal:
+        return False
+
+    if not callable(modal):
+        modal = default_modal_function
+
+    if modal(ev, x, y, w, h):
+        return True
+
+    return False
+
+
 class MultiBox(Container):
 
     layer_name = None
