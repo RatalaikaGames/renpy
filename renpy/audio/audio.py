@@ -661,7 +661,7 @@ class Channel(object):
 
             for filename in filenames:
                 filename, _, _ = self.split_filename(filename, False)
-                renpy.game.persistent._seen_audio[filename] = True # @UndefinedVariable
+                renpy.game.persistent._seen_audio[str(filename)] = True # @UndefinedVariable
 
             if not loop_only:
 
@@ -1104,7 +1104,7 @@ def periodic_pass():
                 need_ss = True
 
         if need_ss:
-            renpysound.unpause_all()
+            renpysound.unpause_all_at_start()
 
             for c in all_channels:
                 c.synchro_start = False

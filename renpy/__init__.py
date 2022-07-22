@@ -467,7 +467,6 @@ def import_all():
     #MBG - removed some unused things here
     #import renpy.gl
     #import renpy.gl2
-    #import renpy.angle
 
     import renpy.display.layout
     import renpy.display.viewport

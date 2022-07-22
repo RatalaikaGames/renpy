@@ -513,6 +513,9 @@ class PauseBehavior(renpy.display.layout.Null):
 
     def event(self, ev, x, y, st):
 
+        if ev.type == renpy.display.core.TIMEEVENT and ev.modal:
+            return
+
         if st >= self.delay:
 
             if self.voice and renpy.config.nw_voice:
@@ -634,7 +637,7 @@ class SayBehavior(renpy.display.layout.Null):
 
                 if not renpy.config.enable_rollback_side:
                     rollback_side = "disable"
-                if renpy.exports.mobile:
+                if renpy.exports.variant("mobile"):
                     rollback_side = renpy.game.preferences.mobile_rollback_side
                 else:
                     rollback_side = renpy.game.preferences.desktop_rollback_side
@@ -2258,12 +2261,15 @@ class Timer(renpy.display.layout.Null):
         # Did we start the timer?
         self.started = False
 
-        if replaces is not None:
+        if isinstance(replaces, Timer):
             self.state = replaces.state
         else:
             self.state = TimerState()
 
     def event(self, ev, x, y, st):
+
+        if ev.type == renpy.display.core.TIMEEVENT and ev.modal:
+            return
 
         state = self.state
 
@@ -2304,7 +2310,7 @@ class MouseArea(renpy.display.core.Displayable):
         # Are we hovered right now?
         self.is_hovered = False
 
-        if replaces is not None:
+        if isinstance(replaces, MouseArea):
             self.is_hovered = replaces.is_hovered
 
         # Taken from the render.

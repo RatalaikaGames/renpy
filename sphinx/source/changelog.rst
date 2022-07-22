@@ -7,8 +7,81 @@ Changelog (Ren'Py 7.x-)
 7.4.11
 ======
 
+The gui.variant Decorator
+-------------------------
+
+A new gui.variant decorator has been added to Ren'Py. This should be used 
+to decorate a function with the name of a variant, and causes that function
+to be run, if the variant is active, when the game is first started, and then 
+each time the gui is rebuilt (which happens when :func:`gui.rebuild` is called, 
+when a gui preference is changed, or when the translation changes.)
+
+This is expected to be used like::
+
+    init python:
+
+        @gui.variant
+        def small():
+
+            ## Font sizes.
+            gui.text_size = gui.scale(30)
+            gui.name_text_size = gui.scale(36)
+            # ...
+
+as a replacement for::
+
+    init python:
+
+        if renpy.variant("small"):
+            ## Font sizes.
+            gui.text_size = gui.scale(30)
+            gui.name_text_size = gui.scale(36)
+            # ...
+
+Which only runs once, and lost the changes if the gui was ever rebuilt.
+
 Fixes
 -----
+
+The new :var:`config.mouse_focus_clickthrough` variable determines if clicks that
+cause the game window to be focused will be processed normally.
+
+The launcher now runs with :var:`config.mouse_focus_clickthrough` true, which 
+means that it will only take a single
+
+When a Live2D motion contains a curve with a shorter duration then the motion
+it is part of, the last value of the curve is retained to the end of the 
+motion.
+
+Rare issues with a displayable being replaced by a displayable of a different
+type are now guarded against. This should only occur when a game is updated
+between saves.
+
+Modal displayables now prevent pauses from ending.
+
+An issue that could cause images to not display in some cases (when a displayable
+was invalidated) has been fixed.
+
+Starting a movie no longer causes paused sounds to unpause. 
+
+AudioData objects are no longer stored in the persistent data. Such objects 
+are removed when persistent data is loaded, if present. 
+
+Platform variables like renpy.android and renpy.ios are now set to follow 
+the emulated platform, when Ren'Py is emulating ios or android.
+
+When in the iOS and Android emulator, the mobile rollback side is used.
+
+Ren'Py will now always run an `unhovered` action when a displayable (or its 
+replacement) remains shown, and the focus changes. Previously, the unhovered
+action would not run when the loss of focus was caused by showing a second
+screen.
+
+When :var:`config.log` is true, the selected choice is now logged properly.
+
+The new :func:`gui.variant` function makes it possible to work around 
+an issue in the standard gui where the calling :func:`gui.rebuild` would cause 
+gui variants to reset. 
 
 The web browser now checks for progressively downloaded images once per
 frame, allowing images to be loaded into the middle of an animation.
@@ -58,6 +131,11 @@ A new :var:`config.debug_prediction` variable has been split out of
 :var:`config.debug_image_cache`. This controls the logging of 
 prediction errors to the console and log.txt, making the latter 
 variable act as documented.
+
+Translations
+------------
+
+The German, Indonesian, Polish, and Russian translations have been updated.
 
 
 .. _renpy-7.4.10:
@@ -256,7 +334,7 @@ An issue that caused analysis files to grow unconstrained, slowing down
 Ren'Py startup, has been fixed. The analysis file will be reduced in size
 when the game scripts are recompiled.
 
-The :propref:`hover_sound` and :properef:`activate_sound` properties now
+The :propref:`hover_sound` and :propref:`activate_sound` properties now
 apply to bars.
 
 When dispatching events in ATL, if an event with a ``selected_`` prefix is not
