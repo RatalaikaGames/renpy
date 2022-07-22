@@ -2971,7 +2971,7 @@ class Interface(object):
         else:
             self.maximum_framerate_time = max(self.maximum_framerate_time, get_time() + t)
 
-    def interact(self, clear=True, suppress_window=False, trans_pause=False, **kwargs):
+    def interact(self, clear=True, suppress_window=False, trans_pause=False, pause=None, **kwargs):
         """
         This handles an interaction, restarting it if necessary. All of the
         keyword arguments are passed off to interact_core.
@@ -3016,8 +3016,10 @@ class Interface(object):
 
             repeat = True
 
+            pause_start = get_time()
+
             while repeat:
-                repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, **kwargs)
+                repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs)
                 self.start_interact = False
 
             return rv
@@ -3174,6 +3176,8 @@ class Interface(object):
                       mouse='default',
                       preloads=[],
                       roll_forward=None,
+                      pause=False,
+                      pause_start=0,
                       ):
         """
         This handles one cycle of displaying an image to the user,
@@ -3187,6 +3191,10 @@ class Interface(object):
 
         @param suppress_overlay: This suppresses the display of the overlay.
         @param suppress_underlay: This suppresses the display of the underlay.
+
+        `pause`
+            If not None, the amount of time before the interaction ends with
+            False being returned.
         """
 
         renpy.plog(1, "start interact_core")
@@ -3383,9 +3391,9 @@ class Interface(object):
             if trans_pause:
 
                 if renpy.store._dismiss_pause:
-                    sb = renpy.display.behavior.SayBehavior(dismiss_unfocused='dismiss')
+                    sb = renpy.display.behavior.SayBehavior(dismiss=[], dismiss_unfocused='dismiss')
                 else:
-                    sb = renpy.display.behavior.SayBehavior(dismiss_unfocused='dismiss_hard_pause')
+                    sb = renpy.display.behavior.SayBehavior(dismiss=[], dismiss_unfocused='dismiss_hard_pause')
 
                 root_widget.add(sb)
                 focus_roots.append(sb)
@@ -3396,6 +3404,11 @@ class Interface(object):
 
         else:
             root_widget.add(layers_root)
+
+        if pause is not None:
+            pb = renpy.display.behavior.PauseBehavior(pause)
+            root_widget.add(pb, pause_start, pause_start)
+            focus_roots.append(pb)
 
         # Add top_layers to the root_widget.
         for layer in renpy.config.top_layers:
@@ -3575,7 +3588,7 @@ class Interface(object):
                         self.mouse_move = None
 
                 # See if we want to restart the interaction entirely.
-                if self.restart_interaction:
+                if self.restart_interaction and not self.display_reset:
                     return True, None
 
                 # Determine if we need a redraw. (We want to run these

@@ -96,9 +96,6 @@ cdef class GL2Draw:
         # The physical size of the window we got.
         self.physical_size = None
 
-        # This is used to cache the surface->texture operation.
-        self.texture_cache = weakref.WeakKeyDictionary()
-
         # The time of the last redraw.
         self.last_redraw_time = 0
 
@@ -419,7 +416,6 @@ cdef class GL2Draw:
             self.redraw_period = 0.1
 
         self.shader_cache = ShaderCache("cache/shaders.txt", self.gles)
-        self.shader_cache.load()
 
         # Initialize the texture loader.
         self.texture_loader = TextureLoader(self)
@@ -512,9 +508,9 @@ cdef class GL2Draw:
 
         self.draw_transform = Matrix.cscreen_projection(self.drawable_viewport[2], self.drawable_viewport[3])
 
+        self.shader_cache.load()
         self.init_fbo()
         self.texture_loader.init()
-
 
     def resize(self):
         """
@@ -594,6 +590,7 @@ cdef class GL2Draw:
 
         # Generate the framebuffer.
         glGenFramebuffers(1, &self.fbo)
+
         glGenTextures(1, &self.color_texture)
 
         if renpy.config.depth_size:
@@ -602,7 +599,10 @@ cdef class GL2Draw:
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size)
         glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &max_renderbuffer_size)
 
-        # The number of pixels of addiitonal border, so we can load textures with
+        max_texture_size = max(max_texture_size, 1024)
+        max_renderbuffer_size = max(max_renderbuffer_size, 1024)
+
+        # The number of pixels of additional border, so we can load textures with
         # higher pitch.
         BORDER = 64
 
@@ -696,22 +696,14 @@ cdef class GL2Draw:
             return False
 
     def mutated_surface(self, surf):
-        if surf in self.texture_cache:
-            del self.texture_cache[surf]
+        return
 
-    def load_texture(self, surf, transient=False):
+    def load_texture(self, surf, transient=False, properties={}):
         """
         Loads a texture into memory.
         """
 
-        # Turn a surface into a texture grid.
-        rv = self.texture_cache.get(surf, None)
-
-        if rv is None:
-            rv = self.texture_loader.load_surface(surf)
-            self.texture_cache[surf] = rv
-
-        return rv
+        return self.texture_loader.load_surface(surf, properties)
 
     def ready_one_texture(self):
         """
@@ -750,7 +742,8 @@ cdef class GL2Draw:
 
         try:
             pygame.display.flip()
-        except pygame.error:
+        except pygame.error as e:
+            renpy.display.log("Flip failed %r", e)
             renpy.game.interface.display_reset = True
 
         end = time.time()
@@ -1065,7 +1058,6 @@ cdef class GL2Draw:
         return rv
 
     def kill_textures(self):
-        self.texture_cache.clear()
         self.texture_loader.cleanup()
 
     def event_peek_sleep(self):

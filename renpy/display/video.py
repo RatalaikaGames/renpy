@@ -81,7 +81,6 @@ def movie_start(filename, size=None, loops=0):
 movie_start_fullscreen = movie_start
 movie_start_displayable = movie_start
 
-
 # A map from a channel name to the movie texture that is being displayed
 # on that channel.
 texture = { }
@@ -138,10 +137,13 @@ def interact():
     return fullscreen
 
 
-def get_movie_texture(channel, mask_channel=None, side_mask=False):
+def get_movie_texture(channel, mask_channel=None, side_mask=False, mipmap=None):
 
     if not renpy.audio.music.get_playing(channel):
         return None, False
+
+    if mipmap is None:
+        mipmap = renpy.config.mipmap_movies
 
     c = renpy.audio.music.get_channel(channel)
     surf = c.read_video()
@@ -175,8 +177,11 @@ def get_movie_texture(channel, mask_channel=None, side_mask=False):
         # TEST
         #surf = surf.subsurface((100,100,200,200))
         renpy.display.render.mutated_surface(surf)
-        # Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
+        #MBG - Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
+        #MBG - mipmap flag is ignored for now
+        #tex = renpy.display.draw.load_texture(surf, True, { "mipmap" : mipmap })
         tex = renpy.display.draw.load_texture(surf, True, True)
+
         tex.alphamask = alp
         texture[channel] = tex
         new = True
@@ -208,7 +213,7 @@ def render_movie(channel, width, height):
     return rv
 
 
-def default_play_callback(old, new):  # @UnusedVariable
+def default_play_callback(old, new): # @UnusedVariable
 
     renpy.audio.music.play(new._play, channel=new.channel, loop=new.loop, synchro_start=True)
 
@@ -277,7 +282,7 @@ class Movie(renpy.display.core.Displayable):
         preference if video is too taxing for their system. The image will
         also be used if the video plays, and then the movie ends.
 
-    ``play_callback``
+    `play_callback`
         If not None, a function that's used to start the movies playing.
         (This may do things like queue a transition between sprites, if
         desired.) It's called with the following arguments:
@@ -302,14 +307,10 @@ class Movie(renpy.display.core.Displayable):
                 if new.mask:
                     renpy.music.play(new.mask, channel=new.mask_channel, loop=new.loop, synchro_start=True)
 
-        `loop`
-            If False, the movie will not loop. If `image` is defined, the image
-            will be displayed when the movie ends. Otherwise, the movie will
-            become transparent.
-
-
-
-    This displayable will be transparent when the movie is not playing.
+    `loop`
+        If False, the movie will not loop. If `image` is defined, the image
+        will be displayed when the movie ends. Otherwise, the displayable will
+        become transparent.
     """
 
     fullscreen = False
@@ -405,7 +406,7 @@ class Movie(renpy.display.core.Displayable):
 
         if self.size is None:
 
-            tex, _ = get_movie_texture(self.channel, self.mask_channel, self.side_mask)
+            tex, _ = get_movie_texture(self.channel, self.mask_channel, self.side_mask, self.style.mipmap)
 
             if (not not_playing) and (tex is not None):
                 width, height = tex.get_size()

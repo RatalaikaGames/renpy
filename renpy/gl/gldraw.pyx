@@ -220,8 +220,11 @@ cdef class GLDraw:
         glEnable(GL_BLEND)
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
 
-        self.rtt.init()
-        self.environ.init()
+        try:
+            self.rtt.init()
+            self.environ.init()
+        except:
+            renpy.display.interface.display_reset = True
 
     def resize(self):
 
@@ -637,7 +640,7 @@ cdef class GLDraw:
         if surf in self.texture_cache:
             del self.texture_cache[surf]
 
-    def load_texture(self, surf, transient=False):
+    def load_texture(self, surf, transient=False, properties={}):
         """
         Loads a texture into memory.
         """

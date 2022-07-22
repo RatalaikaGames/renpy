@@ -8,8 +8,8 @@ Full Changelog
 7.4.1
 =====
 
-Pause Statement Change
-----------------------
+Pause Statement Changes
+-----------------------
 
 The behavior of the ``pause`` statement with a time has changed, so that::
 
@@ -26,6 +26,9 @@ and not::
 This means that other features that expect a real pause will work during the
 pause statement.
 
+Modal screens no longer block the ``pause`` statement, or :func:`renpy.pause()`.
+this means that a pause can end even if a modal screen is displayed above it.
+
 Say Statement Id Clause
 -----------------------
 
@@ -38,13 +41,6 @@ To use it, just add ``id`` to the say statement, followed by the
 statement id::
 
     e "This used to have a typo." id start_61b861a2
-
-Screen Modal Change
--------------------
-
-Modal screens no longer block pause, timeouts, and other displayables
-that rely on events being delivered on time from functioning. This means
-that a pause can end when a modal screen is up
 
 Live2D
 ------
@@ -142,16 +138,19 @@ has been fixed.
 When given a size, the hbox and vbox displayables now position children
 in the same way those children were positioned in Ren'Py 7.4.
 
-The :func:`Dissolve`, :func:`ImageDissolve`, and :func:`AlphaDissolve`
-transitions and the :func:`AlphaMask` displayable now have a `mipmap`
-parameter, that determines if mipmaps are created. Avoding creating
+The new :propref:`mipmap` style property applies to the  :func:`Dissolve`, :func:`ImageDissolve`,
+and :func:`AlphaDissolve` transitions, the :func:`AlphaMask`, :func:`Movie`, and :func:`Text`
+displayables, and text in general. This property controls if mipmaps are
+generated for the textures created by these displayables. Avoiding creating
 mipmaps may improve rendering performance on slower computers, but
-can lead to artifacts when scaling down. When not specified, this
-parameter defaults to :var:`config.mipmap_dissolves`, which defaults
-to False.
+can lead to artifacts when scaling down.  When not specified, this property
+defaults to :var:`config.mipmap_dissolves`, :var:`config.mipmap_movies`, or
+:var:`config.mipmap_text`, as appropriate.
 
 The toggle version of self-voicing preferences have been changed to
 provide a better selected state.
+
+Lint now once again reports statistics by translation.
 
 
 .. _renpy-7.4:
