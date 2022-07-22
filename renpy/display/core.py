@@ -2196,6 +2196,8 @@ class Interface(object):
         renderer = os.environ.get("RENPY_RENDERER", renderer)
         renderer = renpy.session.get("renderer", renderer)
 
+        renpy.config.renderer = renderer
+
         if renpy.android or renpy.ios or renpy.emscripten:
             renderers = [ "gles" ]
         elif renpy.windows:
@@ -2224,6 +2226,9 @@ class Interface(object):
         if renderer in renderers:
             renderers = [ renderer, "sw" ]
 
+        if renderer == "sw":
+            renderers = [ "sw" ]
+
         # Software renderer is the last hope for PC and mac.
         if not (renpy.android or renpy.ios or renpy.emscripten):
             renderers = renderers + [ "sw" ]
@@ -2232,9 +2237,7 @@ class Interface(object):
         renderers = [ "r3" ]
 
         if self.safe_mode:
-            renderer = "sw"
-
-        renpy.config.renderer = renderer
+            renderers = [ "sw" ]
 
         draw_objects = { }
 
