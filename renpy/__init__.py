@@ -414,6 +414,7 @@ def import_all():
     import renpy.python
     import renpy.script
     import renpy.statements
+    import renpy.util
 
     global plog
     plog = renpy.performance.log
@@ -602,6 +603,9 @@ def reload_all():
     # Clear all pending exceptions.
     sys.exc_clear()
 
+    # Quit audio.
+    renpy.audio.audio.quit()
+
     # Reset the styles.
     renpy.style.reset() # @UndefinedVariable
 
@@ -724,6 +728,7 @@ if False:
     import renpy.python
     import renpy.script
     import renpy.statements
+    import renpy.util
 
     import renpy.styledata # @UnresolvedImport
     import renpy.style
@@ -782,8 +787,6 @@ if False:
     import renpy.display.matrix
     import renpy.display.render
     import renpy.display.model
-
-    print(renpy.display.model)
 
     import renpy.display.error
 

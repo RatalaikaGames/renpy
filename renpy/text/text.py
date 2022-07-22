@@ -1546,6 +1546,7 @@ class Text(renpy.display.core.Displayable):
 
     language = None
     mask = None
+    last_ctc = None
 
     def after_upgrade(self, version):
 
@@ -1748,6 +1749,10 @@ class Text(renpy.display.core.Displayable):
         self.ctc = ctc
         self.dirty = True
 
+    def set_last_ctc(self, last_ctc):
+        self.last_ctc = last_ctc
+        self.dirty = True
+
     def update(self):
         """
         This needs to be called after text has been updated, but before
@@ -1796,7 +1801,16 @@ class Text(renpy.display.core.Displayable):
         else:
             # Add the CTC.
             if self.ctc is not None:
-                text.append(self.ctc)
+                if isinstance(self.ctc, list):
+                    text.extend(self.ctc)
+                else:
+                    text.append(self.ctc)
+
+        if self.last_ctc is not None:
+            if isinstance(self.last_ctc, list):
+                text.extend(self.last_ctc)
+            else:
+                text.append(self.last_ctc)
 
         # Tokenize the text.
         tokens = self.tokenize(text)

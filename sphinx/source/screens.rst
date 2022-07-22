@@ -322,6 +322,10 @@ data. It takes the following properties:
 `unhovered`
     An action to run when the bar loses focus.
 
+`released`
+    An action to run when the bar button is released. This will be invoked
+    even if the bar has not changed its value.
+
 One of `value` or `adjustment` must be given. In addition, this
 function takes:
 
@@ -337,7 +341,7 @@ This does not take children.
         frame:
             has vbox
 
-            bar value Preference("sound volume")
+            bar value Preference("sound volume") released Play("sound", "audio/sample_sound.ogg")
             bar value Preference("music volume")
             bar value Preference("voice volume")
 
@@ -700,9 +704,9 @@ This does not take any children.
 Key
 ---
 
-This creates a keybinding that runs an action when a key is
-pressed. Key is used in a loose sense here, as it also allows joystick
-and mouse events.
+This creates a keybinding that runs an action when a key is pressed,
+or one of the keys in a given list. Key is used in a loose sense here,
+as it also allows joystick and mouse events.
 
 Key takes one positional parameter, a string giving the key to
 bind. See the :ref:`keymap` section for a description of available
@@ -719,7 +723,7 @@ It takes no children.
     screen keymap_screen():
         key "game_menu" action ShowMenu('save')
         key "p" action ShowMenu('preferences')
-        key "s" action Screenshot()
+        key ["s", "w"] action Screenshot()
 
 
 .. _sl-label:
