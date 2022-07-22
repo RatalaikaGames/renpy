@@ -1144,6 +1144,10 @@ class SceneLists(renpy.object.Object):
             sle = SceneListEntry(key, zorder, st, at, thing, name)
             l.insert(add_index, sle)
 
+        # By walking the tree of displayables we allow the displayables to
+        # capture the current state.
+        thing.visit_all(lambda d : None)
+
     def hide_or_replace(self, layer, index, prefix):
         """
         Hides or replaces the scene list entry at the given
@@ -1170,7 +1174,7 @@ class SceneLists(renpy.object.Object):
 
         if (prefix is not None) and oldsle.tag:
 
-            d = oldsle.displayable._hide(now - st, now - at, prefix)
+            d = oldsle.displayable._in_current_store()._hide(now - st, now - at, prefix)
 
             # _hide can mutate the layers, so we need to recompute
             # index.
@@ -1628,6 +1632,9 @@ def get_safe_mode():
 
     if renpy.safe_mode_checked:
         return False
+
+    if getattr(renpy.game.args, "safe_mode", False):
+        return True
 
     try:
         if renpy.windows:
@@ -2806,7 +2813,7 @@ class Interface(object):
                 self.transition_from.pop(None, None)
                 continue
 
-            start = self.transition_time.get(l, self.frame_time)
+            start = self.transition_time.get(l, self.frame_time) or 0
             delay = self.transition_delay.get(l, 0)
 
             if (self.frame_time - start) >= delay:
@@ -4196,6 +4203,11 @@ class Interface(object):
 
                     if ev.type != TIMEEVENT:
                         self.post_time_event()
+
+                    # On mobile, if an event originates from the touch mouse, unfocus.
+                    if renpy.mobile and (ev.type == pygame.MOUSEBUTTONUP) and getattr(ev, "which", 0) == 4294967295:
+                        if not self.restart_interaction:
+                            renpy.display.focus.mouse_handler(None, -1, -1, default=False)
 
                 # Check again after handling the event.
                 needs_redraw |= renpy.display.render.check_redraws()

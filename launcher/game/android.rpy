@@ -19,7 +19,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-default persistent.android_bundle = None
+default persistent.android_bundle = False
 
 init python:
     ANDROID_NO_RAPT = 0
@@ -135,6 +135,8 @@ init python:
             return NO_SDK_TEXT
         if state == ANDROID_NO_KEY:
             return NO_KEY_TEXT
+        if state == ANDROID_NO_BUNDLE_KEY:
+            return NO_BUNDLE_KEY_TEXT
         if state == ANDROID_NO_CONFIG:
             return NO_CONFIG_TEXT
         if state == ANDROID_NO_BUNDLE:
@@ -383,20 +385,6 @@ screen android:
                         frame style "l_indent":
 
                             has vbox
-
-                            hbox:
-                                spacing 15
-
-                                textbutton _("Play Bundle"):
-                                    action SetField(persistent, "android_bundle", True)
-                                    hovered tt.Action(PLAY_BUNDLE_TEXT)
-
-                                textbutton _("Universal APK"):
-                                    action SetField(persistent, "android_bundle", False)
-                                    hovered tt.Action(UNIVERSAL_APK_TEXT)
-
-                            add HALF_SPACER
-
                             textbutton _("Install SDK & Create Keys"):
                                 action AndroidIfState(state, ANDROID_NO_SDK, Jump("android_installsdk"))
                                 hovered tt.Action(INSTALL_SDK_TEXT)
@@ -404,6 +392,20 @@ screen android:
                             textbutton _("Configure"):
                                 action AndroidIfState(state, ANDROID_NO_CONFIG, Jump("android_configure"))
                                 hovered tt.Action(CONFIGURE_TEXT)
+
+                            add SPACER
+
+                            textbutton _("Play Bundle"):
+                                action SetField(persistent, "android_bundle", True)
+                                hovered tt.Action(PLAY_BUNDLE_TEXT)
+                                style "l_checkbox"
+
+                            textbutton _("Universal APK"):
+                                action SetField(persistent, "android_bundle", False)
+                                hovered tt.Action(UNIVERSAL_APK_TEXT)
+                                style "l_checkbox"
+
+                            add SPACER
 
                             textbutton _("Build Package"):
                                 action AndroidIfState(state, ANDROID_OK, AndroidBuild("android_build"))
@@ -634,4 +636,3 @@ init python:
         return False
 
     renpy.arguments.register_command("android_build", android_build_command)
-
