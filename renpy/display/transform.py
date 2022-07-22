@@ -95,6 +95,8 @@ def first_not_none(*args):
 
 class TransformState(renpy.object.Object):
 
+    last_angle = None
+
     def __init__(self):
 
         # Most fields on this object are set by add_property, at the bottom
@@ -933,9 +935,6 @@ def add_uniform(name):
     """
 
     if not name.startswith("u_"):
-        return
-
-    if name.startswith("u_renpy"):
         return
 
     if name in renpy.gl2.gl2draw.standard_uniforms:

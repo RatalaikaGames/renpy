@@ -56,7 +56,7 @@ cimport renpy.gl2.gl2texture as gl2texture
 from renpy.gl2.gl2mesh cimport Mesh
 from renpy.gl2.gl2mesh3 cimport Mesh3
 from renpy.gl2.gl2polygon cimport Polygon
-from renpy.gl2.gl2model cimport Model
+from renpy.gl2.gl2model cimport GL2Model
 
 from renpy.gl2.gl2texture import Texture, TextureLoader
 from renpy.gl2.gl2shadercache import ShaderCache
@@ -574,6 +574,17 @@ cdef class GL2Draw:
             self.shader_cache.save()
 
 
+    cdef void change_fbo(self, GLuint fbo):
+        """
+        *Internal*
+        Change the FBO.
+        """
+        if self.current_fbo != fbo:
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+            self.current_fbo = fbo
+
+
+
     def init_fbo(GL2Draw self):
         """
         *Internal*
@@ -587,6 +598,10 @@ cdef class GL2Draw:
         # Store the default FBO.
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, <GLint *> &self.default_fbo);
         self.current_fbo = self.default_fbo
+
+        # Store the default RBO
+        cdef GLuint default_renderbuffer
+        glGetIntegerv(GL_RENDERBUFFER_BINDING, <GLint *> &default_renderbuffer);
 
         # Generate the framebuffer.
         glGenFramebuffers(1, &self.fbo)
@@ -647,6 +662,9 @@ cdef class GL2Draw:
                 GL_DEPTH_ATTACHMENT,
                 GL_RENDERBUFFER,
                 self.depth_renderbuffer)
+
+        glBindRenderbuffer(GL_RENDERBUFFER, default_renderbuffer)
+        self.change_fbo(self.default_fbo)
 
 
     def quit_fbo(GL2Draw self):
@@ -738,7 +756,7 @@ cdef class GL2Draw:
 
         color = (r, g, b, a)
 
-        return Model((w, h), mesh, ("renpy.solid", ), { "u_renpy_solid_color" : color })
+        return GL2Model((w, h), mesh, ("renpy.solid", ), { "u_renpy_solid_color" : color })
 
     def flip(self):
         """
@@ -837,7 +855,7 @@ cdef class GL2Draw:
             self.load_all_textures(what)
             return
 
-        if isinstance(what, Model):
+        if isinstance(what, GL2Model):
             what.load()
             return
 
@@ -854,7 +872,7 @@ cdef class GL2Draw:
         for i in r.children:
             self.load_all_textures(i[0])
 
-        # If we have a mesh (or mesh=True), create the Model.
+        # If we have a mesh (or mesh=True), create the GL2Model.
         if r.mesh:
 
             if (r.mesh is True) and (not r.children):
@@ -872,7 +890,7 @@ cdef class GL2Draw:
             else:
                 mesh = r.mesh
 
-            r.cached_model = Model(
+            r.cached_model = GL2Model(
                 (r.width, r.height),
                 mesh,
                 r.shaders,
@@ -1076,14 +1094,6 @@ cdef class GL2Draw:
 
         return (x, y)
 
-    ############################################################################
-    # Everything below this point is an internal detail.
-
-    cdef void change_fbo(self, GLuint fbo):
-        if self.current_fbo != fbo:
-            glBindFramebuffer(GL_FRAMEBUFFER, fbo)
-            self.current_fbo = fbo
-
 
 cdef class GL2DrawingContext:
     """
@@ -1203,7 +1213,7 @@ cdef class GL2DrawingContext:
     def draw_one(self, what, Matrix transform, Polygon clip_polygon, tuple shaders, dict uniforms, dict properties):
         """
         This is responsible for walking the surface tree, and drawing any
-        Models, Renders, and Surfaces it encounters.
+        GL2Models, Renders, and Surfaces it encounters.
 
         `transform`
             The matrix that transforms texture space into drawable space.
@@ -1229,7 +1239,7 @@ cdef class GL2DrawingContext:
         if isinstance(what, Surface):
             what = self.gl2draw.load_texture(what)
 
-        if isinstance(what, Model):
+        if isinstance(what, GL2Model):
             self.draw_model(what, transform, clip_polygon, shaders, uniforms, properties)
             return
 

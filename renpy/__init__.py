@@ -74,10 +74,10 @@ except ImportError:
     vc_version = 0
 
 # The tuple giving the version number.
-version_tuple = (7, 4, 5, vc_version)
+version_tuple = (7, 4, 6, vc_version)
 
 # The name of this version.
-version_name = "The Five-Leaf Clover"
+version_name = "Lucky Dice"
 
 # A string giving the version number only (8.0.1.123).
 version_only = ".".join(str(i) for i in version_tuple)
@@ -472,6 +472,7 @@ def import_all():
     import renpy.display.emulator
     import renpy.display.tts
     import renpy.display.gesture
+    import renpy.display.model
 
     import renpy.display.error
 
@@ -768,6 +769,9 @@ if False:
     import renpy.display.gesture
     import renpy.display.matrix
     import renpy.display.render
+    import renpy.display.model
+
+    print(renpy.display.model)
 
     import renpy.display.error
 

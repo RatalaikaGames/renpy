@@ -457,8 +457,12 @@ class Script(object):
                         return
 
                     self.duplicate_labels.append(
-                        u'The label {} is defined twice, at\n  File "{}", line {} and\n  File "{}", line {}.'.format(
-                            bad_name, old_node.filename, old_node.linenumber, bad_node.filename, bad_node.linenumber))
+                        u'The label {} is defined twice, at File "{}", line {}:\n{}and File "{}", line {}:\n{}'.format(
+                            bad_name, old_node.filename, old_node.linenumber,
+                            renpy.parser.get_line_text(old_node.filename, old_node.linenumber),
+                            bad_node.filename, bad_node.linenumber,
+                            renpy.parser.get_line_text(old_node.filename, old_node.linenumber),
+                        ))
 
         self.update_bytecode()
 
@@ -688,9 +692,10 @@ class Script(object):
         return data, stmts
 
     def load_appropriate_file(self, compiled, source, dir, fn, initcode): # @ReservedAssignment
+        data = None
+
         # This can only be a .rpyc file, since we're loading it
         # from an archive.
-
         if dir is None:
 
             rpyfn = fn + source
@@ -751,6 +756,9 @@ class Script(object):
                             print("Could not load " + rpycfn)
 
                 except:
+                    renpy.display.log.write("While loading %r", rpycfn)
+                    renpy.display.log.exception()
+
                     if "RENPY_RPYC_EXCEPTIONS" in os.environ:
                         print("While loading", rpycfn)
                         raise

@@ -43,6 +43,26 @@ parse_errors = [ ]
 from renpy.parsersupport import match_logical_word
 
 
+def get_line_text(filename, lineno):
+    """
+    Gets the text of a line, in a best-effort way, for debugging purposes. May
+    return just a newline.
+    """
+
+    import linecache
+    full_filename = renpy.exports.unelide_filename(filename)
+
+    print(full_filename, linecache.getline(full_filename, lineno))
+
+    try:
+        line = linecache.getline(full_filename, lineno) or "\n"
+        line = line.decode("utf-8")
+    except:
+        line = "\n"
+
+    return line
+
+
 class ParseError(Exception):
 
     def __init__(self, filename, number, msg, line=None, pos=None, first=False):
@@ -2114,6 +2134,30 @@ def show_layer_statement(l, loc):
     l.advance()
 
     rv = ast.ShowLayer(loc, layer, at_list, atl)
+
+    return rv
+
+
+@statement("camera")
+def camera_statement(l, loc):
+
+    layer = l.name() or 'master'
+
+    if l.keyword("at"):
+        at_list = parse_simple_expression_list(l)
+    else:
+        at_list = [ ]
+
+    if l.match(':'):
+        atl = renpy.atl.parse_atl(l.subblock_lexer())
+    else:
+        atl = None
+        l.expect_noblock('camera statement')
+
+    l.expect_eol()
+    l.advance()
+
+    rv = ast.Camera(loc, layer, at_list, atl)
 
     return rv
 

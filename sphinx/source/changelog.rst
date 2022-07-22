@@ -2,6 +2,72 @@
 Changelog (Ren'Py 7.x-)
 =======================
 
+.. _renpy-7.4.6:
+
+7.4.6
+=====
+
+Camera Statement
+----------------
+
+There is a new ``camera`` statement, intended for use with the 3D Stage system.
+This statement is similar to the ``show layer`` statement, except that the layer
+name is not required, and it is not cleared when a ``scene`` statement is run.
+
+This statement lets you write::
+
+    camera:
+        perspective True
+
+to enable the 3D State system.
+
+As part of this, the ``show layer`` and ``scene`` statements have been reverted
+to their behavior in 7.4.4 and earlier, where the ``scene`` statement clears
+the list of transforms.
+
+Model Displayable
+-----------------
+
+The new :class:`Model` displayable serves as a way to create models for
+use with the model-based renderer. Right now, the class is able to
+create 2D models with multiple textures, making it possible to create
+custom transforms that work like some of the built-in transforms do.
+
+This displayable doesn't support 3D, yet, but that's expected in the future.
+
+Other Improvements
+------------------
+
+The Atom text editor has been updated, and the language-renpy plugin assoicated
+with it has been updated to support the new keywords introduced in recent
+versions of Ren'Py.
+
+Using a controller immediately hides the mouse cursor.
+
+Fixes
+-----
+
+A mistake in the build process meant that a change to fix compilation
+on iOS that had been in the nightly didn't make it into the Ren'Py
+release.
+
+An issue where a modal screen would not block time events when the Ren'Py
+window lost focus has been fixed.
+
+The number of iterations of the blur shader has been limited, which ensures
+that Ren'Py is compatible with more webgl devices.
+
+Ren'Py will re-compile the Python files in the renpy/ directory, when the
+Force Recompile option is checked. This ensures that if those files are
+recompiled for some reason, the path to Ren'Py on the creator's system
+will not be included.
+
+ATL will now skip to the first frame to be displayed when using the animation
+timebase.
+
+Ren'Py will no longer pauses without timeouts after a rollback.
+
+
 .. _renpy-7.4.5:
 
 7.4.5

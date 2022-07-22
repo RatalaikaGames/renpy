@@ -1528,7 +1528,7 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
     if roll_forward not in [ True, False ]:
         roll_forward = None
 
-    if renpy.game.after_rollback and not renpy.config.pause_after_rollback:
+    if (delay is not None) and renpy.game.after_rollback and not renpy.config.pause_after_rollback:
 
         rv = roll_forward
         if rv is None:
@@ -2424,7 +2424,7 @@ def image_size(im):
     return surf.get_size()
 
 
-def get_at_list(name, layer=None):
+def get_at_list(name, layer=None, camera=False):
     """
     :doc: se_images
 
@@ -2444,13 +2444,13 @@ def get_at_list(name, layer=None):
     return renpy.game.context().scene_lists.at_list[layer].get(tag, None)
 
 
-def show_layer_at(at_list, layer='master', reset=True):
+def show_layer_at(at_list, layer='master', reset=True, camera=False):
     """
     :doc: se_images
     :name: renpy.show_layer_at
 
     The Python equivalent of the ``show layer`` `layer` ``at`` `at_list`
-    statement.
+    statement. If `camera` is True, the equivalent of the ``camera`` statement.
 
     `reset`
         If true, the transform state is reset to the start when it is shown.
@@ -2461,7 +2461,7 @@ def show_layer_at(at_list, layer='master', reset=True):
     if not isinstance(at_list, list):
         at_list = [ at_list ]
 
-    renpy.game.context().scene_lists.set_layer_at_list(layer, at_list, reset=reset)
+    renpy.game.context().scene_lists.set_layer_at_list(layer, at_list, reset=reset, camera=camera)
 
 
 layer_at_list = show_layer_at
@@ -3630,6 +3630,16 @@ def invoke_in_thread(fn, *args, **kwargs):
 
     This function creates a daemon thread, which will be automatically
     stopped when Ren'Py is shutting down.
+
+    This thread is very limited in what it can do with the Ren'Py API.
+    Changing store variables is allowed, as is calling the :func:`renpy.queue_event`
+    function. Most other portions of the Ren'Py API are expected to be called from
+    the main thread.
+
+    The primary use of this function is to place accesss to a web API in a second
+    thread, and then update variables with the results of that call, by storing
+    the result in variables and then relying on the interaction restart to cause
+    screens to display those variables.
     """
 
     def run():
