@@ -314,6 +314,26 @@ class FileLocation(object):
             with open(self.persistent, "wb") as f:
                 f.write(data)
 
+            safe_rename(fn_tmp, fn_new)
+            safe_rename(fn_new, fn)
+
+            # Prevent persistent from unpickle just after save
+            self.persistent_mtime = os.path.getmtime(fn)
+
+            self.sync()
+
+    def unlink_persistent(self):
+
+        if not self.active:
+            return
+
+        try:
+            os.unlink(self.persistent)
+
+            self.sync()
+        except:
+            pass
+
     def __eq__(self, other):
         if not isinstance(other, FileLocation):
             return False
