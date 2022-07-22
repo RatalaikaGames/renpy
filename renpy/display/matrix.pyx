@@ -302,8 +302,8 @@ cdef class Matrix:
 
         self.inverse_cache = rv
 
-        cdef float *m = self.m
-        cdef float *im = rv.m
+        cdef float *m = self.m()
+        cdef float *im = rv.m()
 
         cdef double A2323 = m[10] * m[15] - m[11] * m[14];
         cdef double A1323 = m[ 9] * m[15] - m[11] * m[13];
@@ -332,7 +332,7 @@ cdef class Matrix:
             - m[ 3] * ( m[ 4] * A1223 - m[ 5] * A0223 + m[ 6] * A0123 )
 
         if det == 0:
-            rv.m[15] = 1.0
+            rv.m()[15] = 1.0
             return rv
 
         det = 1 / det;
