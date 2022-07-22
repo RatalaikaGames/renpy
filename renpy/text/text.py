@@ -826,7 +826,17 @@ class Layout(object):
                 continue
 
             # Create the texture.
-            surf = renpy.display.pgrender.surface((sw + o, sh + o), True, True)
+
+            tw = sw + o
+            th = sh + o
+
+            # If not a multiple of 32, round up.
+            tw = (tw | 0x1f) + 1 if (tw & 0x1f) else tw
+            th = (th | 0x1f) + 1 if (th & 0x1f) else th
+
+            #MBG - adding another True argument for my own purposes
+            #surf = renpy.display.pgrender.surface((tw, th), True)
+            surf = renpy.display.pgrender.surface((tw, th), True, True)
 
             di.surface = surf
             di.override_color = color
@@ -924,13 +934,13 @@ class Layout(object):
             if self.oversample < 1:
                 return n
 
-            return n * int(self.oversample)
+            return int(n * int(self.oversample))
 
         else:
             if n == 0:
                 return 0
 
-            rv = round(n * self.oversample)
+            rv = int(round(n * self.oversample))
 
             if n < 0 and rv > -1:
                 rv = -1

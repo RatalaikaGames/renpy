@@ -77,10 +77,14 @@ init -1600 python:
         input_up = [ 'K_UP', 'repeat_K_UP' ],
         input_down = [ 'K_DOWN', 'repeat_K_DOWN' ],
         input_delete = [ 'K_DELETE', 'repeat_K_DELETE' ],
-        input_home = [ 'K_HOME' ],
-        input_end = [ 'K_END' ],
+        input_home = [ 'K_HOME', 'meta_K_LEFT' ],
+        input_end = [ 'K_END', 'meta_K_RIGHT' ],
         input_copy = [ 'ctrl_noshift_K_INSERT', 'ctrl_noshift_K_c' ],
         input_paste = [ 'shift_K_INSERT', 'ctrl_noshift_K_v' ],
+        input_jump_word_left = [ 'osctrl_K_LEFT' ],
+        input_jump_word_right = [ 'osctrl_K_RIGHT' ],
+        input_delete_word = [ 'osctrl_K_BACKSPACE' ],
+        input_delete_full = [ 'meta_K_BACKSPACE' ],
 
         # Viewport.
         viewport_leftarrow = [ 'K_LEFT', 'repeat_K_LEFT' ],
@@ -280,10 +284,12 @@ init -1600 python:
         if renpy.macapp:
             dest = os.path.expanduser(b"~/Desktop")
 
+        pattern = renpy.store._screenshot_pattern or config.screenshot_pattern
+
         # Try to pick a filename.
         i = 1
         while True:
-            fn = os.path.join(dest, config.screenshot_pattern % i)
+            fn = os.path.join(dest, pattern % i)
             if not os.path.exists(fn):
                 break
             i += 1

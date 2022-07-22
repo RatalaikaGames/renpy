@@ -550,6 +550,9 @@ adjust_view_size = None
 # True if we should autosave when a choice occurs.
 autosave_on_choice = True
 
+# True if we should autosave when the player has input something.
+autosave_on_input = True
+
 # A list of channels we should emphasize the audio on.
 emphasize_audio_channels = [ 'voice' ]
 
@@ -1152,6 +1155,21 @@ who_what_sub_compat = 2
 
 # Compat for {,x,y}minimum when applied to side.
 compat_viewport_minimum = False
+
+# Should webaudio be used on the web platform?
+webaudio = True
+
+# If not None, a callback that can be used to alter audio filenames.
+audio_filename_callback = None
+
+# Should minimums be adjusted when x/yminimum and x/ymaximum are both floats?
+adjust_minimums = True
+
+# Should ATL start on show?
+atl_start_on_show = True
+
+# Should the default input caret blink ?
+input_caret_blink = 1.
 
 del os
 del collections

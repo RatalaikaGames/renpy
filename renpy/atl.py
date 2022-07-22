@@ -336,12 +336,19 @@ class ATLTransformBase(renpy.object.Object):
         self.parent_transform = None
 
         # The offset between st and when this ATL block first executed.
-        self.atl_st_offset = 0
+        if renpy.config.atl_start_on_show:
+            self.atl_st_offset = None
+        else:
+            self.atl_st_offset = 0
 
         if renpy.game.context().init_phase:
             compile_queue.append(self)
 
     def _handles_event(self, event):
+
+        if (event == "replaced") and (self.atl_state is None):
+            return True
+
         if (self.block is not None) and (self.block._handles_event(event)):
             return True
 

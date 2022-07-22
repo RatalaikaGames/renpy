@@ -35,10 +35,38 @@ def scale(num, base):
     returns num unchanged.
     """
 
-    if isinstance(num, float):
+    if type(num) is float:
         return num * base
     else:
         return num
+
+
+def xyminimums(style, width, height):
+    """
+    Get the xyminimum and yminimum values as actual pixels, taking into account
+    that width and height might have been adjusted by x/ymaximum already.
+    """
+
+    xminimum = style.xminimum
+    yminimum = style.yminimum
+
+    if type(xminimum) is float:
+        xmaximum = style.xmaximum
+
+        if (type(xmaximum) is float) and xmaximum and renpy.config.adjust_minimums:
+            xminimum = xminimum / xmaximum
+
+        xminimum = xminimum * width
+
+    if type(yminimum) is float:
+        ymaximum = style.ymaximum
+
+        if (type(ymaximum) is float) and ymaximum and renpy.config.adjust_minimums:
+            yminimum = yminimum / ymaximum
+
+        yminimum = yminimum * height
+
+    return xminimum, yminimum
 
 
 class Null(renpy.display.core.Displayable):
@@ -1123,6 +1151,7 @@ class Window(Container):
     """
 
     window_size = (0, 0)
+    current_child = None
 
     def __init__(self, child=None, style='window', **properties):
         super(Window, self).__init__(style=style, **properties)
@@ -1152,11 +1181,15 @@ class Window(Container):
         # save some typing.
         style = self.style
 
-        xminimum = scale(style.xminimum, width)
-        yminimum = scale(style.yminimum, height)
+        xminimum, yminimum = xyminimums(style, width, height)
 
-        xmaximum = scale(style.xmaximum, width)
-        ymaximum = scale(style.ymaximum, height)
+        xmaximum = self.style.xmaximum
+        ymaximum = self.style.ymaximum
+
+        if type(xmaximum) is float:
+            xmaximum *= width
+        if type(ymaximum) is float:
+            ymaximum *= height
 
         size_group = self.style.size_group
         if size_group and size_group in size_groups:
@@ -1185,6 +1218,18 @@ class Window(Container):
         cypadding = top_padding + bottom_padding
 
         child = self.get_child()
+
+        # Transfer the state from the current child to the new child.
+        if child is not self.current_child:
+            if self.current_child is not None:
+                old_target = self.current_child._target()
+                new_target = child._target()
+
+                if isinstance(old_target, renpy.display.transform.Transform) and isinstance(new_target, renpy.display.transform.Transform):
+                    new_target.take_state(old_target)
+                    new_target.take_execution_state(old_target)
+
+            self.current_child = child
 
         # Render the child.
         surf = render(child,
@@ -1311,6 +1356,8 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
     _duplicatable = True
     raw_child = None
+    last_st = 0
+    last_at = 0
 
     def after_setstate(self):
         self.child = None
@@ -1339,8 +1386,7 @@ class DynamicDisplayable(renpy.display.core.Displayable):
         return rv
 
     def visit(self):
-        if not self.child:
-            self.update(0, 0)
+        self.update(self.last_st, self.last_at)
 
         if self.child:
             return [ self.child ]
@@ -1348,19 +1394,23 @@ class DynamicDisplayable(renpy.display.core.Displayable):
             return [ ]
 
     def update(self, st, at):
-        child, redraw = self.function(st, at, *self.args, **self.kwargs)
-        child = renpy.easy.displayable(child)
+        self.last_st = st
+        self.last_at = at
 
-        if child != self.raw_child:
+        raw_child, redraw = self.function(st, at, *self.args, **self.kwargs)
+        raw_child = renpy.easy.displayable(raw_child)
 
-            self.raw_child = child
+        if raw_child != self.raw_child:
 
-            if child._duplicatable:
-                child = child._duplicate(self._args)
+            if raw_child._duplicatable:
+                child = raw_child._duplicate(self._args)
                 child._unique()
+            else:
+                child = raw_child
 
             child.visit_all(lambda c : c.per_interact())
 
+            self.raw_child = raw_child
             self.child = child
 
         if redraw is not None:

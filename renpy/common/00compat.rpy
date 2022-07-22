@@ -216,8 +216,10 @@ init -1900 python:
         if version == (7, 4, 5):
             config.scene_clears_layer_at_list = False
 
-        if version <= (7, 4, 5):
-            pass
+        if version <= (7, 4, 6):
+            config.adjust_minimums = False
+            config.atl_start_on_show = False
+            config.input_caret_blink = False
 
     # The version of Ren'Py this script is intended for, or
     # None if it's intended for the current version.

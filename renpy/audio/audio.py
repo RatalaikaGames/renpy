@@ -364,12 +364,16 @@ class Channel(object):
             except:
                 raise exception("expected channel, got {!r}.".format(v))
 
+        if isinstance(filename, AudioData):
+            return filename, 0, -1
+
         m = re.match(r'<(.*)>(.*)', filename)
         if not m:
-            return filename, 0, -1
+            return self.file_prefix + filename + self.file_suffix, 0, -1
 
         spec = m.group(1)
         fn = m.group(2)
+        fn = self.file_prefix + fn + self.file_suffix
 
         spec = spec.split()
 
@@ -390,7 +394,7 @@ class Channel(object):
                 if not t or t < 0:
                     pass
                 else:
-                    start = t / 1000.0
+                    start = t
             elif clause == "loop":
                 loop = expect_float()
             elif clause == "silence":
@@ -502,6 +506,9 @@ class Channel(object):
             try:
                 filename, start, end = self.split_filename(topq.filename, topq.loop)
 
+                if renpy.config.audio_filename_callback is not None:
+                    filename = renpy.config.audio_filename_callback(filename)
+
                 self.set_tertiary_volume(topq.relative_volume)
 
                 if (end >= 0) and ((end - start) <= 0) and self.queue:
@@ -510,7 +517,7 @@ class Channel(object):
                 if isinstance(topq.filename, AudioData):
                     topf = io.BytesIO(topq.filename.data)
                 else:
-                    topf = load(self.file_prefix + filename + self.file_suffix)
+                    topf = load(filename)
 
                 renpysound.set_video(self.number, self.movie)
 
@@ -652,7 +659,7 @@ class Channel(object):
                 self.keep_queue += 1
 
                 for filename in filenames:
-                    qe = QueueEntry(filename, int(fadein * 1000), tight, False, relative_volume)
+                    qe = QueueEntry(filename, fadein, tight, False, relative_volume)
                     self.queue.append(qe)
 
                     # Only fade the first thing in.
@@ -915,6 +922,10 @@ def init():
         mix_ok = False
         return
 
+    if renpy.emscripten and renpy.config.webaudio:
+        import renpy.audio.webaudio as webaudio
+        renpysound.__dict__.update(webaudio.__dict__)
+
     if pcm_ok is None and renpysound:
         bufsize = 2048
         if renpy.emscripten:
@@ -929,6 +940,7 @@ def init():
             renpysound.init(renpy.config.sound_sample_rate, 2, bufsize, False, renpy.config.equal_mono)
             pcm_ok = True
         except:
+
             if renpy.config.debug_sound:
                 raise
 

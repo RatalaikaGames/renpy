@@ -600,6 +600,10 @@ class Transform(Container):
         return rv
 
     def _handles_event(self, event):
+
+        if (event == "replaced") and (not self.active):
+            return True
+
         if self.function is not None:
             return True
 
@@ -610,9 +614,6 @@ class Transform(Container):
 
     def _hide(self, st, at, kind):
 
-        if not self.child:
-            return None
-
         # Prevent time from ticking backwards, as can happen if we replace a
         # transform but keep its state.
         if st + self.st_offset <= self.st:
@@ -622,6 +623,12 @@ class Transform(Container):
 
         self.st = st = st + self.st_offset
         self.at = at = at + self.at_offset
+
+        if not self.active:
+            self.update_state()
+
+        if not self.child:
+            return None
 
         if not (self.hide_request or self.replaced_request):
             d = self.copy()
@@ -863,9 +870,6 @@ class Transform(Container):
 
         return rv
 
-    def _show(self):
-        self.update_state()
-
 
 class ATLTransform(renpy.atl.ATLTransformBase, Transform):
 
@@ -893,11 +897,6 @@ class ATLTransform(renpy.atl.ATLTransformBase, Transform):
 
     def __repr__(self):
         return "<ATL Transform {:x} {!r}>".format(id(self), self.atl.loc)
-
-    def _show(self):
-        old_state = self.atl_state
-        super(ATLTransform, self)._show()
-        self.atl_state = old_state
 
 
 # Names of transform properties, and if the property should be handles with

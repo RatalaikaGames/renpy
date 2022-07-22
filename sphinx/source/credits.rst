@@ -130,7 +130,7 @@ the omission in future versions.
 * Maxwell Paul Brickner
 * Meithal
 * Merumelu
-* Midgetthetree
+* Midgethetree
 * mikey (ATP Projects)
 * Morgan Willcock
 * Moshibit
@@ -161,6 +161,7 @@ the omission in future versions.
 * Remix
 * Ren
 * Renoa
+* Ruben Jesus Garcia-Hernandez
 * Ria-kon
 * Ricardo Pérez
 * Rikxz
@@ -174,6 +175,7 @@ the omission in future versions.
 * Shayne Officer
 * Shehriyar Qureshi
 * Shiz
+* Siege-Wizard
 * SleepKirby
 * Spiky Caterpillar
 * Susnux

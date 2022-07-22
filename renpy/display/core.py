@@ -82,6 +82,7 @@ enabled_events = {
 
     pygame.TEXTEDITING,
     pygame.TEXTINPUT,
+    pygame.KEYMAPCHANGED,
 
     pygame.MOUSEMOTION,
     pygame.MOUSEBUTTONDOWN,
@@ -671,7 +672,7 @@ class Displayable(renpy.object.Object):
 
     def _show(self):
         """
-        Called when the displayable is added to a scene list.
+        No longer used.
         """
 
     def _target(self):
@@ -1103,17 +1104,22 @@ class SceneLists(renpy.object.Object):
             if keep_st:
                 st = sle.show_time
 
+            if not self.hide_or_replace(layer, remove_index, "replaced"):
+                if add_index > remove_index:
+                    add_index -= 1
+
             if (not atl and
                     not at_list and
                     renpy.config.keep_running_transform and
                     isinstance(old, renpy.display.motion.Transform)):
 
                 thing = sle.displayable._change_transform_child(thing)
+
             else:
-                thing = self.transform_state(l[remove_index].displayable, thing)
+
+                thing = self.transform_state(old, thing)
 
             thing.set_transform_event("replace")
-            thing._show()
 
         else:
 
@@ -1121,26 +1127,22 @@ class SceneLists(renpy.object.Object):
                 thing = self.transform_state(default_transform, thing)
 
             thing.set_transform_event("show")
-            thing._show()
 
-        sle = SceneListEntry(key, zorder, st, at, thing, name)
-        l.insert(add_index, sle)
-
-        if remove_index is not None:
-            if add_index <= remove_index:
-                remove_index += 1
-
-            self.hide_or_replace(layer, remove_index, "replaced")
+        if add_index is not None:
+            sle = SceneListEntry(key, zorder, st, at, thing, name)
+            l.insert(add_index, sle)
 
     def hide_or_replace(self, layer, index, prefix):
         """
         Hides or replaces the scene list entry at the given
         index. `prefix` is a prefix that is used if the entry
         decides it doesn't want to be hidden quite yet.
+
+        Returns True if the displayable is kept, False if it is removed.
         """
 
         if index is None:
-            return
+            return False
 
         l = self.layers[layer]
         oldsle = l[index]
@@ -1174,9 +1176,11 @@ class SceneLists(renpy.object.Object):
 
                 l[index] = sle
 
-                return
+                return True
 
         l.pop(index)
+
+        return False
 
     def get_all_displayables(self, current=False):
         """
@@ -1254,7 +1258,7 @@ class SceneLists(renpy.object.Object):
             return
 
         if not hide:
-            self.layers[layer] = [ ]
+            self.layers[layer][:] = [ ]
 
         else:
 
@@ -1292,7 +1296,7 @@ class SceneLists(renpy.object.Object):
             self.layer_at_list[l] = (t or time, ll)
 
         for l, ll in self.layers.items():
-            self.layers[l] = [ i.update_time(time) for i in ll ]
+            self.layers[l][:] = [ i.update_time(time) for i in ll ]
 
     def showing(self, layer, name):
         """
@@ -1397,7 +1401,7 @@ class SceneLists(renpy.object.Object):
         replaced_tag = "replaced$" + tag
 
         l = self.layers[layer]
-        self.layers[layer] = [ i for i in l if i.tag != hide_tag and i.tag != replaced_tag ]
+        self.layers[layer][:] = [ i for i in l if i.tag != hide_tag and i.tag != replaced_tag ]
 
     def remove_hidden(self):
         """
@@ -1427,7 +1431,7 @@ class SceneLists(renpy.object.Object):
 
                 newl.append(sle)
 
-            self.layers[l] = newl
+            self.layers[l][:] = newl
 
     def remove_all_hidden(self):
         """
@@ -1446,7 +1450,7 @@ class SceneLists(renpy.object.Object):
 
                 newl.append(sle)
 
-            self.layers[l] = newl
+            self.layers[l][:] = newl
 
     def get_displayable_by_tag(self, layer, tag):
         """
@@ -2203,7 +2207,7 @@ class Interface(object):
 
         s = "Total time until interface ready: {}s".format(time.time() - import_time)
 
-        renpy.display.log.write(s)
+        pygame.event.get()
 
         if renpy.android and not renpy.config.log_to_stdout:
             print(s)
@@ -2248,10 +2252,6 @@ class Interface(object):
 
         self.set_window_caption(force=True)
         self.set_icon()
-
-        if renpy.config.key_repeat is not None:
-            delay, repeat_delay = renpy.config.key_repeat
-            pygame.key.set_repeat(int(1000 * delay), int(1000 * repeat_delay))
 
         if renpy.android:
             android.wakelock(True)
@@ -3650,8 +3650,6 @@ class Interface(object):
             if not isinstance(trans, Displayable):
                 raise Exception("Expected transition to be a displayable, not a %r" % trans)
 
-            trans._show()
-
             transition_time = self.transition_time.get(None, None)
             root_widget.add(trans, transition_time, transition_time)
 
@@ -4011,6 +4009,15 @@ class Interface(object):
                         self.text_editing = None
                 elif ev.type == pygame.TEXTINPUT:
                     self.text_editing = None
+
+                elif ev.type == pygame.KEYMAPCHANGED:
+
+                    # Clear the mods when the keymap is changed, such as when
+                    # an IME is selected. This fixes a problem on Windows 10 where
+                    # super+space won't unset super.
+                    pygame.key.set_mods(0)
+                    continue
+
                 elif self.text_editing and ev.type in [ pygame.KEYDOWN, pygame.KEYUP ]:
                     continue
 

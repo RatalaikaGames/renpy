@@ -245,12 +245,14 @@ Occasionally Used
 
     If True, Ren'Py will not require grids to be full in order to display.
 
-.. var:: config.pause_after_rollback = False
+.. var:: config.audio_filename_callback = None
 
-    If False, the default, rolling back will skip any pauses (timed or
-    not) and stop only at other interactions such as dialogues, menus...
-    If True, renpy will include timeless pauses to the valid places a
-    rollback can take the user.
+    If not None, this is a function that is called with an audio filename,
+    and is expected to return a second audio filename, the latter of which
+    will be played.
+
+    This is intended for use when an a games has audio file formats changed,
+    but it's not destired to update the game script.
 
 .. var:: config.auto_channels = { "audio" : ( "sfx", "", ""  ) }
 
@@ -592,12 +594,9 @@ Occasionally Used
     can be repeatedly loaded, hurting performance. If not none,
     :var:`config.image_cache_size` is used instead of this variable.
 
-.. var:: config.key_repeat = (.3, .03)
+.. var:: config.input_caret_blink = 1.0
 
-    Controls the rate of keyboard repeat. When key repeat is enabled, this
-    should be a tuple. The first item in the tuple is the delay before the
-    first repeat, and the second item is the delay between repeats. Both
-    are in seconds. If None, keyboard repeat is disabled.
+    If not False, sets the blinking period of the default caret, in seconds.
 
 .. var:: config.language = None
 
@@ -762,6 +761,13 @@ Occasionally Used
     A list of screens that are displayed when the overlay is enabled,
     and hidden when the overlay is suppressed. (The screens are shown
     on the screens layer, not the overlay layer.)
+
+.. var:: config.pause_after_rollback = False
+
+    If False, the default, rolling back will skip any pauses (timed or
+    not) and stop only at other interactions such as dialogues, menus...
+    If True, renpy will include timeless pauses to the valid places a
+    rollback can take the user.
 
 .. var:: config.preload_fonts = [ ]
 
@@ -1076,6 +1082,11 @@ Rarely or Internally Used
     return to the main menu, or load a game over the existing game. (To
     save time, the autosave occurs while the user is being prompted to confirm
     his or her decision.)
+
+.. var:: config.autosave_on_input = True
+
+    If True, Ren'Py will autosave when the user inputs text.
+    (When :func:`renpy.input` is called.)
 
 .. var:: config.character_callback = None
 
@@ -1513,6 +1524,11 @@ Rarely or Internally Used
     of filenames. The filenames may be absolute, or relative to
     config.renpy_base. The first filename that does not exist is used as the
     name of the screenshot.
+
+    Directories are created if they do not exist.
+
+    See also :var:`_screenshot_pattern`, which is used in preference to this
+    variable if not None.
 
 .. var:: config.script_version = None
 
