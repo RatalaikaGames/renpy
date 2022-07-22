@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -198,6 +198,10 @@ init -1900 python:
             config.side_image_requires_attributes = False
             config.window_functions_set_auto = False
             config.hw_video = True
+
+        if version <= (7, 4, 0):
+            config.pause_with_transition = True
+            config.modal_timeevents = True
 
 
     # The version of Ren'Py this script is intended for, or

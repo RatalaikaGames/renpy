@@ -8,10 +8,7 @@
 #include <SDL.h>
 #include <SDL_thread.h>
 
-#if defined(__arm__) && !(__MACOS__ || __IPHONEOS__)
-#define USE_MEMALIGN
 #include <stdlib.h>
-#endif
 
 /* Should a mono channel be split into two equal stero channels (true) or
  * should the energy be split onto two stereo channels with 1/2 the energy
@@ -34,11 +31,15 @@ const int BPS = 4; // Bytes per sample.
 
 const int FRAMES = 3;
 
+// The alignment of each row of pixels.
+const int ROW_ALIGNMENT = 16;
+
 // The number of pixels on each side. This has to be greater that 0 (since
 // Ren'Py needs some padding), FRAME_PADDING * BPS has to be a multiple of
 // 16 (alignment issues on ARM NEON), and has to match the crop in the
 // read_video function of renpysound.pyx.
-const int FRAME_PADDING = 4;
+const int FRAME_PADDING = ROW_ALIGNMENT / 4;
+
 
 const int SPEED = 1;
 
@@ -577,6 +578,8 @@ static AVCodecContext *find_context(AVFormatContext *ctx, int index) {
 		goto fail;
 	}
 
+    codec_ctx->thread_count = 0;
+
 	if (avcodec_open2(codec_ctx, codec, NULL)) {
 		goto fail;
 	}
@@ -831,19 +834,21 @@ static SurfaceQueueEntry *decode_video_frame(MediaState *ms) {
 		return NULL;
 	}
 	rv->w = ms->video_decode_frame->width + FRAME_PADDING * 2;
-	rv->pitch = rv->w * sample->format->BytesPerPixel;
 	rv->h = ms->video_decode_frame->height + FRAME_PADDING * 2;
 
-	// We have to use SDL_calloc here, since SDL frees these pixels. This
-	// Should be
+	rv->pitch = rv->w * sample->format->BytesPerPixel;
 
+	if (rv->pitch % ROW_ALIGNMENT) {
+	    rv->pitch += ROW_ALIGNMENT - (rv->pitch % ROW_ALIGNMENT);
+	}
 
-#ifdef USE_MEMALIGN
-    posix_memalign(&rv->pixels, 16, rv->pitch * rv->h);
-    memset(rv->pixels, 0, rv->pitch * rv->h);
+#if defined(_WIN32)
+    rv->pixels = SDL_calloc(rv->pitch * rv->h, 1);
 #else
-    rv->pixels = SDL_calloc(1, rv->pitch * rv->h);
+    posix_memalign(&rv->pixels, ROW_ALIGNMENT, rv->pitch * rv->h);
 #endif
+
+    memset(rv->pixels, 0, rv->pitch * rv->h);
 
 	rv->format = sample->format;
 	rv->next = NULL;

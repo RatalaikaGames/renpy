@@ -1,4 +1,4 @@
-# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -333,11 +333,12 @@ def read_video(channel):
     if rv is None:
         return rv
 
-    # MBG - 2 pixels? 4? who knows? why? who knows.
     # Remove padding from the edges of the surface.
-    #w, h = rv.get_size()
-    #return rv.subsurface((4, 4, w-8, h-8))
-    return rv
+    w, h = rv.get_size()
+
+    # This has to be set to the same number it is in ffmedia.c
+    FRAME_PADDING = 4
+    return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
 
 # No video will be played from this channel.
 NO_VIDEO = 0

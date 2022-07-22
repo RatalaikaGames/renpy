@@ -12,6 +12,28 @@ features.
 Incompatible changes to the GUI are documented at :ref:`gui-changes`, as
 such changes only take effect when the GUI is regenerated.
 
+.. _incompatible-7.4.1:
+
+7.4.1
+-----
+
+Pause with a delay now uses :func:`renpy.pause` rather than ``with Pause(...)``.
+This means that the user will have to click to bypass multiple pauses in a row.
+To revert to the old behavior, use::
+
+    define config.pause_with_transition = True
+
+Modal screens no longer block pause, timeouts, and other displayables
+that rely on events being delivered on time from functioning. This means
+that a pause can end when a modal screen is up
+
+To restore the old behavior:
+
+    define config.modal_timeevent = True
+
+
+
+
 .. _incompatible-7.4:
 
 7.4

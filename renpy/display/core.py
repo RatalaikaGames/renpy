@@ -1,4 +1,4 @@
-# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -2196,31 +2196,42 @@ class Interface(object):
         renderer = os.environ.get("RENPY_RENDERER", renderer)
         renderer = renpy.session.get("renderer", renderer)
 
+        if renpy.android or renpy.ios or renpy.emscripten:
+            renderers = [ "gles" ]
+        elif renpy.windows:
+            renderers = [ "gl", "angle", "gles" ]
+        else:
+            renderers = [ "gl", "gles" ]
+
+        gl2_renderers = [ ]
+
+        for i in [ "gl", "angle", "gles" ]:
+
+            if i in renderers:
+                gl2_renderers.append(i + "2")
+
+        if renpy.config.gl2:
+            renderers = gl2_renderers + renderers
+
+            # Prevent a performance warning if the renderer
+            # is taken from old persistent data
+            if renderer not in gl2_renderers:
+                renderer = "auto"
+
+        else:
+            renderers = renderers + gl2_renderers
+
+        if renderer in renderers:
+            renderers = [ renderer, "sw" ]
+
+        # Software renderer is the last hope for PC and mac.
+        if not (renpy.android or renpy.ios or renpy.emscripten):
+            renderers = renderers + [ "sw" ]
+
         if self.safe_mode:
             renderer = "sw"
 
-        if (renderer == "angle" or renderer == "angle2") and (not renpy.windows):
-            renderer = "auto"
-
         renpy.config.renderer = renderer
-
-        if renderer == "auto":
-
-            if renpy.android or renpy.ios or renpy.emscripten:
-                renderers = [ "gles" ]
-            elif renpy.windows:
-                renderers = [ "gl", "angle", "gles", "sw" ]
-            else:
-                renderers = [ "gl", "gles", "sw" ]
-
-            if renpy.config.gl2:
-
-                for i in [ "gles", "angle", "gl" ]:
-                    if i in renderers:
-                        renderers.insert(0, i + "2")
-
-        else:
-            renderers = [ renderer, "sw" ]
 
         draw_objects = { }
 
@@ -2257,7 +2268,7 @@ class Interface(object):
 
         def append_draw(name):
             if name in draw_objects:
-                rv.append(draw_objects[name])
+                rv.append((name, draw_objects[name]))
             else:
                 renpy.display.log.write("Unknown renderer: {0}".format(name))
 
@@ -2331,7 +2342,9 @@ class Interface(object):
         else:
             draws = self.get_draw_constructors()
 
-        for draw in draws:
+        for name, draw in draws:
+            renpy.display.log.write("")
+            renpy.display.log.write("Initializing {0} renderer:".format(name))
             if draw.init(virtual_size):
                 renpy.display.draw = draw
                 renpy.display.render.models = draw.info.get("models", False)
@@ -2502,9 +2515,20 @@ class Interface(object):
             PPP("empty window")
 
             try:
+
+                old_say_attributes = renpy.game.context().say_attributes
+                renpy.game.context().say_attributes = None
+
+                old_temporary_attributes = renpy.game.context().temporary_attributes
+                renpy.game.context().temporary_attributes = None
+
                 renpy.config.empty_window()
+
             finally:
                 renpy.store._history = old_history
+
+                renpy.game.context().say_attributes = old_say_attributes
+                renpy.game.context().temporary_attributes = old_temporary_attributes
 
     def do_with(self, trans, paired, clear=False):
 
@@ -2528,8 +2552,6 @@ class Interface(object):
         """
 
         PPP("start of with none")
-
-        renpy.game.context().say_attributes = None
 
         # Show the window, if that's necessary.
         self.show_window()
@@ -3826,8 +3848,6 @@ class Interface(object):
             return False, e.value
 
         finally:
-
-            renpy.game.context().say_attributes = None
 
             # Clean out the overlay layers.
             for i in renpy.config.overlay_layers:

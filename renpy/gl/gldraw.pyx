@@ -1,6 +1,6 @@
 #cython: profile=False
 #@PydevCodeAnalysisIgnore
-# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -159,11 +159,11 @@ cdef class GLDraw:
         renpy.game.preferences.fullscreen = fullscreen
         renpy.game.interface.fullscreen = fullscreen
 
-        if not fullscreen:
-            renpy.game.preferences.physical_size = pwidth, pheight
-
         self.physical_size = (pwidth, pheight)
         self.drawable_size = pygame.display.get_drawable_size()
+
+        if not fullscreen:
+            renpy.game.preferences.physical_size = self.get_physical_size()
 
         renpy.display.log.write("Screen sizes: virtual=%r physical=%r drawable=%r" % (self.virtual_size, self.physical_size, self.drawable_size))
 
@@ -236,6 +236,9 @@ cdef class GLDraw:
             width = self.virtual_size[0]
             height = self.virtual_size[1]
 
+        width *= self.dpi_scale
+        height *= self.dpi_scale
+
         max_w, max_h = self.info["max_window_size"]
         width = min(width, max_w)
         height = min(height, max_h)
@@ -285,8 +288,6 @@ cdef class GLDraw:
             fullscreen = True
         else:
             fullscreen = renpy.game.preferences.fullscreen
-
-        renpy.display.log.write("")
 
         self.virtual_size = virtual_size
 
@@ -378,6 +379,7 @@ cdef class GLDraw:
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 2);
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0);
             pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
+
         else:
             pygame.display.hint("SDL_OPENGL_ES_DRIVER", "0")
 
@@ -409,6 +411,9 @@ cdef class GLDraw:
         if opengl:
             pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, vsync)
             pygame.display.gl_set_attribute(pygame.GL_ALPHA_SIZE, 8)
+
+        if renpy.config.gl_set_attributes is not None:
+            renpy.config.gl_set_attributes()
 
         self.window = None
 
@@ -761,7 +766,6 @@ cdef class GLDraw:
             try:
                 pygame.display.flip()
             except pygame.error:
-                print("Flip failed.")
                 renpy.game.interface.display_reset = True
 
             end = time.time()
@@ -1297,8 +1301,6 @@ cdef class GLDraw:
         y = int(y / self.dpi_scale)
 
         return (x, y)
-
-
 
 
 class Rtt(object):

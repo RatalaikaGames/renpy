@@ -1,4 +1,4 @@
-# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -725,7 +725,8 @@ class ScreenDisplayable(renpy.display.layout.Container):
             return rv
 
         if self.modal:
-            raise renpy.display.layout.IgnoreLayers()
+            if (ev.type != renpy.display.core.TIMEEVENT) or renpy.config.modal_timeevent:
+                raise renpy.display.layout.IgnoreLayers()
 
     def get_phase_name(self):
         return phase_name[self.phase]

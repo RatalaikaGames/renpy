@@ -1,4 +1,4 @@
-# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -601,7 +601,7 @@ missing_label_callback = None
 preserve_zorder = True
 
 # The set of names to ignore.
-lint_ignore_replaces = [ 'help', 'quit' ]
+lint_ignore_replaces = [ 'help', 'quit', "_confirm_quit" ]
 
 # How long should the presplash be kept up for?
 minimum_presplash_time = 0.0
@@ -1083,6 +1083,12 @@ side_image_only_not_showing = False
 # How much should the texture bounds be expanded by? This allows the mipmaps
 # to properly include
 expand_texture_bounds = 8
+
+# Should time events be modal?
+modal_timeevent = False
+
+# This exists for debugging Ren'Py.
+gl_set_attributes = None
 
 del os
 del collections

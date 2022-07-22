@@ -1,4 +1,4 @@
-# Copyright 2004-2020 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -171,6 +171,8 @@ def elide_filename(fn):
 
 
 def unelide_filename(fn):
+    fn = os.path.normpath(fn)
+
     fn1 = os.path.join(renpy.config.basedir, fn)
     if os.path.exists(fn1):
         return fn1
