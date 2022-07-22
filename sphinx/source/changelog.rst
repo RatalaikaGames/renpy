@@ -26,6 +26,19 @@ and not::
 This means that other features that expect a real pause will work during the
 pause statement.
 
+Say Statement Id Clause
+-----------------------
+
+The say statement has now grown an ``id`` clause, that lets you specify the
+old say statement id. This is useful for changing a say statement in the
+original language, such as to fix an obvious typo, without needing to
+update all the translations.
+
+To use it, just add ``id`` to the say statement, followed by the
+statement id::
+
+    e "This used to have a typo." id start_61b861a2
+
 Screen Modal Change
 -------------------
 
@@ -39,14 +52,43 @@ Live2D
 Live2D support has has a `default_fade` argument added, which can change the
 default duration of fades at the start and end of motions and expressions.
 
-An issue with live2d that manifested as a tuple error has been fixed.
+An issue with Live2D that manifested as a tuple error has been fixed.
 
-macOS Compatibility
--------------------
+Controller Blocklist
+--------------------
+
+The Nintendo Switch Pro Controller, when connected to a computer by
+USB, requires an initialization sequence to be sent to cause it to
+act as a Joystick, and not return incorrect data.
+
+Ren'Py 7.4.0 attempted to send this sequence, but doing so required
+directly accessing the USB bus, which was causing crashes and long
+pauses on some computer. We've decided that this functionality is too
+prone to compatibility problems to include in Ren'Py.
+
+As a result, the Switch Pro Controller has been added to a new
+controller blocklist, and will not function in Ren'Py.
+
+macOS
+-----
 
 The minimum supported version of macOS is now 10.10 (Yosemite). Ren'Py
 7.4 did not run on this version, so this represents a restoration of
 support for this version.
+
+Choosing the projects directory was broken on macOS 11.0 (Big Sur).
+This has been fixed.
+
+Pyobjus is now part of the macOS build of Ren'Py, in addition to
+the iOS build. This library makes it possible to access Cocoa APIs.
+
+Android
+-------
+
+There have been reports that prereleases of Ren'Py 7.4.1 will not run
+properly on older Android devices, like the Samsung Galaxy S5. We
+are attempting to acquire an example of a device exhibiting the
+problem, and will make a new release as required.
 
 Translations
 ------------
@@ -81,10 +123,35 @@ improved.
 An issue that prevented triple-quoted strings (like the strings used for
 gui.about) from being evaluated correctly has been fixed.
 
-Ren'Py now attempts to detect and prevent a crash when controller
-emulation software (such as SCP Toolkit) is in use.
-
 Ren'Py now detects its path during certain reloads.
+
+Ren'Py will determine of all functions a renderer requires can be
+dynamically loaded, and will try different renderers if this is not
+the case.
+
+Timers that are created after the start of a statement now properly
+participate in the rollback system, and will fire if the game rolls
+back to a point where the timer has not fired.
+
+Ren'Py now allows the screensaver to activate while a Ren'Py game is
+running.
+
+A problem with dynamic variables not remaining dynamic during a rollback
+has been fixed.
+
+When given a size, the hbox and vbox displayables now position children
+in the same way those children were positioned in Ren'Py 7.4.
+
+The :func:`Dissolve`, :func:`ImageDissolve`, and :func:`AlphaDissolve`
+transitions and the :func:`AlphaMask` displayable now have a `mipmap`
+parameter, that determines if mipmaps are created. Avoding creating
+mipmaps may improve rendering performance on slower computers, but
+can lead to artifacts when scaling down. When not specified, this
+parameter defaults to :var:`config.mipmap_dissolves`, which defaults
+to False.
+
+The toggle version of self-voicing preferences have been changed to
+provide a better selected state.
 
 
 .. _renpy-7.4:

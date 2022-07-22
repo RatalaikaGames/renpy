@@ -1033,6 +1033,13 @@ Rarely or Internally Used
 
     A list of layers that are cleared when entering a new context.
 
+.. var:: config.controller_blocklist = [ ... ]
+
+    A list of strings, where each string is matched against the GUID
+    of a game controller. These strings are mached as a prefix to the
+    controller GUID (which cand be found in log.txt), and if matched,
+    prevent the controller from being initialized.
+
 .. var:: config.exception_handler = None
 
     If not None, this should be a function that takes three arguments:
@@ -1227,6 +1234,11 @@ Rarely or Internally Used
     If not None, this is expected to be a filename. Much of the text
     shown to the user by :ref:`say <say-statement>` or :ref:`menu
     <menu-statement>` statements will be logged to this file.
+
+.. var:: config.mipmap_dissolves = False
+
+    The default value of the mipmap argument to :func:`Dissolve`,
+    :func:`ImageDissolve`, :func:`AlphaDissolve`, and :func:`AlphaMask`.
 
 .. var:: config.missing_image_callback = None
 
