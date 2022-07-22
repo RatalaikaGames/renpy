@@ -107,10 +107,8 @@ def transform_render(self, widtho, heighto, st, at):
     # Render the child.
     child = self.child
 
-
     if child is None:
         child = renpy.display.transform.get_null()
-
 
     state = self.state
 
@@ -119,8 +117,12 @@ def transform_render(self, widtho, heighto, st, at):
     fit = state.fit
 
     if xsize is not None:
+        if (type(xsize) is float) and renpy.config.relative_transform_size:
+            xsize *= widtho
         widtho = xsize
     if ysize is not None:
+        if (type(ysize) is float) and renpy.config.relative_transform_size:
+            ysize *= heighto
         heighto = ysize
 
     # Figure out the perspective.
@@ -128,7 +130,7 @@ def transform_render(self, widtho, heighto, st, at):
 
     if perspective is True:
         perspective = renpy.config.perspective
-    if isinstance(perspective, (int, float)):
+    elif isinstance(perspective, (int, float)):
         perspective = (renpy.config.perspective[0], perspective, renpy.config.perspective[2])
 
     # Set the z11 distance.
@@ -561,7 +563,10 @@ def transform_render(self, widtho, heighto, st, at):
         value = getattr(state, name, None)
 
         if value is not None:
-            rv.add_property(name[3:], value)
+            if mesh:
+                mr.add_property(name[3:], value)
+            else:
+                rv.add_property(name[3:], value)
 
     # Clipping.
     rv.xclipping = clipping

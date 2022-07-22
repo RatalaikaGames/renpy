@@ -2062,7 +2062,7 @@ class RollbackLog(renpy.object.Object):
         for rb in revlog:
             rb.rollback()
 
-            if rb.context.current == self.fixed_rollback_boundary:
+            if (rb.context.current == self.fixed_rollback_boundary) and (rb.context.current):
                 self.rollback_is_fixed = True
 
             if rb.forward is not None:
@@ -2097,6 +2097,8 @@ class RollbackLog(renpy.object.Object):
             i.scene_lists.remove_all_hidden()
 
         renpy.game.contexts.extend(other_contexts)
+
+        renpy.exports.execute_default_statement(False)
 
         self.mutated.clear()
         begin_stores()

@@ -626,6 +626,9 @@ class MultiBox(Container):
         # that layer.
         self.layers = None
 
+        # The same, but for the raw layers.
+        self.raw_layers = None
+
         # The scene list for this widget.
         self.scene_list = None
 
@@ -635,6 +638,7 @@ class MultiBox(Container):
         self.start_times = [ ]
         self.anim_times = [ ]
         self.layers = None
+        self.raw_layers = None
         self.scene_list = None
 
     def _in_current_store(self):
@@ -669,18 +673,24 @@ class MultiBox(Container):
         elif self.layers:
             rv = MultiBox(layout=self.default_layout)
             rv.layers = { }
+            rv.raw_layers = { }
 
             changed = False
 
             for layer in renpy.config.layers:
-                old_d = self.layers[layer]
+                old_d = self.raw_layers[layer]
                 new_d = old_d._in_current_store()
+
+                rv.raw_layers[layer] = new_d
 
                 if new_d is not old_d:
                     changed = True
+                    new_d = renpy.game.context().scene_lists.transform_layer(layer, new_d)
+                else:
+                    new_d = self.layers[layer]
 
-                rv.add(new_d)
                 rv.layers[layer] = new_d
+                rv.add(new_d)
 
             if not changed:
                 return self
@@ -1102,6 +1112,12 @@ class MultiBox(Container):
                 raise
 
         return None
+
+    def _tts(self):
+        if self.layers or self.scene_list:
+            return self._tts_common(reverse=renpy.config.tts_front_to_back)
+        else:
+            return self._tts_common()
 
 
 def Fixed(**properties):
@@ -1937,6 +1953,41 @@ class AdjustTimes(Container):
     def event(self, ev, x, y, st):
         st, _ = self.adjusted_times()
         Container.event(self, ev, x, y, st)
+
+    def get_placement(self):
+        return self.child.get_placement()
+
+
+class MatchTimes(Container):
+    """
+    A displayable that changes the `target` so that the times given to
+    this target match the times this displayable was rendered at.
+
+    `target`
+        This must be an AdjustTimes displayable, that's a child of this
+        MatchTimes displayable.
+    """
+
+    def __init__(self, child, target, **properties):
+        super(MatchTimes, self).__init__(**properties)
+
+        self.target = target
+
+        self.add(child)
+
+    def render(self, w, h, st, at):
+
+        self.target.start_time = renpy.game.interface.frame_time - st
+        self.target.anim_time = renpy.game.interface.frame_time - at
+
+        cr = renpy.display.render.render(self.child, w, h, st, at)
+        cw, ch = cr.get_size()
+        rv = renpy.display.render.Render(cw, ch)
+        rv.blit(cr, (0, 0))
+
+        self.offsets = [ (0, 0) ]
+
+        return rv
 
     def get_placement(self):
         return self.child.get_placement()

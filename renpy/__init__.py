@@ -62,6 +62,7 @@ import sys
 import os
 import copy
 import types
+import site
 
 ################################################################################
 # Version information
@@ -69,18 +70,27 @@ import types
 
 # Version numbers.
 try:
-    from renpy.vc_version import vc_version
+    from renpy.vc_version import vc_version, official, nightly
 except ImportError:
     vc_version = 0
+    official = False
+    nightly = False
+
+official = official and getattr(site, "renpy_build_official", False)
 
 # The tuple giving the version number.
-version_tuple = (7, 4, 8, vc_version)
+version_tuple = (7, 4, 9, vc_version)
 
 # The name of this version.
-version_name = "Lucky Eight Ball"
+version_name = "Lucky Robot Retcon"
 
-# A string giving the version number only (8.0.1.123).
+# A string giving the version number only (8.0.1.123), with a suffix if needed.
 version_only = ".".join(str(i) for i in version_tuple)
+
+if not official:
+    version_only += "u"
+elif nightly:
+    version_only += "n"
 
 # A verbose string giving the version.
 version = "Ren'Py " + version_only
@@ -609,9 +619,11 @@ def reload_all():
     renpy.display.render.mark_sweep()
 
     # Get rid of the draw module and interface.
-    renpy.display.draw.quit()
-    renpy.display.draw = None
     renpy.display.interface = None
+
+    if not renpy.session.get("_keep_renderer", False):
+        renpy.display.draw.quit()
+        renpy.display.draw = None
 
     py_compile_cache = renpy.python.py_compile_cache
     reload_modules = renpy.config.reload_modules

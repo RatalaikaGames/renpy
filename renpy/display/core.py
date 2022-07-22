@@ -700,16 +700,26 @@ class Displayable(renpy.object.Object):
 
         return
 
-    def _tts_common(self, default_alt=None):
+    def _tts_common(self, default_alt=None, reverse=False):
 
         rv = [ ]
 
-        for i in self.visit()[::-1]:
+        if reverse:
+            order = 1
+        else:
+            order = -1
+
+        speech = ""
+
+        for i in self.visit()[::order]:
             if i is not None:
                 speech = i._tts()
 
                 if speech.strip():
                     rv.append(speech)
+
+                    if isinstance(speech, renpy.display.tts.TTSDone):
+                        break
 
         rv = ": ".join(rv)
         rv = rv.replace("::", ":")
@@ -722,6 +732,8 @@ class Displayable(renpy.object.Object):
 
         if alt is not None:
             rv = renpy.substitutions.substitute(alt, scope={ "text" : rv })[0]
+
+        rv = type(speech)(rv)
 
         return rv
 
@@ -1332,6 +1344,16 @@ class SceneLists(renpy.object.Object):
         rv.append_scene_list(self.layers[layer])
         rv.layer_name = layer
         rv._duplicatable = False
+
+        return rv
+
+    def transform_layer(self, layer, d):
+        """
+        When `d` is a layer created with make_layer, returns `d` with the
+        various at_list transformas applied to it.
+        """
+
+        rv = d
 
         # Layer at list.
 
@@ -2442,6 +2464,7 @@ class Interface(object):
         renpy.display.im.cache.clear()
         renpy.display.render.free_memory()
         renpy.text.text.layout_cache_clear()
+        renpy.display.video.texture.clear()
 
     def kill_surfaces(self):
         """
@@ -2488,6 +2511,10 @@ class Interface(object):
         This constructs the draw object and sets the initial size of the
         window.
         """
+
+        if renpy.session.get("_keep_renderer", False):
+            renpy.display.render.models = renpy.display.draw.info.get("models", False)
+            return
 
         virtual_size = (renpy.config.screen_width, renpy.config.screen_height)
 
@@ -2898,17 +2925,22 @@ class Interface(object):
         name to a Fixed containing that layer.
         """
 
+        raw = { }
         rv = { }
 
         for layer in renpy.config.layers + renpy.config.top_layers:
-            rv[layer] = scene_lists.make_layer(layer, self.layer_properties[layer])
+            raw[layer] = d = scene_lists.make_layer(layer, self.layer_properties[layer])
+            rv[layer] = scene_lists.transform_layer(layer, d)
 
         root = renpy.display.layout.MultiBox(layout='fixed')
         root.layers = { }
+        root.raw_layers = { }
 
         for layer in renpy.config.layers:
             root.layers[layer] = rv[layer]
+            root.raw_layers[layer] = raw[layer]
             root.add(rv[layer])
+
         rv[None] = root
 
         return rv
@@ -3602,6 +3634,7 @@ class Interface(object):
         # The root widget of all of the layers.
         layers_root = renpy.display.layout.MultiBox(layout='fixed')
         layers_root.layers = { }
+        layers_root.raw_layers = scene[None].raw_layers
 
         def add_layer(where, layer):
 
@@ -3637,6 +3670,7 @@ class Interface(object):
 
             old_root = renpy.display.layout.MultiBox(layout='fixed')
             old_root.layers = { }
+            old_root.raw_layers = self.transition_from[None].raw_layers
 
             for layer in renpy.config.layers:
                 d = self.transition_from[None].layers[layer]

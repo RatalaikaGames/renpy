@@ -32,7 +32,8 @@ at clause. The syntax of the transform statement is:
 The transform statement  must be run at init time. If it is found outside an
 ``init`` block, then it is automatically placed inside an ``init`` block with a
 priority of 0. The transform may have a list of parameters, which must be
-supplied when it is called.
+supplied when it is called. Default values for the right-most parameters can
+be given by adding "=" and the value (e.g. "transform a (b, c=0):").
 
 `Name` must be a Python identifier. The transform created by the ATL block is
 bound to this name.::
@@ -719,25 +720,41 @@ both horizontal and vertical positions.
 
     Equivalent to setting ypos and yanchor to this value.
 
+.. transform-property:: offset
+
+    :type: (int, int)
+    :default: (0, 0)
+
+    The number of pixels the displayable is offset by in each direction.
+    Positive values offset towards the bottom-right.
+
 .. transform-property:: xoffset
 
-    :type: float
-    :default: 0.0
+    :type: int
+    :default: 0
 
     The number of pixels the displayable is offset by in the horizontal
     direction. Positive values offset toward the right.
 
 .. transform-property:: yoffset
 
-    :type: float
-    :default: 0.0
+    :type: int
+    :default: 0
 
     The number of pixels the displayable is offset by in the vertical
     direction. Positive values offset toward the bottom.
 
+.. transform-property:: xycenter
+
+    :type: (position, position)
+    :default: (0.0, 0.0)
+
+    Equivalent to setting pos to the value of this property, and
+    anchor to (0.5, 0.5).
+
 .. transform-property:: xcenter
 
-    :type: float
+    :type: position
     :default: 0.0
 
     Equivalent to setting xpos to the value of this property, and
@@ -745,7 +762,7 @@ both horizontal and vertical positions.
 
 .. transform-property:: ycenter
 
-    :type: float
+    :type: position
     :default: 0.0
 
     Equivalent to setting ypos to the value of this property, and
@@ -926,9 +943,9 @@ both horizontal and vertical positions.
     If not None, gives the lower right corner of the crop box. Cropt takes
     priority over corners.
 
-.. transform-property:: size
+.. transform-property:: xysize
 
-    :type: None or (int, int)
+    :type: None or (position, position)
     :default: None
 
     If not None, causes the displayable to be scaled to the given
@@ -938,7 +955,7 @@ both horizontal and vertical positions.
 
 .. transform-property:: xsize
 
-    :type: None or int
+    :type: None or position
     :default: None
 
     If not None, causes the displayable to be scaled to the given width.
@@ -947,7 +964,7 @@ both horizontal and vertical positions.
 
 .. transform-property:: ysize
 
-    :type: None or int
+    :type: None or position
     :default: None
 
     If not None, causes the displayable to be scaled to the given height.
@@ -984,6 +1001,20 @@ both horizontal and vertical positions.
         - As for ``cover``, but will never decrease the size of the
           displayable.
 
+.. transform-property:: size
+
+    :type: None or (int, int)
+    :default: None
+
+    If not None, causes the displayable to be scaled to the given
+    size.
+
+    This is affected by the :tpref:`fit` property.
+
+    .. warning::
+
+        This property is deprecated. Use :tpref:`xysize` instead.
+
 .. transform-property:: maxsize
 
     :type: None or (int, int)
@@ -996,7 +1027,7 @@ both horizontal and vertical positions.
 
     .. warning::
 
-        This property is deprecated. Consider using :tpref:`size` in
+        This property is deprecated. Consider using :tpref:`xysize` in
         conjuction with :tpref:`fit` and the value ``contain``.
 
 .. transform-property:: subpixel
@@ -1114,7 +1145,7 @@ These properties are applied in the following order:
 #. tile
 #. mesh, blur
 #. crop, corner1, corner2
-#. size, maxsize
+#. xysize, size, maxsize
 #. zoom, xzoom, yzoom
 #. pan
 #. rotate

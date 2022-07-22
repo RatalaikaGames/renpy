@@ -1963,15 +1963,23 @@ This can be used to display an imagemap. The imagemap can place a
 value into the ``_return`` variable using the :func:`Return` action,
 or can jump to a label using the :func:`Jump` action.
 
-The call screen statement takes an optional ``nopredict`` keyword, that
+The call screen statement takes an optional ``nopredict`` keyword, which
 prevents screen prediction from occurring. During screen prediction,
 arguments to the screen are evaluated. Please ensure that evaluating
 the screen arguments does not cause unexpected side-effects to occur.
 
-The call screen statement takes an optional ``with`` keyword, followed
-by a transition. The transition takes place when the screen is first
-displayed. A with statement after the transition runs after the screen
-is hidden, provided control is not transferred.
+In a call screen statement, the ``with`` clause causes a transition
+to occur when the screen is shown.
+
+Since calling a screen is an interaction, and interactions trigger
+an implicit ``with None``, using a ``with`` statement after the
+``call screen`` instruction won't make the screen disappear using the
+transition, as the screen will already will be gone. To disable the
+implicit ``with None`` transition, pass the ``_with_none=False``
+special keyword argument to the screen, as in the example below.
+
+Other ways of triggering transitions also work, such as the
+``[ With(dissolve), Return() ]`` action list.
 
 .. warning::
 
@@ -1984,9 +1992,14 @@ is hidden, provided control is not transferred.
 
     call screen my_screen(side_effect_function()) nopredict
 
-    # Shows the screen with dissolve and hides it with fade.
+    # Shows the screen with dissolve
     call screen my_other_screen with dissolve
-    with fade
+    # The screens instantly hides with None, then the pixellate transition executes
+    with pixellate
+
+    # Shows the screen with dissolve and hides it with pixellate.
+    call screen my_other_screen(_with_none=False) with dissolve
+    with pixellate
 
 .. _screen-variants:
 

@@ -909,6 +909,7 @@ class SLDisplayable(SLBlock):
 
                 if widget_id and not ctx.unlikely:
                     screen.widgets[widget_id] = main
+                    screen.base_widgets[widget_id] = d
 
                 if self.scope and main._uses_scope:
                     if copy_on_change:
@@ -945,6 +946,7 @@ class SLDisplayable(SLBlock):
 
                 if widget_id and not ctx.unlikely:
                     screen.widgets[widget_id] = main
+                    screen.base_widgets[widget_id] = d
                 # End child creation code.
 
                 imagemap = self.imagemap
@@ -1028,6 +1030,7 @@ class SLDisplayable(SLBlock):
 
                 if widget_id:
                     screen.widgets[widget_id] = main
+                    screen.base_widgets[widget_id] = d
                 # End child creation code.
 
                 cache.copy_on_change = False
@@ -2467,7 +2470,7 @@ def save_cache():
         return
 
     try:
-        data = zlib.compress(dumps(scache, 2), 9)
+        data = zlib.compress(dumps(scache, 2), 3)
 
         with open(renpy.loader.get_path(CACHE_FILENAME), "wb") as f:
             f.write(renpy.game.script.digest.digest())

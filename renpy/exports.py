@@ -1259,14 +1259,14 @@ def display_menu(items,
 
             item_actions.append(me)
 
-            show_screen(
-                screen,
-                items=item_actions,
-                _widget_properties=props,
-                _transient=True,
-                _layer=renpy.config.choice_layer,
-                *menu_args,
-                **scope)
+        show_screen(
+            screen,
+            items=item_actions,
+            _widget_properties=props,
+            _transient=True,
+            _layer=renpy.config.choice_layer,
+            *menu_args,
+            **scope)
 
     else:
         renpy.exports.shown_window()
@@ -1826,13 +1826,15 @@ def full_restart(transition=False, label="_invoke_main_menu", target="_main_menu
     raise renpy.game.FullRestartException((transition, label, target))
 
 
-def utter_restart():
+def utter_restart(keep_renderer=False):
     """
     :undocumented: Used in the implementation of shift+R.
 
     Causes an utter restart of Ren'Py. This reloads the script and
     re-runs initialization.
     """
+
+    renpy.session["_keep_renderer"] = keep_renderer
 
     raise renpy.game.UtterRestartException()
 
@@ -4214,4 +4216,50 @@ def set_focus(screen, id, layer="screens"): # @ReservedAssignment
     renpy.display.focus.override = (screen, id, layer)
     renpy.display.interface.last_event = None
     restart_interaction()
+
+
+def check_permission(permission):
+    """
+    :doc: android_permission
+
+    Checks to see if an Android permission has been granted to this application.
+
+    `permission`
+        A string giving the name of the permission, for example, "android.permission.WRITE_EXTERNAL_STORAGE".
+
+    Returns true if the permission has been granted, false if it has not or if called on
+    a non-Android platform.
+    """
+
+    if not renpy.android:
+        return False
+
+    from jnius import autoclass
+    PythonSDLActivity = autoclass("org.renpy.android.PythonSDLActivity")
+    activity = PythonSDLActivity.mActivity
+
+    try:
+        return activity.checkSelfPermission(permission) == 0 # PackageManager.PERMISSION_GRANTED
+    except:
+        return False
+
+
+def request_permission(permission):
+    """
+    :doc: android_permission
+
+    Asks Android to grant a permission to this application. The user may be
+    prompted to grant the permission.
+
+    `permission`
+        A string giving the name of the permission, for example, "android.permission.WRITE_EXTERNAL_STORAGE".
+
+    Returns true if the permission has been granted, false if not or if called on a
+    non-Android platform.
+    """
+
+    if not renpy.android:
+        return False
+
+    return get_sdl_dll().SDL_AndroidRequestPermission(permission.encode("utf-8"))
 
