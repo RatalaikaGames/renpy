@@ -147,10 +147,10 @@ has changed slightly. Here's the latest list of what is supported:
       - Intended to support Raspberry Pi, uses Raspian Buster
     * - Windows
       - x86_64
-      - A new port to 64-bit Windows XP+
+      - A new port to 64-bit Windows Vista and later.
     * - Windows
       - i686
-      - Continued support for 32-Bit Windows XP+
+      - Raised minimum version to Windows Vista.
     * - macOS
       - x86_64
       - macOS 10.6+ (All 64-bit macOS versions.)
@@ -206,6 +206,16 @@ to native Ren'Py ports.
 
 Support for iOS browsers was improved.
 
+Steam
+-----
+
+It is now possible to install Steam support from the Ren'Py launcher, by
+choosing "preferences", "Install libraries", "Install Steam Support".
+
+The new :var:`config.steam_appid` variable automatically creates the
+steam_appid.txt file for you. This needs to be set by a ``define`` statement,
+or in a python early block.
+
 Translations
 ------------
 
@@ -218,7 +228,9 @@ Neoteus.
 Depreciations and Removals
 --------------------------
 
-As describe above, Ren'Py no longer supports 32-bit iOS devices.
+As described above, Ren'Py no longer support Windows XP.
+
+As described above, Ren'Py no longer supports 32-bit iOS devices.
 
 The choice of downloading the Editra text editor has been removed from Ren'Py.
 Editra hadn't been updated in over 5 years, and the website it was originally
