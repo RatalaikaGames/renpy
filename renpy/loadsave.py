@@ -315,7 +315,7 @@ class SaveRecord(object):
         This writes a standard-format savefile to `filename`.
         """
 
-        with zipfile.ZipFile(filename_new, "w", zipfile.ZIP_DEFLATED) as zf:
+        with zipfile.ZipFile(filename, "w", zipfile.ZIP_DEFLATED) as zf:
             # Screenshot.
             if self.screenshot is not None:
                 zf.writestr("screenshot.png", self.screenshot)
