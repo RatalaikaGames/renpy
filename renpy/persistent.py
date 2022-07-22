@@ -26,6 +26,7 @@ import os
 import copy
 import time
 import zlib
+import weakref
 
 import renpy
 
@@ -415,6 +416,11 @@ def save():
 # MultiPersistent
 ################################################################################
 
+save_MP_instances = weakref.WeakSet()
+
+def save_MP():
+    for ins in save_MP_instances:
+        ins.save()
 
 class _MultiPersistent(object):
 
@@ -440,7 +446,7 @@ class _MultiPersistent(object):
         dump(self, f)
         f.close()
 
-def MultiPersistent(name):
+def MultiPersistent(name, save_on_quit=False):
 
     name = renpy.exports.fsencode(name)
 
@@ -500,6 +506,9 @@ def MultiPersistent(name):
         rv = _MultiPersistent()
 
     rv._filename = fn  # W0201
+
+    if save_on_quit:
+        save_MP_instances.add(rv)
     return rv
 
 

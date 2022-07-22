@@ -520,9 +520,8 @@ Occasionally Used
 .. var:: config.hw_video = False
 
     If true, hardware video playback will be used on mobile platforms. This
-    is faster, but only some formats are supported and only fullscreen video
-    is available. If false, software playback will be used, but it may be
-    too slow to be useful.
+    may be faster, but only some formats are supported and only fullscreen video
+    is available. If false, software playback will be used.
 
 .. var:: config.hyperlink_handlers = { ... }
 
@@ -1320,6 +1319,11 @@ Rarely or Internally Used
 
     If set to True, some profiling information will be output to
     stdout.
+
+.. var:: config.profile_init = 0.25
+
+    ``init`` and ``init python`` blocks taking longer than this amount of time
+    to run are reported to log file.
 
 .. var:: config.quit_on_mobile_background = False
 

@@ -673,7 +673,6 @@ class Say(Node):
     def execute(self):
 
         next_node(self.next)
-        statement_name("say")
 
         try:
 
@@ -681,6 +680,11 @@ class Say(Node):
             renpy.game.context().temporary_attributes = self.temporary_attributes
 
             who = eval_who(self.who, self.who_fast)
+
+            if who is not None:
+                statement_name(getattr(who, "statement_name", "say"))
+            else:
+                statement_name("say")
 
             if not (
                     (who is None) or
