@@ -515,6 +515,9 @@ def mark_sweep():
     if screen_render is not None:
         worklist.append(screen_render)
 
+    cache_renders = renpy.display.im.cache.get_renders()
+    worklist.extend(cache_renders)
+
     i = 0
 
     while i < len(worklist):
@@ -530,6 +533,9 @@ def mark_sweep():
     if screen_render is not None:
         screen_render.mark = True
 
+    for r in cache_renders:
+        r.mark = True
+
     for r in live_renders:
         if not r.mark:
             r.kill_cache()
@@ -537,6 +543,7 @@ def mark_sweep():
             r.mark = False
 
     live_renders = worklist
+
 
 def compute_subline(sx0, sw, cx0, cw):
     """
@@ -1079,8 +1086,6 @@ cdef class Render:
         for i in list(self.depends_on_list):
             i.parents.discard(self)
 
-        del self.depends_on_list[:]
-
         for ro in self.render_of:
             id_ro = id(ro)
 
@@ -1092,9 +1097,19 @@ cdef class Render:
             if not cache:
                 del render_cache[id_ro]
 
-        del self.render_of[:]
-        del self.visible_children[:]
-        del self.children[:]
+        # Break references to other Renders.
+        #
+        # This is conditional, as there is a special case that needs to be
+        # dealt with. GL2 breaks large surfaces into multiple textures combined
+        # by a Render. These should not be changed on a cache kill, but since
+        # these can't depend on a Render, can't cause cycles.
+        if self.depends_on_list:
+            del self.depends_on_list[:]
+            del self.render_of[:]
+            del self.children[:]
+
+        self.opaque = None
+        self.visible_children = self.children
 
         self.focuses = None
         self.pass_focuses = None
