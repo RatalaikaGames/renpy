@@ -791,6 +791,8 @@ class SLDisplayable(SLBlock):
                 else:
                     scope = context_scope
 
+
+
                 if copy_on_change:
                     if i._scope(scope, False):
                         cache.constant = None
@@ -1901,7 +1903,9 @@ class SLUse(SLNode):
             if args:
                 raise Exception("Screen {} does not take positional arguments. ({} given)".format(self.target, len(args)))
 
-            scope = context.scope.copy()
+            scope = ctx.old_cache.get("scope", None) or ctx.miss_cache.get("scope", None) or { }
+            scope.clear()
+            scope.update(context.scope)
             scope.update(kwargs)
 
         scope["_scope"] = scope
@@ -2153,7 +2157,9 @@ class SLCustomUse(SLNode):
             if args:
                 raise Exception("Screen {} does not take positional arguments. ({} given)".format(self.target, len(args)))
 
-            scope = context.scope.copy()
+            scope = ctx.old_cache.get("scope", None) or ctx.miss_cache.get("scope", None) or { }
+            scope.clear()
+            scope.update(context.scope)
             scope.update(kwargs)
 
         scope["_scope"] = scope

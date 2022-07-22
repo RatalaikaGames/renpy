@@ -706,6 +706,11 @@ class Live2D(renpy.display.core.Displayable):
 
         # Determine the current motion.
 
+        motion_st = st
+        
+        if st_fade is not None:
+            motion_st = st - st_fade
+
         for m in self.motions:
             motion = common.motions.get(m, None)
 
@@ -715,6 +720,10 @@ class Live2D(renpy.display.core.Displayable):
             if motion.duration > st:
                 break
 
+            elif (motion.duration > motion_st) and not common.is_seamless(m):
+                break
+
+            motion_st -= motion.duration
             st -= motion.duration
             current_index += 1
 
@@ -722,9 +731,18 @@ class Live2D(renpy.display.core.Displayable):
             if motion is None:
                 return None
 
-            if not self.loop:
+            if (not self.loop) or (not motion.duration):
                 st = motion.duration
                 last_frame = True
+            
+            elif (st_fade is not None) and not common.is_seamless(m):
+                # This keeps a motion from being restarted after it would have
+                # been faded out.
+                motion_start = motion_st - motion_st % motion.duration
+
+                if (st - motion_start) > motion.duration:
+                    st = motion.duration
+                    last_frame = True
 
         if motion is None:
             return None
@@ -754,7 +772,7 @@ class Live2D(renpy.display.core.Displayable):
         if (last_name == current_name) and common.is_seamless(current_name):
             do_fade_in = False
 
-        if (next_name == current_name) and common.is_seamless(current_name):
+        if (next_name == current_name) and common.is_seamless(current_name) and (st_fade is None):
             do_fade_out = False        
 
         # Apply the motion.
@@ -870,13 +888,18 @@ class Live2D(renpy.display.core.Displayable):
         model.reset_parameters()
 
         if fade:
-            old_redraw = state.old.update(common, renpy.display.interface.frame_time - state.old_base_time, st)
             t = renpy.display.interface.frame_time - state.new_base_time
         else:
-            old_redraw = None
             t = st
 
         new_redraw = self.update(common, t, None)
+
+        if fade:
+            old_redraw = state.old.update(common, renpy.display.interface.frame_time - state.old_base_time, st)
+        else:
+            old_redraw = None
+
+        model.finish_parameters()
 
         # Apply the expressions.
         expression_redraw = self.update_expressions(st)

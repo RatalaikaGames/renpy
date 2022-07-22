@@ -1348,20 +1348,27 @@ class SceneLists(renpy.object.Object):
         rv.append_scene_list(self.layers[layer])
         rv.layer_name = layer
         rv._duplicatable = False
+        rv._layer_at_list = self.layer_at_list[layer]
+        rv._camera_list = self.camera_list[layer]
 
         return rv
 
-    def transform_layer(self, layer, d):
+    def transform_layer(self, layer, d, layer_at_list=None, camera_list=None):
         """
         When `d` is a layer created with make_layer, returns `d` with the
-        various at_list transformas applied to it.
+        various at_list transforms applied to it.
         """
+
+        if layer_at_list is None:
+            layer_at_list = self.layer_at_list[layer]
+        if camera_list is None:
+            camera_list = self.camera_list[layer]
 
         rv = d
 
         # Layer at list.
 
-        time, at_list = self.layer_at_list[layer]
+        time, at_list = layer_at_list
 
         old_transform = self.layer_transform.get(layer, None)
         new_transform = None
@@ -1389,7 +1396,7 @@ class SceneLists(renpy.object.Object):
 
         # Camera list.
 
-        time, at_list = self.camera_list[layer]
+        time, at_list = camera_list
 
         old_transform = self.camera_transform.get(layer, None)
         new_transform = None
@@ -3413,21 +3420,13 @@ class Interface(object):
                 self.consider_gc()
                 step += 1
 
-            # Step 2: Load downloaded resources
+            # Step 2: Push textures to GPU.
             elif step == 2:
-
-                if renpy.emscripten or os.environ.get('RENPY_SIMULATE_DOWNLOAD', False):
-                    renpy.webloader.process_downloaded_resources()
-
-                step += 1
-
-            # Step 3: Push textures to GPU.
-            elif step == 3:
                 renpy.display.draw.ready_one_texture()
                 step += 1
 
-            # Step 4: Predict more images.
-            elif step == 4:
+            # Step 3: Predict more images.
+            elif step == 3:
 
                 if not self.prediction_coroutine:
                     step += 1
@@ -3448,16 +3447,16 @@ class Interface(object):
                     if not expensive:
                         step += 1
 
-            # Step 5: Preload images (on emscripten)
-            elif step == 5:
+            # Step 4: Preload images (on emscripten)
+            elif step == 4:
 
                 if expensive and renpy.emscripten:
                     renpy.display.im.cache.preload_thread_pass()
 
                 step += 1
 
-            # Step 6: Autosave.
-            elif step == 6:
+            # Step 5: Autosave.
+            elif step == 5:
 
                 if not self.did_autosave:
                     renpy.loadsave.autosave()
@@ -3811,6 +3810,9 @@ class Interface(object):
 
                 # Check for autoreload.
                 renpy.loader.check_autoreload()
+
+                if renpy.emscripten or os.environ.get('RENPY_SIMULATE_DOWNLOAD', False):
+                    renpy.webloader.process_downloaded_resources()
 
                 for i in renpy.config.needs_redraw_callbacks:
                     if i():
