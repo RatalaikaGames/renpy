@@ -838,7 +838,7 @@ def scene(layer='master'):
     renpy.display.interface.ongoing_transition.pop(layer, None)
 
 
-def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None, screen="input", **kwargs): # @ReservedAssignment
+def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None, screen="input", mask=None, **kwargs): # @ReservedAssignment
     """
     :doc: input
 
@@ -871,6 +871,10 @@ def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=N
         The name of the screen that takes input. If not given, the ``input``
         screen is used.
 
+    `mask`
+        If not None, a single-character string that replaces the input text that
+        is shown to the player, such as to conceal a password.
+
     If :var:`config.disable_input` is True, this function only returns
     `default`.
 
@@ -901,7 +905,7 @@ def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=N
 
     if has_screen(screen):
         widget_properties = { }
-        widget_properties["input"] = dict(default=default, length=length, allow=allow, exclude=exclude, editable=not fixed, pixel_width=pixel_width)
+        widget_properties["input"] = dict(default=default, length=length, allow=allow, exclude=exclude, editable=not fixed, pixel_width=pixel_width, mask=mask)
 
         show_screen(screen, _transient=True, _widget_properties=widget_properties, prompt=prompt, **show_properties)
 
@@ -1798,7 +1802,7 @@ def take_screenshot(scale=None, background=False):
     renpy.game.interface.take_screenshot(scale, background=background)
 
 
-def full_restart(transition=False, label="_invoke_main_menu", target="_main_menu"):
+def full_restart(transition=False, label="_invoke_main_menu", target="_main_menu", save=False):
     """
     :doc: other
 
@@ -1807,7 +1811,14 @@ def full_restart(transition=False, label="_invoke_main_menu", target="_main_menu
     `transition`
         If given, the transition to run, or None to not run a transition.
         False uses :var:`config.end_game_transition`.
+
+    `save`
+        If true, the game is saved in :var:`_quit_slot` before Ren'Py
+        restarts and returns the user to the main menu.
     """
+
+    if save and (renpy.store._quit_slot is not None):
+        renpy.loadsave.save(renpy.store._quit_slot, getattr(renpy.store, "save_name", ""))
 
     if transition is False:
         transition = renpy.config.end_game_transition
@@ -1953,6 +1964,33 @@ def screenshot(filename):
     """
 
     return renpy.game.interface.save_screenshot(filename)
+
+
+def screenshot_to_bytes(size):
+    """
+    :doc: other
+
+    Returns a screenshot as a bytes object, that can be passed to im.Data().
+    The bytes will be a png-format image, such that::
+
+        $ data = renpy.screenshot_to_bytes((640, 360))
+        show expression im.Data(data, "screenshot.png"):
+            align (0, 0)
+
+    Will show the image. The bytes objects returned can be stored in save
+    files and persistent data. However, these may be large, and care should
+    be taken to not include too many.
+
+    `size`
+        The size the screenshot will be resized to. If None, the screenshot
+        will be resized, and hence will be the size of the player's window,
+        without any letterbars.
+
+    This function may be slow, and so it's intended for save-like screenshots,
+    and not realtime effects.
+    """
+
+    return renpy.game.interface.screenshot_to_bytes(size)
 
 
 @renpy_pure

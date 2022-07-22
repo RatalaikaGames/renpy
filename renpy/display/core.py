@@ -2018,6 +2018,9 @@ class Interface(object):
         # layer.
         self.transition_delay = { }
 
+        # Is this the first frame?
+        self.first_frame = True
+
         try:
             self.setup_nvdrs()
         except:
@@ -2209,6 +2212,18 @@ class Interface(object):
                 continue
 
             pygame.event.set_blocked(i)
+
+    def after_first_frame(self):
+        """
+        Called after the first frame has been drawn.
+        """
+
+        if renpy.android:
+            from jnius import autoclass
+            PythonSDLActivity = autoclass("org.renpy.android.PythonSDLActivity")
+            PythonSDLActivity.hidePresplash()
+
+            print("Hid presplash.")
 
     def set_icon(self):
         """
@@ -2482,6 +2497,10 @@ class Interface(object):
         self.surftree = surftree
         self.fullscreen_video = fullscreen_video
 
+        if self.first_frame:
+            self.after_first_frame()
+            self.first_frame = False
+
     def take_screenshot(self, scale, background=False):
         """
         This takes a screenshot of the current screen, and stores it so
@@ -2581,6 +2600,30 @@ class Interface(object):
                 raise
 
             return False
+
+    def screenshot_to_bytes(self, size=None):
+        """
+        This takes a screenshot of the last thing drawn, and returns it.
+        """
+
+        self.clear_screenshot = False
+
+        # Do nothing before the first interaction.
+        if not self.started:
+            return
+
+        surf = renpy.display.draw.screenshot(self.surftree)
+
+        if size is not None:
+            surf = renpy.display.scale.smoothscale(surf, size)
+
+        renpy.display.render.mutated_surface(surf)
+
+        self.screenshot_surface = surf
+
+        with io.BytesIO() as sio:
+            renpy.display.module.save_png(surf, sio, 0)
+            return sio.getvalue()
 
     def show_window(self):
 
