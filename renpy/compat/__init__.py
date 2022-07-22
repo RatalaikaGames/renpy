@@ -85,6 +85,8 @@ PY2 = future.utils.PY2
 
 if PY2:
     open = io.open
+    import re
+    re.Pattern = re._pattern_type
 else:
     open = builtins.open
 
@@ -115,6 +117,7 @@ renpy.update_path()
 basestring = future.utils.string_types # @ReservedAssignment
 pystr = str
 str = future.utils.text_type # @ReservedAssignment
+unicode = future.utils.text_type # @ReservedAssignment
 
 bord = future.utils.bord
 bchr = future.utils.bchr
@@ -148,7 +151,7 @@ else:
 # Sort key functions.
 
 __all__ = [ "PY2", "open", "basestring", "str", "pystr", "range",
-            "bord", "bchr", "tobytes", "chr", ]
+            "bord", "bchr", "tobytes", "chr", "unicode", ]
 
 if PY2:
     __all__ = [ bytes(i) for i in __all__ ]

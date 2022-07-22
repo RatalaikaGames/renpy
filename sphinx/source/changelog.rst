@@ -4,6 +4,54 @@ Changelog (Ren'Py 7.x-)
 
 .. _renpy-7.4.3:
 
+7.4.4
+=====
+
+The old-game directory
+----------------------
+
+To help creators that make multiple releases of their games (as with
+early access or Patreon releases), Ren'Py now supports an old-game directory,
+which can be a copy of the game directory from the previous release. Ren'Py
+will use the information found in the .rpyc files in this directory when it
+generates .rpyc files. As the .rpyc files are used when loading games,
+this will tend to help Ren'Py load games created by multiple
+developers.
+
+For more information, see the :ref:`documentation <old-game>`.
+
+Fixes
+-----
+
+A crash that could occur with gestures or controllers has been fixed.
+
+A crash that occured when generating web distributions on windows has
+been fixed.
+
+The persistent backend for achievements now supports the clearing of
+progress.
+
+Live2D now resets opacities with other parameters.
+
+Ren'Py does not change the size of a maximized window when reloading.
+
+Other
+-----
+
+There is a new GL property, ``blend_func`` that is supported by the
+model-based renderer. This allows the customization of the GL blend
+function, allowing Ren'Py to start to support new blend modes.
+
+Live2D now supports the additive and multiply blend modes.
+
+Using default or define with the ``renpy`` namespace will now produce an
+error.
+
+A number of previously-undocumented methods on the `preferences object <preference-variables>`
+have been documented. These methods make it possible to get or set the current value
+of the volume and the current value of mute.
+
+
 7.4.3
 =====
 

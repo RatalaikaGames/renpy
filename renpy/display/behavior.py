@@ -239,7 +239,7 @@ def map_keyup(ev, keysym):
     """Returns true if the event matches the named keycode being released."""
 
     if ev.type == renpy.display.core.EVENTNAME:
-        if (name in ev.eventnames) and ev.up:
+        if (keysym in ev.eventnames) and ev.up:
             return True
 
     if isinstance(keysym, list):
@@ -1424,7 +1424,7 @@ class Input(renpy.text.text.Text): # @UndefinedVariable
                 if self.allow:
 
                     # Allow is regex
-                    if isinstance(self.allow, re._pattern_type):
+                    if isinstance(self.allow, re.Pattern):
 
                         # Character doesn't match
                         if self.allow.search(c) is None:
@@ -1438,7 +1438,7 @@ class Input(renpy.text.text.Text): # @UndefinedVariable
                 if self.exclude:
 
                     # Exclude is regex
-                    if isinstance(self.exclude, re._pattern_type):
+                    if isinstance(self.exclude, re.Pattern):
 
                         # Character matches
                         if self.exclude.search(c) is not None:
