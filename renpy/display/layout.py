@@ -553,6 +553,9 @@ def check_modal(modal, ev, x, y, w, h):
     if not modal:
         return False
 
+    if (ev is not None) and (ev.type == renpy.display.core.TIMEEVENT) and ev.modal:
+        return False
+
     if not callable(modal):
         modal = default_modal_function
 
@@ -780,11 +783,11 @@ class MultiBox(Container):
 
                 if first_fit_width:
                     width = rv.width = size[0]
-                    first_fit_width = False
+                    first_fit_width = None
 
                 if first_fit_height:
                     height = rv.height = size[1]
-                    first_fit_height = False
+                    first_fit_height = None
 
                 if surf:
                     offset = child.place(rv, 0, 0, width, height, surf)
@@ -798,7 +801,7 @@ class MultiBox(Container):
                 for o, s in zip(offsets, sizes):
                     width = max(o[0] + s[0], width)
 
-                    if fit_first:
+                    if first_fit_width is None:
                         break
 
                 rv.width = width
@@ -812,13 +815,13 @@ class MultiBox(Container):
                 for o, s in zip(offsets, sizes):
                     height = max(o[1] + s[1], height)
 
-                    if fit_first:
+                    if first_fit_height is None:
                         break
 
                 rv.height = height
 
                 if height > renpy.config.max_fit_size:
-                    raise Exception("Fixed fit width ({}) is too large.".format(height))
+                    raise Exception("Fixed fit height ({}) is too large.".format(height))
 
             if self.style.order_reverse:
                 offsets.reverse()
@@ -1057,8 +1060,8 @@ class MultiBox(Container):
         except IgnoreLayers:
             if self.layers:
 
-                if ev.type != renpy.display.core.TIMEEVENT:
-                    renpy.display.interface.post_time_event()
+                if (ev.type != renpy.display.core.TIMEEVENT) or (not ev.modal):
+                    renpy.display.interface.post_time_event(modal=True)
 
                 return None
             else:
@@ -1305,6 +1308,7 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
     def after_setstate(self):
         self.child = None
+        self.raw_child = None
 
     def __init__(self, function, *args, **kwargs):
 
@@ -1323,14 +1327,19 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
     def _duplicate(self, args):
         rv = self._copy(args)
-
-        if rv.child is not None and rv.child._duplicateable:
-            rv.child = rv.child._duplicate(args)
+        rv.child = None
+        rv.raw_child = None
 
         return rv
 
     def visit(self):
-        return [ ]
+        if not self.child:
+            self.update(0, 0)
+
+        if self.child:
+            return [ self.child ]
+        else:
+            return [ ]
 
     def update(self, st, at):
         child, redraw = self.function(st, at, *self.args, **self.kwargs)
@@ -1356,7 +1365,6 @@ class DynamicDisplayable(renpy.display.core.Displayable):
 
     def render(self, w, h, st, at):
         self.update(st, at)
-
         return renpy.display.render.render(self.child, w, h, st, at)
 
     def predict_one(self):
@@ -1409,7 +1417,9 @@ def condition_switch_pick(switch):
         if renpy.python.py_eval_bytecode(code):
             return d
 
-    raise Exception("Switch could not choose a displayable.")
+    if renpy.config.developer:
+        raise Exception("Switch could not choose a displayable.")
+    return Null()
 
 
 def condition_switch_show(st, at, switch, predict_all=None):

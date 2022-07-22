@@ -56,6 +56,9 @@ report_node = None
 all_define_statments = {}
 all_default_statements = {}
 
+# True if at east one error was reported, false otherwise.
+error_reported = False
+
 # Reports a message to the user.
 
 
@@ -68,6 +71,9 @@ def report(msg, *args):
     out += msg % args
     print("")
     print(out)
+
+    global error_reported
+    error_reported = True
 
 
 added = { }
@@ -757,6 +763,7 @@ def lint():
 
     ap = renpy.arguments.ArgumentParser(description="Checks the script for errors and prints script statistics.", require_command=False)
     ap.add_argument("filename", nargs='?', action="store", help="The file to write to.")
+    ap.add_argument("--error-code", action="store_true", help="If given, the error code is 0 if the game has no lint errros, 1 if lint errors are found.")
 
     args = ap.parse_args()
 
@@ -927,5 +934,8 @@ characters per block. """.format(
 
     print("Lint is not a substitute for thorough testing. Remember to update Ren'Py")
     print("before releasing. New releases fix bugs and improve compatibility.")
+
+    if error_reported and args.error_code:
+        renpy.exports.quit(status=1)
 
     return False

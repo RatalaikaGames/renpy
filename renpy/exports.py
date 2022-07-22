@@ -268,7 +268,7 @@ def in_fixed_rollback():
     return renpy.game.log.in_fixed_rollback()
 
 
-def checkpoint(data=None, keep_rollback=None):
+def checkpoint(data=None, keep_rollback=None, hard=True):
     """
     :doc: rollback
     :args: (data=None)
@@ -282,12 +282,16 @@ def checkpoint(data=None, keep_rollback=None):
     `data`
         This data is returned by :func:`renpy.roll_forward_info` when the
         game is being rolled back.
+
+    `hard`
+        If true, this is a hard checkpoint that rollback will stop at. If false,
+        this is a soft checkpoint that will not stop rollback.
     """
 
     if keep_rollback is None:
         keep_rollback = renpy.config.keep_rollback_data
 
-    renpy.game.log.checkpoint(data, keep_rollback=keep_rollback, hard=renpy.store._rollback)
+    renpy.game.log.checkpoint(data, keep_rollback=keep_rollback, hard=renpy.store._rollback and hard)
 
     if renpy.store._rollback and renpy.config.auto_clear_screenshot:
         renpy.game.interface.clear_screenshot = True
@@ -544,6 +548,30 @@ def get_attributes(tag, layer=None, if_hidden=None):
     return renpy.game.context().images.get_attributes(layer, tag, if_hidden)
 
 
+def _find_image(layer, key, name, what):
+    """
+    :undocumented:
+
+    Finds an image to show.
+    """
+
+    if renpy.config.image_attributes:
+
+        new_what = renpy.game.context().images.apply_attributes(layer, key, name)
+        if new_what is not None:
+            what = new_what
+            name = (key,) + new_what[1:]
+            return name, what
+
+    f = renpy.config.adjust_attributes.get(what[0], None) or renpy.config.adjust_attributes.get(None, None)
+    if f is not None:
+        new_what = f(what)
+        name = (key,) + new_what[1:]
+        return name, new_what
+
+    return name, what
+
+
 def predict_show(name, layer=None, what=None, tag=None, at_list=[ ]):
     """
     :undocumented:
@@ -579,13 +607,8 @@ def predict_show(name, layer=None, what=None, tag=None, at_list=[ ]):
         base = img = what
 
     else:
-        if renpy.config.image_attributes:
 
-            new_what = renpy.game.context().images.apply_attributes(layer, key, name)
-            if new_what is not None:
-                what = new_what
-                name = (key,) + new_what[1:]
-
+        name, what = _find_image(layer, key, name, what)
         base = img = renpy.display.image.ImageReference(what, style='image_placement')
 
         if not base.find_target():
@@ -717,13 +740,7 @@ def show(name, at_list=[ ], layer=None, what=None, zorder=None, tag=None, behind
             base = img = what
 
     else:
-
-        if renpy.config.image_attributes:
-            new_what = renpy.game.context().images.apply_attributes(layer, key, name)
-            if new_what is not None:
-                what = new_what
-                name = (key,) + new_what[1:]
-
+        name, what = _find_image(layer, key, name, what)
         base = img = renpy.display.image.ImageReference(what, style='image_placement')
 
         if not base.find_target() and renpy.config.missing_show:
@@ -816,6 +833,9 @@ def scene(layer='master'):
 
     if renpy.config.missing_scene:
         renpy.config.missing_scene(layer)
+
+    # End a transition that's affecting layer.
+    renpy.display.interface.ongoing_transition.pop(layer, None)
 
 
 def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None, screen="input", **kwargs): # @ReservedAssignment
@@ -1490,18 +1510,30 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
         tl;dr - Don't use renpy.pause with hard=True.
     """
 
+    if renpy.config.skipping == "fast":
+        return False
+
     if checkpoint is None:
         if delay is not None:
             checkpoint = False
         else:
             checkpoint = True
 
-    if renpy.config.skipping == "fast":
-        return False
-
     roll_forward = renpy.exports.roll_forward_info()
+
     if roll_forward not in [ True, False ]:
         roll_forward = None
+
+    if renpy.game.after_rollback and not renpy.config.pause_after_rollback:
+
+        rv = roll_forward
+        if rv is None:
+            rv = False
+
+        if checkpoint:
+            renpy.exports.checkpoint(rv, keep_rollback=True, hard=False)
+
+        return rv
 
     renpy.exports.mode('pause')
 
@@ -1520,14 +1552,14 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
         afm = None
 
     if hard or not renpy.store._dismiss_pause:
-        renpy.ui.saybehavior(afm=afm, dismiss='dismiss_hard_pause')
+        renpy.ui.saybehavior(afm=afm, dismiss='dismiss_hard_pause', dismiss_unfocused=[])
     else:
         renpy.ui.saybehavior(afm=afm)
 
     rv = renpy.ui.interact(mouse='pause', type='pause', roll_forward=roll_forward, pause=delay)
 
     if checkpoint:
-        renpy.exports.checkpoint(rv, keep_rollback=True)
+        renpy.exports.checkpoint(rv, keep_rollback=True, hard=renpy.config.pause_after_rollback)
 
     if with_none is None:
         with_none = renpy.config.implicit_with_none
@@ -1801,6 +1833,10 @@ def reload_script():
     Causes Ren'Py to save the game, reload the script, and then load the
     save.
     """
+
+    # Avoid reloading in a replay.
+    if renpy.store._in_replay:
+        return
 
     s = get_screen("menu")
 
@@ -4005,3 +4041,36 @@ def get_sdl_window_pointer():
     except:
         return None
 
+
+def is_mouse_visible():
+    """
+    :doc: other
+
+    Returns True if the mouse cursor is visible, False otherwise.
+    """
+
+    if not renpy.display.interface:
+        return True
+
+    if not renpy.display.interface.mouse_focused:
+        return False
+
+    return renpy.display.interface.is_mouse_visible()
+
+
+def get_mouse_name(interaction=False):
+    """
+    :doc: other
+
+    Returns the name of the mouse that should be shown.
+
+
+    `interaction`
+        If true, get a mouse name that is based on the type of interaction
+        occuring. (This is rarely useful.)
+    """
+
+    if not renpy.display.interface:
+        return 'default'
+
+    return renpy.display.interface.get_mouse_name(interaction=interaction)

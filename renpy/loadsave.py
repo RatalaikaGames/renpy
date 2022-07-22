@@ -184,7 +184,8 @@ def save_dump(roots, log):
     with f:
         visit(roots, "roots")
         visit(log, "log")
-    
+
+
 def find_bad_reduction(roots, log):
     """
     Finds objects that can't be reduced properly.
@@ -314,24 +315,22 @@ class SaveRecord(object):
         This writes a standard-format savefile to `filename`.
         """
 
-        zf = zipfile.ZipFile(filename, "w", zipfile.ZIP_DEFLATED)
+        with zipfile.ZipFile(filename_new, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Screenshot.
+            if self.screenshot is not None:
+                zf.writestr("screenshot.png", self.screenshot)
 
-        # Screenshot.
-        zf.writestr("screenshot.png", self.screenshot)
+            # Extra info.
+            zf.writestr("extra_info", self.extra_info.encode("utf-8"))
 
-        # Extra info.
-        zf.writestr("extra_info", self.extra_info.encode("utf-8"))
+            # Json
+            zf.writestr("json", self.json)
 
-        # Json
-        zf.writestr("json", self.json)
+            # Version.
+            zf.writestr("renpy_version", renpy.version)
 
-        # Version.
-        zf.writestr("renpy_version", renpy.version)
-
-        # The actual game.
-        zf.writestr("log", self.log)
-
-        zf.close()
+            # The actual game.
+            zf.writestr("log", self.log)
 
         self.first_filename = filename
 
@@ -451,7 +450,7 @@ def autosave():
         return
 
     # That is, autosave is running.
-    if not autosave_not_running.isSet():
+    if not autosave_not_running.is_set():
         return
 
     if renpy.config.skipping:
@@ -495,7 +494,7 @@ def force_autosave(take_screenshot=False, block=False):
         return
 
     # That is, autosave is running.
-    if not autosave_not_running.isSet():
+    if not autosave_not_running.is_set():
         return
 
     # Join the autosave thread to clear resources.

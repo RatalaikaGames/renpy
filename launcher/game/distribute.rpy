@@ -316,7 +316,7 @@ init python in distribute:
             for f in list(self):
 
                 if f.name.startswith("lib/python2.7") and (not duplicate):
-                    name = app + "/Contents/MacOS/" + f.name
+                    name = app + "/Contents/Resources/" + f.name
 
                 elif f.name.startswith("lib/mac-x86_64"):
                     name = app + "/Contents/MacOS/" + f.name[15:]
@@ -615,8 +615,17 @@ init python in distribute:
                     match_name = name
 
                 for pattern, file_list in patterns:
+
                     if match(match_name, pattern):
+
+                        # When we have ('test/**', None), avoid excluding test.
+                        if (not file_list) and is_dir:
+                            new_pattern = pattern.rstrip("*")
+                            if (pattern != new_pattern) and match(match_name, new_pattern):
+                                continue
+
                         break
+
                 else:
                     print(str(match_name), "doesn't match anything.", file=self.log)
 
@@ -968,7 +977,7 @@ init python in distribute:
             if not self.build['renpy']:
                 self.add_directory(filelist, contents + "/MacOS/lib")
                 self.add_directory(filelist, contents + "/MacOS/lib/mac-x86_64")
-                self.add_directory(filelist, contents + "/MacOS/lib/python2.7")
+                self.add_directory(filelist, contents + "/Resources/lib/python2.7")
 
             self.file_lists[filelist].mac_lib_transform(self.app, self.build['renpy'])
 

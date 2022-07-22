@@ -85,7 +85,7 @@ def float_or_none(x):
     return float(x)
 
 
-def matrixcolor(x):
+def matrix(x):
     if x is None:
         return None
     elif callable(x):
@@ -102,62 +102,8 @@ def mesh(x):
 
 
 # A dictionary giving property names and the corresponding default
-# values.
-PROPERTIES = {
-    "pos" : (position, position),
-    "xpos" : position,
-    "ypos" : position,
-    "anchor" : (position, position),
-    "xanchor" : position,
-    "yanchor" : position,
-    "xaround" : position,
-    "yaround" : position,
-    "xanchoraround" : float,
-    "yanchoraround" : float,
-    "align" : (float, float),
-    "xalign" : float,
-    "yalign" : float,
-    "rotate" : float,
-    "rotate_pad" : bool,
-    "transform_anchor" : bool,
-    "xzoom" : float,
-    "yzoom" : float,
-    "zoom" : float,
-    "nearest" : bool_or_none,
-    "alpha" : float,
-    "additive" : float,
-    "around" : (position, position),
-    "alignaround" : (float, float),
-    "angle" : float,
-    "radius" : float,
-    "crop" : (float, float, float, float),
-    "crop_relative" : bool,
-    "xsize" : int,
-    "ysize" : int,
-    "size" : (int, int),
-    "fit" : str,
-    "maxsize" : (int, int),
-    "corner1" : (float, float),
-    "corner2" : (float, float),
-    "subpixel" : bool,
-    "delay" : float,
-    "xoffset" : float,
-    "yoffset" : float,
-    "offset" : (int, int),
-    "xcenter" : position,
-    "ycenter" : position,
-    "debug" : any_object,
-    "events" : bool,
-    "xpan" : float_or_none,
-    "ypan" : float_or_none,
-    "xtile" : int,
-    "ytile" : int,
-    "matrixcolor" : matrixcolor,
-    "shader" : any_object,
-    "mesh" : mesh,
-    "mesh_pad" : any_object,
-    "blur" : float_or_none,
-    }
+# values. This is massively added to by renpy.display.transform.
+PROPERTIES = { }
 
 
 def correct_type(v, b, ty):

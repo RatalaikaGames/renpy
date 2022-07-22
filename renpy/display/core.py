@@ -1034,7 +1034,7 @@ class SceneLists(renpy.object.Object):
         `behind` - A list of tags to place the thing behind.
 
         `at_list` - The at_list associated with this
-        displayable. Counterintunitively, this is not actually
+        displayable. Counterintuitively, this is not actually
         applied, but merely stored for future use.
 
         `name` - The full name of the image being displayed. This is used for
@@ -1247,7 +1247,9 @@ class SceneLists(renpy.object.Object):
 
         self.at_list[layer].clear()
         self.shown.predict_scene(layer)
-        self.layer_at_list[layer] = (None, [ ])
+
+        if renpy.config.scene_clears_layer_at_list:
+            self.layer_at_list[layer] = (None, [ ])
 
     def set_layer_at_list(self, layer, at_list, reset=True):
         self.layer_at_list[layer] = (None, list(at_list))
@@ -1869,7 +1871,8 @@ class Interface(object):
         # Are we currently processing the quit event?
         self.in_quit_event = False
 
-        self.time_event = pygame.event.Event(TIMEEVENT)
+        self.time_event = pygame.event.Event(TIMEEVENT, { "modal" : False })
+        self.modal_time_event = pygame.event.Event(TIMEEVENT, { "modal" : True })
         self.redraw_event = pygame.event.Event(REDRAW)
 
         # Are we focused?
@@ -2010,6 +2013,10 @@ class Interface(object):
 
         # The old mouse.
         self.old_mouse = None
+
+        # A map from a layer to the duration of the current transition on that
+        # layer.
+        self.transition_delay = { }
 
         try:
             self.setup_nvdrs()
@@ -2257,6 +2264,9 @@ class Interface(object):
         Figures out the list of draw constructors to try.
         """
 
+        if "RENPY_RENDERER" in os.environ:
+            renpy.config.gl2 = False
+
         renderer = renpy.game.preferences.renderer
         renderer = os.environ.get("RENPY_RENDERER", renderer)
         renderer = renpy.session.get("renderer", renderer)
@@ -2437,6 +2447,7 @@ class Interface(object):
 
         if renpy.android:
             android.init()
+            pygame.event.get()
 
     def draw_screen(self, root_widget, fullscreen_video, draw):
 
@@ -2528,7 +2539,7 @@ class Interface(object):
         """
 
         if not self.started:
-            self.start()
+            return None
 
         rv = self.screenshot
 
@@ -2639,7 +2650,10 @@ class Interface(object):
 
         # Compute the scene.
         for layer, d in self.compute_scene(scene_lists).items():
-            if layer not in self.transition:
+            if layer is None:
+                if not self.transition:
+                    self.old_scene[layer] = d
+            elif layer not in self.transition:
                 self.old_scene[layer] = d
 
         # Get rid of transient things.
@@ -2652,6 +2666,29 @@ class Interface(object):
         if renpy.store._side_image_attributes_reset:
             renpy.store._side_image_attributes = None
             renpy.store._side_image_attributes_reset = False
+
+    def end_transitions(self):
+        """
+        This runs at the end of each interaction to remove the transitions
+        that have run their course.
+        """
+
+        layers = list(self.ongoing_transition)
+
+        for l in layers:
+            if l is None:
+                self.ongoing_transition.pop(None, None)
+                self.transition_time.pop(None, None)
+                self.transition_from.pop(None, None)
+                continue
+
+            start = self.transition_time.get(l, self.frame_time)
+            delay = self.transition_delay.get(l, 0)
+
+            if (self.frame_time - start) >= delay:
+                self.ongoing_transition.pop(l, None)
+                self.transition_time.pop(l, None)
+                self.transition_from.pop(l, None)
 
     def set_transition(self, transition, layer=None, force=False):
         """
@@ -2815,15 +2852,16 @@ class Interface(object):
         self.old_mouse = cursor
 
         if cursor is True:
+            pygame.mouse.reset()
             pygame.mouse.set_visible(True)
         elif cursor is False:
+            pygame.mouse.reset()
             pygame.mouse.set_visible(False)
         else:
             pygame.mouse.set_visible(True)
             cursor.activate()
 
-    def update_mouse(self):
-
+    def is_mouse_visible(self):
         # Figure out if the mouse visibility algorithm is hiding the mouse.
         if (renpy.config.mouse_hide_time is not None) and (self.mouse_event_time + renpy.config.mouse_hide_time < renpy.display.core.get_time()):
             visible = False
@@ -2835,6 +2873,33 @@ class Interface(object):
         # MBG hack - for our games, let's add another mechanism to suppress the mouse
         if _ratapy.is_hide_mouse():
             visible = False
+
+        return visible
+
+    def get_mouse_name(self, cache_only=False, interaction=True):
+
+        mouse_kind = renpy.display.focus.get_mouse()
+
+        if interaction and (mouse_kind is None):
+            mouse_kind = self.mouse
+
+        if cache_only and (mouse_kind not in self.cursor_cache):
+            mouse_kind = 'default'
+
+        if mouse_kind == 'default':
+            mouse_kind = getattr(renpy.store, 'default_mouse', 'default')
+
+        return mouse_kind
+
+    def update_mouse(self, mouse_displayable):
+
+        visible = self.is_mouse_visible()
+
+        if mouse_displayable is not None:
+            x, y = renpy.exports.get_mouse_pos()
+
+            if (0 <= x < renpy.config.screen_width) and (0 <= y < renpy.config.screen_height):
+                visible = False
 
         # If not visible, hide the mouse.
         if not visible:
@@ -2853,10 +2918,7 @@ class Interface(object):
             self.set_mouse(True)
             return
 
-        mouse_kind = renpy.display.focus.get_mouse() or self.mouse
-
-        if (mouse_kind == 'default') or (mouse_kind not in self.cursor_cache):
-            mouse_kind = getattr(renpy.store, 'default_mouse', 'default')
+        mouse_kind = self.get_mouse_name(True)
 
         if mouse_kind in self.cursor_cache:
             anim = self.cursor_cache[mouse_kind]
@@ -2983,13 +3045,16 @@ class Interface(object):
         self.transition_from.clear()
         self.transition_time.clear()
 
-    def post_time_event(self):
+    def post_time_event(self, modal=False):
         """
         Posts a time_event object to the queue.
         """
 
         try:
-            pygame.event.post(self.time_event)
+            if modal:
+                pygame.event.post(self.modal_time_event)
+            else:
+                pygame.event.post(self.time_event)
         except:
             pass
 
@@ -3127,9 +3192,7 @@ class Interface(object):
                 scene_lists = renpy.game.context().scene_lists
                 scene_lists.replace_transient()
 
-            self.ongoing_transition = { }
-            self.transition_time = { }
-            self.transition_from = { }
+            self.end_transitions()
 
             self.restart_interaction = True
 
@@ -3511,6 +3574,14 @@ class Interface(object):
         for i in renpy.display.emulator.overlay:
             root_widget.add(i)
 
+        mouse_displayable = renpy.config.mouse_displayable
+        if mouse_displayable is not None:
+            if not isinstance(mouse_displayable, Displayable):
+                mouse_displayable = mouse_displayable()
+
+            if mouse_displayable is not None:
+                root_widget.add(mouse_displayable, 0, 0)
+
         del add_layer
 
         self.prediction_coroutine = renpy.display.predict.prediction_coroutine(root_widget)
@@ -3784,6 +3855,9 @@ class Interface(object):
                     old_timeout_time = None
                     pygame.event.clear([TIMEEVENT])
 
+                    if not hasattr(ev, "modal"):
+                        ev = self.time_event
+
                 # On Android, where we have multiple mouse buttons, we can
                 # merge a mouse down and mouse up event with its successor. This
                 # prevents us from getting overwhelmed with too many events on
@@ -3810,7 +3884,7 @@ class Interface(object):
                     renpy.display.tts.periodic()
                     renpy.display.controller.periodic()
 
-                    self.update_mouse()
+                    self.update_mouse(mouse_displayable)
 
                     continue
 
@@ -3876,6 +3950,9 @@ class Interface(object):
                     if self.ignore_touch:
                         renpy.display.focus.mouse_handler(None, -1, -1, default=False)
 
+                    if mouse_displayable:
+                        renpy.display.render.redraw(mouse_displayable, 0)
+
                 # Handle focus notifications.
                 if ev.type == pygame.ACTIVEEVENT:
 
@@ -3884,6 +3961,9 @@ class Interface(object):
                             renpy.display.focus.clear_focus()
 
                         self.mouse_focused = ev.gain
+
+                        if mouse_displayable:
+                            renpy.display.render.redraw(mouse_displayable, 0)
 
                     if ev.state & 2:
                         self.keyboard_focused = ev.gain
@@ -3982,6 +4062,9 @@ class Interface(object):
             return False, e.value
 
         finally:
+
+            # Determine the transition delay for each layer.
+            self.transition_delay = { k : getattr(v, "delay", 0) for k, v in layers_root.layers.items() }
 
             # Clean out the overlay layers.
             for i in renpy.config.overlay_layers:

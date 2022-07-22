@@ -218,6 +218,11 @@ def scan(name, o, prefix=""):
     # Get the function's docstring.
     doc = inspect.getdoc(o)
 
+#     if doc is None:
+#         doc = getattr(o, "__doc__", None)
+#         if not isinstance(doc, basestring):
+#             doc = None
+
     if not doc:
         return
 
@@ -300,8 +305,12 @@ def scan(name, o, prefix=""):
     lb.append(prefix + "")
 
     if inspect.isclass(o):
-        for i in dir(o):
-            scan(i, getattr(o, i), prefix + "    ")
+        if (name not in [ "Matrix", "OffsetMatrix", "RotateMatrix", "ScaleMatrix" ]):
+            for i in dir(o):
+                scan(i, getattr(o, i), prefix + "    ")
+
+    if name == "identity":
+        raise Exception("identity")
 
     documented_list.append(o)
     documented[id(o)].append(name)
@@ -384,8 +393,6 @@ def format_name(name):
 
 
 def write_reserved(module, dest, ignore_builtins):
-
-    print("Writing", dest)
 
     with open(dest, "w") as f:
 

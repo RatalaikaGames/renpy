@@ -216,6 +216,21 @@ for more information on how to set defaults for various preferences.
 Occasionally Used
 -----------------
 
+.. var:: config.adjust_attributes = { }
+
+    If not None, this is a dictionary. When a statement or function that
+    contains image attributes executes or is predicted, the tag is
+    looked up in this dictionary. If it is not found, the None key
+    is looked up in this dictionary.
+
+    If either is found, they're expected to be a function. The function
+    is given an image name, a tuple consisting of the tag and any
+    attributes. It should return an adjusted tuple, which contains
+    and a potential new set of attributes.
+
+    As this function may be called during prediction, it should not
+    rely on the image's state.
+
 .. var:: config.after_load_callbacks = [ ... ]
 
     A list of functions that are called (with no arguments) when a load
@@ -229,6 +244,13 @@ Occasionally Used
 .. var:: config.allow_underfull_grids = False
 
     If True, Ren'Py will not require grids to be full in order to display.
+
+.. var:: config.pause_after_rollback = False
+
+    If False, the default, rolling back will skip any pauses (timed or
+    not) and stop only at other interactions such as dialogues, menus...
+    If True, renpy will include timeless pauses to the valid places a
+    rollback can take the user.
 
 .. var:: config.auto_channels = { "audio" : ( "sfx", "", ""  ) }
 
@@ -501,6 +523,11 @@ Occasionally Used
     edges drawn when aspect ratio of the window or monitor in fullscreen
     mode) does not match the aspect ratio of the game.
 
+.. var:: config.gl_lod_bias = -0.5
+
+    The default value of the :ref:`u_lod_bias <u-lod-bias>` uniform,
+    which controls the mipmap level Ren'Py uses.
+
 .. var:: config.gl_test_image = "black"
 
     The name of the image that is used when running the OpenGL
@@ -674,7 +701,10 @@ Occasionally Used
     `xoffset`, `yoffset`) tuples, representing frames.
 
     `image`
-        The mouse cursor image.
+        The mouse cursor image. The maximum size for this image
+        varies based on the player's hardware. 32x32 is guaranteed
+        to work everywhere, while 64x64 works on most hardware. Larger
+        images may not work.
 
     `xoffset`
         The offset of the hotspot pixel from the left side of the
@@ -685,6 +715,18 @@ Occasionally Used
 
     The frames are played back at 20Hz, and the animation loops after
     all frames have been shown.
+
+.. var:: config.mouse_displayable = None
+
+    If not None, this should either be a displayable, or a callable that
+    returns a displayable. The callable may return None, in which case
+    Ren'Py proceeds if the displayable is None.
+
+    If a displayable is given, the mouse cursor is hidden, and the
+    displayable is shown above anything else. This displayable is
+    responsible for positioning and drawing a sythetic mouse
+    cursor, and so should probably be a :func:`MouseDisplayable`
+    or something very similar.
 
 .. var:: config.narrator_menu = False
 

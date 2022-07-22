@@ -478,7 +478,14 @@ def run_scan_thread():
 
 
 def quit():  # @ReservedAssignment
-    pass
+    global quit_scan_thread
+
+    with scan_thread_condition:
+        quit_scan_thread = True
+        scan_thread_condition.notify_all()
+
+    scan_thread.join()
+
 
 def init():
     location = FileLocation(renpy.config.savedir)

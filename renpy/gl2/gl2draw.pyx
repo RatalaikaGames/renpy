@@ -591,7 +591,7 @@ cdef class GL2Draw:
         # Generate the framebuffer.
         glGenFramebuffers(1, &self.fbo)
 
-        glGenTextures(1, &self.color_texture)
+        glGenRenderbuffers(1, &self.color_renderbuffer)
 
         if renpy.config.depth_size:
             glGenRenderbuffers(1, &self.depth_renderbuffer)
@@ -620,19 +620,27 @@ cdef class GL2Draw:
 
         self.change_fbo(self.fbo)
 
-        glBindTexture(GL_TEXTURE_2D, self.color_texture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,  GL_RGBA, GL_UNSIGNED_BYTE, NULL)
-        glFramebufferTexture2D(
+        glBindRenderbuffer(GL_RENDERBUFFER, self.color_renderbuffer)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height)
+
+        glFramebufferRenderbuffer(
             GL_FRAMEBUFFER,
             GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D,
-            self.color_texture,
-            0)
+            GL_RENDERBUFFER,
+            self.color_renderbuffer)
 
         if renpy.config.depth_size:
 
             glBindRenderbuffer(GL_RENDERBUFFER, self.depth_renderbuffer)
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height)
+
+            if self.gles:
+                if renpy.config.depth_size >= 24:
+                    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height)
+                else:
+                    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, width, height)
+
+            else:
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height)
 
             glFramebufferRenderbuffer(
                 GL_FRAMEBUFFER,
@@ -640,12 +648,13 @@ cdef class GL2Draw:
                 GL_RENDERBUFFER,
                 self.depth_renderbuffer)
 
+
     def quit_fbo(GL2Draw self):
 
         self.change_fbo(self.default_fbo)
 
         glDeleteFramebuffers(1, &self.fbo)
-        glDeleteTextures(1, &self.color_texture)
+        glDeleteRenderbuffers(1, &self.color_renderbuffer)
 
         if renpy.config.depth_size:
             glDeleteRenderbuffers(1, &self.depth_renderbuffer)
@@ -919,7 +928,7 @@ cdef class GL2Draw:
 
         # Clear the screen.
         glClearColor(0.0, 0.0, 0.0, 0.0)
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT)
 
         # Project the child from virtual space to the screen space.
         cdef Matrix transform
@@ -960,11 +969,6 @@ cdef class GL2Draw:
 
         x = int(x)
         y = int(y)
-
-        x = max(0, x)
-        x = min(vw, x)
-        y = max(0, y)
-        y = min(vh, y)
 
         return x, y
 
@@ -1183,7 +1187,7 @@ cdef class GL2DrawingContext:
         program.start()
 
         program.set_uniform("u_model_size", (model.width, model.height))
-        program.set_uniform("u_lod_bias", -1.0)
+        program.set_uniform("u_lod_bias", float(renpy.config.gl_lod_bias))
         program.set_uniform("u_transform", transform)
         program.set_uniform("u_time", (renpy.display.interface.frame_time - renpy.display.interface.init_time) % 86400)
         program.set_uniform("u_random", (random.random(), random.random(), random.random(), random.random()))
@@ -1266,6 +1270,14 @@ cdef class GL2DrawingContext:
                 else:
                     uniforms[k] = v
 
+        depth = properties.pop("depth", False) and not properties.get("has_depth", False)
+        if depth:
+            glClear(GL_DEPTH_BUFFER_BIT)
+            glEnable(GL_DEPTH_TEST)
+            glDepthFunc(GL_LESS)
+
+            properties["has_depth"] = True
+
         children = r.visible_children
 
         if r.cached_model is not None:
@@ -1296,6 +1308,9 @@ cdef class GL2DrawingContext:
             self.draw_one(child, child_transform, child_clip_polygon, shaders, uniforms, child_properties)
 
 
+        if depth:
+            glDisable(GL_DEPTH_TEST)
+
         return 0
 
 
@@ -1310,7 +1325,6 @@ cdef class GL2DrawingContext:
             properties["texture_scaling"] = "nearest"
 
         self.draw_one(what, transform, clip_polygon, shaders, uniforms, properties)
-
 
 
 # A set of uniforms that are defined by Ren'Py, and shouldn't be set in ATL.

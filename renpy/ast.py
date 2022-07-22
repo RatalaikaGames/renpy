@@ -711,8 +711,8 @@ class Say(Node):
             if self.arguments is not None:
                 args, kwargs = self.arguments.evaluate()
             else:
-                args = tuple()
-                kwargs = dict()
+                args = ()
+                kwargs = {}
 
             kwargs.setdefault("interact", self.interact)
 
@@ -1643,7 +1643,7 @@ class Menu(Node):
                 if self.item_arguments and (self.item_arguments[i] is not None):
                     item_arguments.append(self.item_arguments[i].evaluate())
                 else:
-                    item_arguments.append((tuple(), dict()))
+                    item_arguments.append(( (), {} ))
 
         if narration:
             renpy.exports.say(None, "\n".join(narration), interact=False)
@@ -2072,6 +2072,7 @@ def create_store(name):
 
 
 class StoreNamespace(object):
+    pure = True
 
     def __init__(self, store):
         self.store = store
@@ -2170,7 +2171,9 @@ class Define(Node):
             renpy.dump.definitions.append((self.store[6:] + "." + self.varname, self.filename, self.linenumber))
 
         if self.operator == "=" and self.index is None:
-            renpy.exports.pure(self.store + "." + self.varname)
+            ns, _special = get_namespace(self.store)
+            if getattr(ns, "pure", True):
+                renpy.exports.pure(self.store + "." + self.varname)
 
         self.set()
 
