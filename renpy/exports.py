@@ -3179,7 +3179,7 @@ def get_say_attributes():
     return renpy.game.context().say_attributes
 
 
-def get_side_image(prefix_tag, image_tag=None, not_showing=True, layer=None):
+def get_side_image(prefix_tag, image_tag=None, not_showing=None, layer=None):
     """
     :doc: side
 
@@ -3193,11 +3193,15 @@ def get_side_image(prefix_tag, image_tag=None, not_showing=True, layer=None):
     and returns it if it exists.
 
     If not_showing is True, this only returns a side image if the image the
-    attributes are taken from is not on the screen.
+    attributes are taken from is not on the screen. If Nome, the value
+    is taken from :var:`config.side_image_only_not_showing`.
 
     If `layer` is None, uses the default layer for the currently showing
     tag.
     """
+
+    if not_showing is None:
+        not_showing = renpy.config.side_image_only_not_showing
 
     images = renpy.game.context().images
 
@@ -3219,8 +3223,8 @@ def get_side_image(prefix_tag, image_tag=None, not_showing=True, layer=None):
     if not_showing and images.showing(attr_layer, (attrs[0],)):
         return None
 
-    required = set()
-    optional = set(attrs)
+    required = [ attrs[0] ]
+    optional = list(attrs[1:])
 
     return images.choose_image(prefix_tag, required, optional, None)
 

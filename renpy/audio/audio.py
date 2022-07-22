@@ -79,7 +79,7 @@ def load(fn):
             # prediction failed, too late
             pass
         # temporary 1s placeholder, will retry loading when looping:
-        rv = open(os.path.join(renpy.config.commondir,'_dl_silence.ogg'), 'rb')
+        rv = open(os.path.join(renpy.config.commondir, '_dl_silence.ogg'), 'rb')
     return rv
 
 
@@ -631,9 +631,6 @@ class Channel(object):
                 filename, _, _ = self.split_filename(filename, False)
                 renpy.game.persistent._seen_audio[filename] = True # @UndefinedVariable
 
-            if not pcm_ok:
-                return
-
             if not loop_only:
 
                 if tight is None:
@@ -1181,8 +1178,6 @@ def autoreload(_fn):
     After a sound file has been changed, stop all sound (and let Ren'Py restart
     the channels, as needed.)
     """
-
-    print("Sound autoreload", _fn)
 
     for c in all_channels:
         c.reload()
