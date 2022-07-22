@@ -2228,6 +2228,9 @@ class Interface(object):
         if not (renpy.android or renpy.ios or renpy.emscripten):
             renderers = renderers + [ "sw" ]
 
+        # MBG - fix for me
+        renderers = [ "r3" ]
+
         if self.safe_mode:
             renderer = "sw"
 
@@ -2253,15 +2256,19 @@ class Interface(object):
 #
 #                return False
 
-        make_draw("gl", "renpy.gl.gldraw", "GLDraw", "gl")
-        make_draw("angle", "renpy.gl.gldraw", "GLDraw", "angle")
-        make_draw("gles", "renpy.gl.gldraw", "GLDraw", "gles")
+        # MBG - gl doesnt work anymore, no big deal
+        #make_draw("gl", "renpy.gl.gldraw", "GLDraw", "gl")
+        #make_draw("angle", "renpy.gl.gldraw", "GLDraw", "angle")
+        #make_draw("gles", "renpy.gl.gldraw", "GLDraw", "gles")
 
-        make_draw("gl2", "renpy.gl2.gl2draw", "GL2Draw", "gl2")
-        make_draw("angle2", "renpy.gl2.gl2draw", "GL2Draw", "angle2")
-        make_draw("gles2", "renpy.gl2.gl2draw", "GL2Draw", "gles2")
+        # MBG - gl2 doesnt work anymore, no big deal
+        #make_draw("gl2", "renpy.gl2.gl2draw", "GL2Draw", "gl2")
+        #make_draw("angle2", "renpy.gl2.gl2draw", "GL2Draw", "angle2")
+        #make_draw("gles2", "renpy.gl2.gl2draw", "GL2Draw", "gles2")
 
-        make_draw("sw", "renpy.display.swdraw", "SWDraw")
+        # MBG - needs angle. not needed, no big deal
+        #make_draw("sw", "renpy.display.swdraw", "SWDraw")
+
         make_draw("r3", "r3draw", "r3draw")
 
         rv = [ ]
