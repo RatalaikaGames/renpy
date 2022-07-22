@@ -56,9 +56,6 @@ Right now, it does the following things:
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 
-import renpy
-renpy.update_path()
-
 #MBG - I dont know why I'm having to do this. first I did it in my very first bootstrap but it needs to be here for cython, too
 from future.utils.surrogateescape import register_surrogateescape
 register_surrogateescape()
@@ -93,8 +90,14 @@ else:
 # Make strict use surrogateescape error handling.
 if PY2:
     import codecs
+
+    strict_error = codecs.lookup_error("strict")
+    codecs.register_error("python_strict", strict_error)
     surrogateescape_error = codecs.lookup_error("surrogateescape")
     codecs.register_error("strict", surrogateescape_error)
+
+import renpy
+renpy.update_path()
 
 ################################################################################
 # String (text and binary) types and functions.
