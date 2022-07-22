@@ -19,6 +19,8 @@ the omission in future versions.
 * Alessio
 * Alexandre Tranchant
 * Alisha Taylor
+* Andrej
+* Andrí Wilford
 * Andy_kl
 * Apricotorange
 * Arda Güler
@@ -40,6 +42,7 @@ the omission in future versions.
 * Civalin
 * CobaltCore
 * Craig P. Donson
+* 被诅咒的章鱼
 * DaFool
 * Daniel Conley
 * Daniel Luque
@@ -92,6 +95,7 @@ the omission in future versions.
 * James Broadhead
 * James Pearson Hughes
 * Jan Beich
+* Jan Masek
 * Javimat
 * Joaquin Garmendia Cabrera
 * Joshua Fehler
@@ -132,6 +136,7 @@ the omission in future versions.
 * Muhammad Nur Hidayat Yasuyoshi
 * Neotus
 * NetGenSuperstar
+* 逆转咸鱼
 * NoJoker
 * Nolanlemahn
 * Nxcrft

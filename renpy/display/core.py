@@ -41,6 +41,7 @@ import io
 import threading
 import copy
 import gc
+import atexit
 
 import_time = time.time()
 
@@ -702,7 +703,7 @@ class Displayable(renpy.object.Object):
 
         rv = [ ]
 
-        for i in self.visit():
+        for i in self.visit()[::-1]:
             if i is not None:
                 speech = i._tts()
 
@@ -1457,6 +1458,37 @@ class SceneLists(renpy.object.Object):
 
         return (x, y, sw, sh)
 
+    def get_zorder_list(self, layer):
+        """
+        Returns a list of (tag, zorder) pairs.
+        """
+
+        rv = [ ]
+
+        for sle in self.layers.get(layer, [ ]):
+
+            if sle.tag is None:
+                continue
+            if "$" in sle.tag:
+                continue
+
+            rv.append((sle.tag, sle.zorder))
+
+        return rv
+
+    def change_zorder(self, layer, tag, zorder):
+        """
+        Changes the zorder for tag on layer.
+        """
+
+        sl = self.layers.get(layer, [ ])
+        for sle in sl:
+
+            if sle.tag == tag:
+                sle.zorder = zorder
+
+        sl.sort(key=lambda sle : sle.zorder)
+
 
 def scene_lists(index=-1):
     """
@@ -1979,6 +2011,31 @@ class Interface(object):
         # The old mouse.
         self.old_mouse = None
 
+        try:
+            self.setup_nvdrs()
+        except:
+            pass
+
+    def setup_nvdrs(self):
+        from ctypes import cdll, c_char_p
+        nvdrs = cdll.nvdrs
+
+        disable_thread_optimization = nvdrs.disable_thread_optimization
+        restore_thread_optimization = nvdrs.restore_thread_optimization
+        get_nvdrs_error = nvdrs.get_nvdrs_error
+        get_nvdrs_error.restype = c_char_p
+
+        renpy.display.log.write("nvdrs: Loaded, about to disable thread optimizations.")
+
+        disable_thread_optimization()
+        error = get_nvdrs_error()
+        if error:
+            renpy.display.log.write("nvdrs: %r (can be ignored)", error)
+        else:
+            renpy.display.log.write("nvdrs: Disabled thread optimizations.")
+
+        atexit.register(restore_thread_optimization)
+
     def setup_dpi_scaling(self):
 
         if "RENPY_HIGHDPI" in os.environ:
@@ -2031,7 +2088,13 @@ class Interface(object):
         if self.started:
             return
 
+        # Avoid starting on Android if we don't have focus.
+        if renpy.android:
+            self.check_android_start()
         # MBG - did this earlier
+        
+        #pygame.display.hint("SDL_AUDIO_DEVICE_APP_NAME", (renpy.config.name or "Ren'Py Game").encode("utf-8"))
+
         # Initialize audio.
         #renpy.audio.audio.init()
 
@@ -2393,7 +2456,6 @@ class Interface(object):
 
         if renpy.emscripten:
             emscripten.sleep(0)
-
 
         now = time.time()
 
@@ -2820,17 +2882,49 @@ class Interface(object):
 
         return (get_time() - self.frame_time) <= seconds_ago
 
+    def mobile_save(self):
+        """
+        Create a mobile reload file.
+        """
+
+        if renpy.config.save_on_mobile_background and (not renpy.store.main_menu):
+            renpy.loadsave.save("_reload-1")
+
+        renpy.persistent.update(True)
+        renpy.persistent.save_MP()
+
+    def mobile_unlink(self):
+        """
+        Delete an unused mobile reload file.
+        """
+
+        # Since we came back to life, we can get rid of the
+        # auto-reload.
+        renpy.loadsave.unlink_save("_reload-1")
+
+    def check_android_start(self):
+        """
+        Delays until the android screen is visible, to ensure the
+        GL context is created properly.
+        """
+
+        from jnius import autoclass
+        SDLActivity = autoclass("org.libsdl.app.SDLActivity")
+
+        if SDLActivity.mHasFocus:
+            return
+
+        renpy.display.log.write("App not focused at interface start, shutting down early.")
+
+        self.mobile_save()
+
+        import os
+        os._exit(1)
+
     def check_suspend(self, ev):
         """
         Handles the SDL2 suspend process.
         """
-
-        def save():
-            if renpy.config.save_on_mobile_background and (not renpy.store.main_menu):
-                renpy.loadsave.save("_reload-1")
-
-            renpy.persistent.update(True)
-            renpy.persistent.save_MP()
 
         if ev.type != pygame.APP_WILLENTERBACKGROUND:
             return False
@@ -2846,7 +2940,7 @@ class Interface(object):
         pygame.time.set_timer(REDRAW, 0)
         pygame.time.set_timer(TIMEEVENT, 0)
 
-        save()
+        self.mobile_save()
 
         if renpy.config.quit_on_mobile_background:
             sys.exit(0)
@@ -2863,9 +2957,7 @@ class Interface(object):
 
         print("Entering foreground.")
 
-        # Since we came back to life, we can get rid of the
-        # auto-reload.
-        renpy.loadsave.unlink_save("_reload-1")
+        self.mobile_unlink()
 
         pygame.time.set_timer(PERIODIC, PERIODIC_INTERVAL)
 
@@ -3845,6 +3937,22 @@ class Interface(object):
                         elif renpy.display.behavior.map_event(ev, "full_inspector"):
                             l = self.surftree.main_displayables_at_point(x, y, renpy.config.layers)
                             renpy.game.invoke_in_new_context(renpy.config.inspector, l)
+
+                    # Handle the dismissing of non trans_pause transitions.
+                    if self.ongoing_transition.get(None, None) and (not suppress_transition) and (not trans_pause) and (renpy.config.dismiss_blocking_transitions):
+
+                        if renpy.store._dismiss_pause:
+                            dismiss = "dismiss"
+                        else:
+                            dismiss = "dismiss_hard_pause"
+
+                        if renpy.display.behavior.map_event(ev, dismiss):
+                            self.transition.pop(None, None)
+                            self.ongoing_transition.pop(None, None)
+                            self.transition_time.pop(None, None)
+                            self.transition_from.pop(None, None)
+                            self.restart_interaction = True
+                            raise IgnoreEvent()
 
                 except IgnoreEvent:
                     # An ignored event can change the timeout. So we want to

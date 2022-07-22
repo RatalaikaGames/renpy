@@ -147,6 +147,9 @@ cdef class GLDraw:
         self.environ.deinit()
         self.rtt.deinit()
 
+        gltexture.dealloc_textures()
+        gltexture.free_texture_numbers()
+
         if renpy.android or renpy.ios:
             pygame.display.get_window().recreate_gl_context()
 
@@ -370,9 +373,12 @@ cdef class GLDraw:
 
         # Angle or GL?
         if self.angle:
-            renpy.uguu.angle.load_angle()
+            res = renpy.uguu.angle.load_angle()
         else:
-            renpy.uguu.angle.load_gl()
+            res = renpy.uguu.angle.load_gl()
+
+        if not res:
+            return False
 
         # Set the display mode.
 
