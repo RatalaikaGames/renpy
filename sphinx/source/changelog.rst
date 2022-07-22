@@ -2,6 +2,44 @@
 Changelog (Ren'Py 7.x-)
 =======================
 
+.. _renpy-7.4.11:
+
+7.4.11
+======
+
+Fixes
+-----
+
+The 4-component constructor for matrices has been fixed. 
+
+Ren'Py now cleans out the android build directories when producing a Android 
+App Bundle (AAB) file, preventing problems that might be caused when packaging 
+multiple games, or a single game where files are deleted.
+
+Live2d now properly handles seamless animation when the same motion is repeated
+in a displayable. (For example, ``show eileen m1 m1 m2`` where ``m1`` is seamless.)
+
+Mouse motion is now tracked on Chrome OS devices. This prevents the mouse cursor
+from being hidden between clicks. 
+
+An issue with windows partially rendering on ChromeOS has been resolved. 
+
+An issue with transcludes in screens has been fixed. 
+
+An issue that could prevent a transform with both :tpref:`perspective` and 
+:tpref:`mesh` true from displaying has been fixed.
+
+Buttons now only propagate transform state to direct children, not to 
+children accessed through ImageReferences.
+
+The ``repeat_`` modifier can now be applied to gamepad events. 
+
+A new :var:`config.debug_prediction` variable has been split out of 
+:var:`config.debug_image_cache`. This controls the logging of 
+prediction errors to the console and log.txt, making the latter 
+variable act as documented.
+
+
 .. _renpy-7.4.10:
 
 7.4.10
