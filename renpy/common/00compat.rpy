@@ -193,11 +193,13 @@ init -1900 python:
         if version <= (7, 3, 2):
             config.audio_directory = None
             config.early_start_store = True
+            config.compat_viewport_minimum = True
 
         if version <= (7, 3, 5):
             config.side_image_requires_attributes = False
             config.window_functions_set_auto = False
             config.hw_video = True
+            config.who_what_sub_compat = 0
 
         if version <= (7, 4, 0):
             config.pause_with_transition = True
@@ -210,6 +212,7 @@ init -1900 python:
             config.gl2 = False
             config.scene_clears_layer_at_list = True
             config.gl_lod_bias = -1.0
+            config.who_what_sub_compat = 1
 
     # The version of Ren'Py this script is intended for, or
     # None if it's intended for the current version.

@@ -1144,6 +1144,15 @@ gl_lod_bias = -.5
 # of that tag.
 adjust_attributes = { }
 
+# The compatibility mode for who/what substitutions.
+# 0: ver < 7.4
+# 1: 7.4 <= ver <= 7.4.4
+# 2: ver >= 7.4.5
+who_what_sub_compat = 2
+
+# Compat for {,x,y}minimum when applied to side.
+compat_viewport_minimum = False
+
 del os
 del collections
 

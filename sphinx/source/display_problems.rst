@@ -1,8 +1,8 @@
-:orphan:
-
-
 Dealing With Display Problems
 -----------------------------
+
+On Startup
+^^^^^^^^^^
 
 Ren'Py requires that your computer has functioning graphics acceleration
 hardware, such as a GPU or a CPU with integrated graphics. Ren'Py will
@@ -21,8 +21,8 @@ currently exist to enable new features, and are expected to become the
 default renderer in the future.
 
 4. gl2: OpenGL 2.0 or greater.
-2. angle2: Windows, DirectX 9 or DirectX 11.
-3. gles2: OpenGL ES 3.0.
+5. angle2: Windows, DirectX 9 or DirectX 11.
+6. gles2: OpenGL ES 3.0.
 
 Older versions of Ren'Py supported a software renderer, but this has
 been removed.
@@ -41,4 +41,14 @@ consider switching video renderers, using the following steps.
 
 We suggest trying the GL and ANGLE renderers. The GLES renderers may not function
 on desktop hardware.
+
+
+On Suspend/Resume
+^^^^^^^^^^^^^^^^^
+
+We have had reports of systems that lose textures when a computer is suspened
+and resumed. This is likely a problem with the computer or its device drivers,
+but it is possible to force Ren'Py to reload the textures by resizing the
+window, or pressing the F key to toggle fullscreen mode.
+
 
