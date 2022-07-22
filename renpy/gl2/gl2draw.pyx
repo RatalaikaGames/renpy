@@ -28,7 +28,6 @@ DEF ANGLE = False
 from libc.stdlib cimport malloc, free
 from sdl2 cimport *
 from renpy.uguu.gl cimport *
-import renpy.uguu.angle
 import renpy.gl2.gl2functions
 
 from pygame_sdl2 cimport *
@@ -324,15 +323,6 @@ cdef class GL2Draw:
 
         renpy.display.log.write("swap interval: %r frames", vsync)
 
-        # Angle or GL?
-        if self.angle:
-            res = renpy.uguu.angle.load_angle()
-        else:
-            res = renpy.uguu.angle.load_gl()
-
-        if not res:
-            return False
-
         # Determine the GLES mode, the actual window size to request, and the
         # window flags to use. (These are platform dependent.)
         gles = self.gles
@@ -385,6 +375,10 @@ cdef class GL2Draw:
 
         # Initialize OpenGL.
 
+        if "RENPY_FAIL_" + self.info["renderer"].upper() in os.environ:
+            self.quit()
+            return False
+
         # Load uguu, and init GL.
         renpy.uguu.gl.clear_missing_functions()
         renpy.uguu.gl.load()
@@ -403,10 +397,12 @@ cdef class GL2Draw:
         extensions_string = <char *> glGetString(GL_EXTENSIONS)
         extensions = set(extensions_string.split(" "))
 
-        renpy.display.log.write("Extensions:")
+        if renpy.config.log_gl_extensions:
 
-        for i in sorted(extensions):
-            renpy.display.log.write("    %s", i)
+            renpy.display.log.write("Extensions:")
+
+            for i in sorted(extensions):
+                renpy.display.log.write("    %s", i)
 
         # Do additional setup needed.
         renpy.display.pgrender.set_rgba_masks()
@@ -574,7 +570,8 @@ cdef class GL2Draw:
 
         self.quit_fbo()
 
-        self.shader_cache.save()
+        if self.shader_cache is not None:
+            self.shader_cache.save()
 
 
     def init_fbo(GL2Draw self):
@@ -1061,7 +1058,8 @@ cdef class GL2Draw:
         return rv
 
     def kill_textures(self):
-        self.texture_loader.cleanup()
+        if self.texture_loader is not None:
+            self.texture_loader.cleanup()
 
     def event_peek_sleep(self):
         pass

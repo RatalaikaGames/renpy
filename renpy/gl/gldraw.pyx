@@ -32,7 +32,6 @@ import_pygame_sdl2()
 
 import renpy
 import renpy.uguu.gl
-import renpy.uguu.angle
 import renpy.gl.glfunctions
 import pygame_sdl2 as pygame
 import os
@@ -371,15 +370,6 @@ cdef class GLDraw:
 
         renpy.display.log.write("swap interval: %r frames", vsync)
 
-        # Angle or GL?
-        if self.angle:
-            res = renpy.uguu.angle.load_angle()
-        else:
-            res = renpy.uguu.angle.load_gl()
-
-        if not res:
-            return False
-
         # Set the display mode.
 
         pygame.display.gl_reset_attributes()
@@ -444,10 +434,6 @@ cdef class GLDraw:
                 renpy.display.log.write("Could not get pygame screen: %r", e)
                 return False
 
-        if "RENPY_FAIL_" + self.info["renderer"].upper() in os.environ:
-            self.quit()
-            return False
-
         renpy.uguu.gl.clear_missing_functions()
         renpy.uguu.gl.load()
         if renpy.uguu.gl.check_missing_functions(renpy.gl.glfunctions.required_functions):
@@ -477,10 +463,16 @@ cdef class GLDraw:
         extensions_string = <char *> glGetString(GL_EXTENSIONS)
         extensions = set(i.decode("utf-8") for i in extensions_string.split(b" "))
 
-        renpy.display.log.write("Extensions:")
+        if renpy.config.log_gl_extensions:
 
-        for i in sorted(extensions):
-            renpy.display.log.write("    %s", i)
+            renpy.display.log.write("Extensions:")
+
+            for i in sorted(extensions):
+                renpy.display.log.write("    %s", i)
+
+        if "RENPY_FAIL_" + self.info["renderer"].upper() in os.environ:
+            self.quit()
+            return False
 
         def use_subsystem(module, envvar, envval, *req_ext):
             """

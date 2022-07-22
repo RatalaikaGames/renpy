@@ -25,6 +25,11 @@ Optimization interacted poorly with Ren'Py, causing pauses in places where
 Ren'Py did not expect pauses to occur. This could manifest as audio glitches
 that this change fixes.
 
+Ren'Py will automatically use the ANGLE library to emulate OpenGL ES using
+DirectX, if DirectX is available and OpenGL is not. This had not worked
+properly in Ren'Py 7.4. The window may appear and disappear multiple times
+as Ren'Py tries different video systems, this is expected.
+
 Android
 -------
 
@@ -37,8 +42,13 @@ fixes an issue where, if the player switched out of the application before
 the game could fully start. Now, if Ren'Py has lost focus at game start,
 it will save and quit, then re-launch when the player returns to the game.
 
+In general, compatibility with Android devices has been improved.
+
 Features
 --------
+
+Added :var:`config.main_menu_music_fadein`, a way of fading in the main
+menu music.
 
 The new :func:`renpy.get_zorder_list` and :func:`renpy.change_zorder` allow
 the zorder of images and screens to be manipulated after being shown.
@@ -117,7 +127,10 @@ The {done} text tag now works as defined.
 Ren'Py is better at checking for GL load failuires and falling back to older
 libraries.
 
------------
+Apps built for macOS should enable HighDPI mode.
+
+Translations
+------------
 
 The Ren'Py documentation has been translated into both Simplified and
 Traditional Chinese, courtesy of 被诅咒的章鱼 and 逆转咸鱼.
