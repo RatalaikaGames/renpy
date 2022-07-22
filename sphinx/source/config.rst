@@ -263,6 +263,14 @@ Occasionally Used
     * A prefix that is given to files played on the channel.
     * A suffix that is given to files played on the channel.
 
+.. var:: config.auto_movie_channel = True
+
+    If True, and the `play` argument is give to :func:`Movie`, an
+    audio channel name is automatically generated for each movie.
+
+    :var:`config.single_movie_channel` takes precendece over this
+    variable.
+
 .. var:: config.auto_load = None
 
     If not None, the name of a save file to automatically load when
@@ -879,6 +887,13 @@ Occasionally Used
 
     The width of the screen. Usually set by :func:`gui.init`.
 
+.. var:: config.single_movie_channel = None
+
+    If not None, and the `play` argument is give to :func:`Movie`,
+    this is the name used for the channel the movie is played on.
+    This should not be "movie", as that name is reserved for
+    Ren'Py's internal use.
+
 .. var:: config.skip_sounds = False
 
     If False, non-looping audio will not be played when Ren'Py is
@@ -942,7 +957,7 @@ Occasionally Used
     platform specific, and so this should be set in a platform-specific
     manner. (It may make sense to change this in translations, as well.)
 
-.. var:: config.window_auto_hide = [ 'scene', 'call screen', 'menu' ]
+.. var:: config.window_auto_hide = [ 'scene', 'call screen', 'menu', "say-centered" ]
 
     A list of statements that cause ``window auto`` to hide the empty
     dialogue window.

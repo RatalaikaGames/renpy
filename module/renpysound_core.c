@@ -80,6 +80,7 @@ MediaState *media_open(SDL_RWops *, const char *);
 void media_want_video(MediaState *, int);
 void media_start_end(MediaState *, double, double);
 void media_start(MediaState *);
+void media_pause(MediaState *, int);
 void media_close(MediaState *);
 
 int media_read_audio(struct MediaState *is, Uint8 *stream, int len);
@@ -964,6 +965,10 @@ void RPS_pause(int channel, int pause) {
 
     c->paused = pause;
 
+    if (c->playing) {
+        media_pause(c->playing, pause);
+    }
+
     EXIT();
 
     error(SUCCESS);
@@ -989,6 +994,9 @@ void RPS_unpause_all(void) {
 
     for (i = 0; i < num_channels; i++) {
         channels[i].paused = 0;
+        if (channels[i].playing) {
+            media_pause(channels[i].playing, 0);
+        }
     }
 
     EXIT();
