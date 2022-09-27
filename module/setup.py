@@ -201,14 +201,15 @@ cython("renpy.gl.glenviron_shader", libs=sdl)
 cython("renpy.gl.glrtt_copy", libs=sdl)
 cython("renpy.gl.glrtt_fbo", libs=sdl)
 
-cython("renpy.gl2.gl2mesh")
-cython("renpy.gl2.gl2mesh2")
-cython("renpy.gl2.gl2mesh3")
-cython("renpy.gl2.gl2polygon")
-cython("renpy.gl2.gl2model")
-cython("renpy.gl2.gl2draw", libs=sdl)
-cython("renpy.gl2.gl2texture", libs=sdl)
-cython("renpy.gl2.gl2shader", libs=sdl)
+#MBG - removed gl2
+#cython("renpy.gl2.gl2mesh")
+#cython("renpy.gl2.gl2mesh2")
+#cython("renpy.gl2.gl2mesh3")
+#cython("renpy.gl2.gl2polygon")
+#cython("renpy.gl2.gl2model")
+#cython("renpy.gl2.gl2draw", libs=sdl)
+#cython("renpy.gl2.gl2texture", libs=sdl)
+#cython("renpy.gl2.gl2shader", libs=sdl)
 
 if cubism:
     cython("renpy.gl2.live2dmodel", libs=sdl)
