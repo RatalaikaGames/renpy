@@ -185,7 +185,7 @@ SpriteManager = renpy.display.particle.SpriteManager
 
 Matrix = renpy.display.matrix.Matrix # @UndefinedVariable
 
-Live2D = renpy.gl2.live2d.Live2D
+Live2D = None #renpy.gl2.live2d.Live2D
 
 Model = renpy.display.model.Model
 
