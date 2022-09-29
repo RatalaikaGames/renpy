@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && !defined(RENPY_RATA)
 #define GCC_MMX 1
 #include "mmx.h"
 #endif
