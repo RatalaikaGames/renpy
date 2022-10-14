@@ -459,14 +459,10 @@ class _MultiPersistent(object):
     def save(self):
 
         fn = self._filename
-        with open(fn + b".new", "wb") as f:
-            dump(self, f)
+        f = open(fn, "wb")
+        dump(self, f)
+        f.close()
 
-        try:
-            os.rename(fn + b".new", fn)
-        except:
-            os.unlink(fn)
-            os.rename(fn + b".new", fn)
 
 
 def MultiPersistent(name, save_on_quit=False):
