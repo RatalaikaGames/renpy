@@ -590,6 +590,10 @@ def load(name, tl=True):
         rv = load_core(p + name)
         if rv is not None:
             return rv
+            
+    # MBG hack. sometimes we use flac alternatives
+    if not name.endswith('.flac'):
+        return load(name + ".flac", tl)
 
     raise IOError("Couldn't find file '%s'." % name)
 
