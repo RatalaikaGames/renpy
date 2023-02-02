@@ -1076,7 +1076,10 @@ cdef class GL2Draw:
 
         # Crop and flip it, since it's upside down.
         rv = full.subsurface((px * xmul, py * ymul, pw * xmul, ph * ymul))
-        rv = renpy.display.pgrender.flip_unscaled(rv, False, True)
+        
+        #MBG UNFLUCK - remove this, we dont need to flip it
+        #rv = renpy.display.pgrender.flip_unscaled(rv, False, True)
+        rv = renpy.display.pgrender.copy_surface_unscaled(rv)
 
         return rv
 
