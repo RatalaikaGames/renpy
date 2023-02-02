@@ -333,15 +333,12 @@ def read_video(channel):
     if rv is None:
         return rv
 
-    # MBG - 2 pixels? 4? who knows? why? who knows. I returned a kind of no-op subsurface because it renpy probably needs a new object wrapper to preserve some management semantics
-    ## Remove padding from the edges of the surface.
-    #w, h = rv.get_size()
-    #
-    ## This has to be set to the same number it is in ffmedia.c
-    #FRAME_PADDING = 4
-    #return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
+    # Remove padding from the edges of the surface.
     w, h = rv.get_size()
-    return rv.subsurface((0,0,w,h))
+    
+    # This has to be set to the same number it is in ffmedia.c
+    FRAME_PADDING = 4
+    return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
 
 # No video will be played from this channel.
 NO_VIDEO = 0

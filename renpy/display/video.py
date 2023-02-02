@@ -177,10 +177,7 @@ def get_movie_texture(channel, mask_channel=None, side_mask=False, mipmap=None):
         # TEST
         #surf = surf.subsurface((100,100,200,200))
         renpy.display.render.mutated_surface(surf)
-        #MBG - Note: True is passed here for IsText. this is only used for controlling whether mips are generated, and I wanted to disable mips for videos. Not great, but here we are. At least I wrote it down
-        #MBG - mipmap flag is ignored for now
-        #tex = renpy.display.draw.load_texture(surf, True, { "mipmap" : mipmap })
-        tex = renpy.display.draw.load_texture(surf, True, True)
+        tex = renpy.display.draw.load_texture(surf, True, { "mipmap" : mipmap })
 
         tex.alphamask = alp
         texture[channel] = tex

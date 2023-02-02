@@ -749,10 +749,6 @@ class Layout(object):
             maxx = min_width - self.xborder
 
         maxx = math.ceil(maxx)
-        
-        #MBG - at some point when I was removing my +2 padding all over, this broke on some empty strings which have a width of 0
-        #width of 0 freaks things out. this fixes it
-        maxx = max(maxx,1)
 
         textsupport.align_and_justify(lines, maxx, style.text_align, style.justify)
 
@@ -781,8 +777,7 @@ class Layout(object):
         # Figure out the size of the texture. (This is a little over-sized,
         # but it simplifies the code to not have to care about borders on a
         # per-outline basis.)
-        # MBG - added another max(1 to make sure the texture size is never 0
-        sw, sh = size = (max(1,maxx + self.xborder), y + self.yborder)
+        sw, sh = size = (maxx + self.xborder, y + self.yborder)
         self.size = size
 
         self.baseline = find_baseline()
@@ -817,10 +812,6 @@ class Layout(object):
 
         di = DrawInfo()
 
-        if sw == 0:
-            print("ZAGGA", width, height, sw, sh)
-            traceback.print_stack()
-
         for o, color, _xo, _yo in self.outlines:
             key = (o, color)
 
@@ -842,7 +833,7 @@ class Layout(object):
             tw = (tw | 0x1f) + 1 if (tw & 0x1f) else tw
             th = (th | 0x1f) + 1 if (th & 0x1f) else th
 
-            #MBG - adding another True argument for my own purposes
+            # MBG OPTIMIZATION - pass flag to clear surface
             #surf = renpy.display.pgrender.surface((tw, th), True)
             surf = renpy.display.pgrender.surface((tw, th), True, True)
 
@@ -879,9 +870,7 @@ class Layout(object):
                 self.make_alignment_grid(surf)
 
             renpy.display.draw.mutated_surface(surf)
-            #MBG - I have my own code to load textures
-            #tex = renpy.display.draw.load_texture(surf, properties={ "mipmap" : renpy.config.mipmap_text if (style.mipmap is None) else style.mipmap })
-            tex = renpy.display.draw.load_texture(surf, False, True)
+            tex = renpy.display.draw.load_texture(surf, properties={ "mipmap" : renpy.config.mipmap_text if (style.mipmap is None) else style.mipmap })
 
             self.textures[key] = tex
 
@@ -992,7 +981,6 @@ class Layout(object):
         ts.cps = style.slow_cps
         if ts.cps is None or ts.cps is True:
             ts.cps = renpy.game.preferences.text_cps
-        #ts.cps = 1 # MBG TEST
 
         ts.take_style(style, self)
 

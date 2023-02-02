@@ -113,9 +113,8 @@ from renpy.loader import add_python_directory
 
 from renpy.lint import try_compile, try_eval
 
-# MBG - we don't need this to be happening, can't think of a better way to get rid of it now
-# from renpy.gl2.gl2shadercache import register_shader
-# from renpy.gl2.live2d import has_live2d
+from renpy.gl2.gl2shadercache import register_shader
+from renpy.gl2.live2d import has_live2d
 
 renpy_pure("ParameterizedText")
 renpy_pure("Keymap")

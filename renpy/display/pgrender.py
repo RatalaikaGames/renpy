@@ -117,14 +117,14 @@ def surface(rect, alpha, clear = False):
     if sample is None:
         sample = pygame.Surface((4, 4), pygame.SRCALPHA, 32)
 
-    # MBG _ skip padding (for now)
+    #MBG - optimization. use clear flag passed in by text to indicate which surfaces need to be cleared
     #surf = Surface((width + 4, height + 4), 0, sample)
-    #return surf.subsurface((2, 2, width, height))  # E1101
     if clear:
-        return Surface((width, height), 1337, sample)
+        surf = Surface((width + 4, height + 4), 1337, sample)
     else:
-        return Surface((width, height), 0, sample)
+        surf = Surface((width + 4, height + 4), 0, sample)
 
+    return surf.subsurface((2, 2, width, height))  # E1101
 
 surface_unscaled = surface
 
@@ -170,10 +170,8 @@ def load_image(f, filename):
     except Exception as e:
         raise Exception("Could not load image {!r}: {!r}".format(filename, e))
 
-    # MBG - skip this copying, I accept responsibility for problems
-    #rv = copy_surface_unscaled(surf)
-    #return rv
-    return surf
+    rv = copy_surface_unscaled(surf)
+    return rv
 
 
 load_image_unscaled = load_image

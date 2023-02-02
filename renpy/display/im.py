@@ -71,8 +71,7 @@ class CacheEntry(object):
             rv += self.width * self.height
 
         if self.texture is not None:
-            #rv += self.bounds[2] * self.bounds[3]
-            rv += renpy.display.draw.texels_size(self.texture)
+            rv += self.bounds[2] * self.bounds[3]
 
         return rv
 
@@ -138,10 +137,8 @@ class Cache(object):
         cache, in pixels.
         """
 
-        #MBG - revised to calculate using my graphics backend
-        #with self.lock:
-        #     rv = sum(i.size() for i in self.cache.values())
-        rv = renpy.display.draw.all_texels_size()
+        with self.lock:
+             rv = sum(i.size() for i in self.cache.values())
 
         # print("Total cache size: {:.1f}/{:.1f} MB (Textures {:.1f} MB)".format(
         #     4.0 * rv / 1024 / 1024,
@@ -400,10 +397,8 @@ class Cache(object):
             self.kill(ce)
 
             # If we're in the limit, we're done.
-            #if self.get_total_size() <= self.cache_limit:
-            #    break
-            # MBG - dont nuke more than one per frame
-            return False
+            if self.get_total_size() <= self.cache_limit:
+                break
 
         return True
 

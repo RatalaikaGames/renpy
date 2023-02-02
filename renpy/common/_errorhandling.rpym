@@ -28,8 +28,7 @@ init python in gui:
     system_font = None
 
 init python:
-    #MBG - we don't want to have to support the shaders module just for this
-    #renpy.load_module("_shaders")
+    renpy.load_module("_shaders")
 
     style._default = Style(None)
 

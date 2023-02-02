@@ -124,6 +124,9 @@ android = False
 ios = False
 emscripten = False
 
+# MBG - quick hack
+rata = ("RENPY_RATA" in os.environ)
+
 # Should we enable experimental features and debugging?
 experimental = "RENPY_EXPERIMENTAL" in os.environ
 
@@ -527,18 +530,14 @@ def import_all():
     import renpy.add_from
     import renpy.dump
 
-    #MBG - no gl2
-    #import renpy.gl2.gl2draw
-    #import renpy.gl2.gl2mesh
-    #import renpy.gl2.gl2model
-    #import renpy.gl2.gl2polygon
-    #import renpy.gl2.gl2shader
-    #import renpy.gl2.gl2texture
-    #import renpy.gl2.live2d
+    import renpy.gl2.gl2draw
+    import renpy.gl2.gl2mesh
+    import renpy.gl2.gl2model
+    import renpy.gl2.gl2polygon
+    import renpy.gl2.gl2shader
+    import renpy.gl2.gl2texture
+    import renpy.gl2.live2d
     
-    #MBG - use my own thing instead
-    import r3draw
-
     import renpy.minstore # depends on lots. @UnresolvedImport
     import renpy.defaultstore # depends on everything. @UnresolvedImport
 
