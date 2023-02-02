@@ -95,7 +95,7 @@ class Surface(pygame.Surface):
         rv = pygame.Surface.subsurface(self, rect)
         return rv
 
-
+#MBG - added clear parameter
 def surface(rect, alpha, clear = False):
     """
     Constructs a new surface. The allocated surface is actually a subsurface

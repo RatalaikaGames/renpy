@@ -138,7 +138,7 @@ class Cache(object):
         """
 
         with self.lock:
-             rv = sum(i.size() for i in self.cache.values())
+            rv = sum(i.size() for i in self.cache.values())
 
         # print("Total cache size: {:.1f}/{:.1f} MB (Textures {:.1f} MB)".format(
         #     4.0 * rv / 1024 / 1024,
@@ -548,7 +548,7 @@ class Cache(object):
                 try:
                     surf = image.load()
                     self.pin_cache[image] = surf
-                    renpy.display.draw.load_texture(surf, False, False)
+                    renpy.display.draw.load_texture(surf)
                 except:
                     self.preload_blacklist.add(image)
 
@@ -832,6 +832,7 @@ class Composite(ImageBase):
         else:
             size = cache.get(self.images[0]).get_size()
 
+        #MBG MODIFICATION - True passed to order surface to clear for proper composition
         rv = renpy.display.pgrender.surface(size, True, True)
 
         for pos, im in zip(self.positions, self.images):
