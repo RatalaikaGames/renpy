@@ -246,31 +246,34 @@ cdef class GL2Draw:
         Selects the GL attributes and hints to use.
         """
 
-        pygame.display.gl_reset_attributes()
 
-        pygame.display.gl_set_attribute(pygame.GL_RED_SIZE, 8)
-        pygame.display.gl_set_attribute(pygame.GL_GREEN_SIZE, 8)
-        pygame.display.gl_set_attribute(pygame.GL_BLUE_SIZE, 8)
-        pygame.display.gl_set_attribute(pygame.GL_ALPHA_SIZE, 8)
+        if not renpy.rata:
 
-        if renpy.config.depth_size:
-            pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, renpy.config.depth_size)
+            pygame.display.gl_reset_attributes()
 
-        pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, vsync)
+            pygame.display.gl_set_attribute(pygame.GL_RED_SIZE, 8)
+            pygame.display.gl_set_attribute(pygame.GL_GREEN_SIZE, 8)
+            pygame.display.gl_set_attribute(pygame.GL_BLUE_SIZE, 8)
+            pygame.display.gl_set_attribute(pygame.GL_ALPHA_SIZE, 8)
 
-        if gles:
-            pygame.display.hint("SDL_OPENGL_ES_DRIVER", "1")
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3);
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0);
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
-        else:
-            pygame.display.hint("SDL_OPENGL_ES_DRIVER", "0")
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 2);
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0);
-            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_COMPATIBILITY)
+            if renpy.config.depth_size:
+                pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, renpy.config.depth_size)
 
-        if renpy.config.gl_set_attributes is not None:
-            renpy.config.gl_set_attributes()
+            pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, vsync)
+
+            if gles:
+                pygame.display.hint("SDL_OPENGL_ES_DRIVER", "1")
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3);
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0);
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_ES)
+            else:
+                pygame.display.hint("SDL_OPENGL_ES_DRIVER", "0")
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 2);
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 0);
+                pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_COMPATIBILITY)
+
+            if renpy.config.gl_set_attributes is not None:
+                renpy.config.gl_set_attributes()
 
     def init(self, virtual_size):
         """

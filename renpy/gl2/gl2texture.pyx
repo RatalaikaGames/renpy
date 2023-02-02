@@ -406,7 +406,9 @@ cdef class GLTexture(GL2Model):
         glPixelStorei(GL_UNPACK_ROW_LENGTH, s.pitch // 4)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.width, self.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, s.pixels)
 
-        mesh = Mesh2.texture_rectangle(-1.0, -1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0)
+        #MBG - UNFLUCK
+        #mesh = Mesh2.texture_rectangle(-1.0, -1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0)
+        mesh = Mesh2.texture_rectangle(-1.0, -1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0)
 
         # Set up the viewport.
         glViewport(0, 0, self.width, self.height)
