@@ -339,10 +339,17 @@ cdef class GLTexture(GL2Model):
 
         # Set up the viewport.
         glViewport(0, 0, tw, th)
+        
+        #MBG - litter perf hack
+        glScissor(0, 0, tw, th)
+        glEnable(GL_SCISSOR_TEST)
 
         # Clear the screen.
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glClear(GL_COLOR_BUFFER_BIT)
+        
+        #MBG - undo little perf hack
+        glDisable(GL_SCISSOR_TEST)
 
         # Set up the default modes.
         glEnable(GL_BLEND)
