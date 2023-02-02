@@ -3,7 +3,11 @@
 
 #include <SDL.h>
 
-#if defined(__IPHONEOS__)
+#if defined(RENPY_GL_HEADER_PATH)
+
+#include RENPY_GL_HEADER_PATH
+
+#elif defined(__IPHONEOS__)
 
 #include <OpenGLES/ES3/gl.h>
 
