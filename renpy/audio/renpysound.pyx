@@ -336,9 +336,16 @@ def read_video(channel):
     # Remove padding from the edges of the surface.
     w, h = rv.get_size()
     
-    # This has to be set to the same number it is in ffmedia.c
-    FRAME_PADDING = 4
-    return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
+    # MBG - I know we need padding in renpy generally, but it seems like we go straight from ffmedia adding padding to this removing it.
+    # So I guess the internal renpy padding is not important at this point? I don't want to add it in my own ratamedia. so let's not take it off here
+    ## Remove padding from the edges of the surface.
+    #w, h = rv.get_size()
+    #
+    ## This has to be set to the same number it is in ffmedia.c
+    #FRAME_PADDING = 4
+    #return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
+    w, h = rv.get_size()
+    return rv.subsurface((0,0,w,h))
 
 # No video will be played from this channel.
 NO_VIDEO = 0
