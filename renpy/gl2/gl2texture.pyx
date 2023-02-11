@@ -375,6 +375,41 @@ cdef class GLTexture(GL2Model):
     def __repr__(self):
         return "<GLTexture {}x{} {}>".format(self.width, self.height, self.number)
 
+    def load_gltexture_rata(GLTexture self):
+        cdef GLuint tex
+        cdef GLuint premultiplied
+        cdef Program program
+        cdef SDL_Surface *s
+
+        draw = self.loader.draw
+        s = PySurface_AsSurface(self.surface)
+
+        # MBG - what follows is special loading logic that skips the hokey-pokey of drawing to premultiply and then mipmapping (with multiple resolving passes happening internally)
+
+        # generate a single premultiplied texture with mipmappy state set
+        glGenTextures(1, &premultiplied)
+        self.allocate_texture(premultiplied, self.width, self.height, self.properties)
+
+        # special state which says to premultiply on loading
+        glPixelStorei(8888, 8888) 
+
+        # normal bitmap loading
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, s.pitch // 4)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.width, self.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, s.pixels)
+
+        # remove premultiply hack
+        glPixelStorei(8888, 0)
+
+        # mipmap
+        self.mipmap_texture(premultiplied, self.width, self.height, self.properties)
+
+        # Store the loaded texture.
+        self.number = premultiplied
+        self.loader.allocated.add(self.number)
+
+        self.loaded = True
+        self.surface = None
+
     def load_gltexture(GLTexture self):
         """
         Loads this texture. When it's loaded, generation and number are set,
@@ -388,6 +423,11 @@ cdef class GLTexture(GL2Model):
 
         if self.loaded:
             return
+
+        # MBG HACK - I do this totally differently
+        if renpy.rata:
+                self.load_gltexture_rata()
+                return
 
         draw = self.loader.draw
 
