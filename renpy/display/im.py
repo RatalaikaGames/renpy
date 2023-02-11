@@ -334,7 +334,14 @@ class Cache(object):
 
                 ce.texture = renpy.display.draw.load_texture(texsurf)
 
+                # This was loaded while predicting images for immediate use,
+                # so get it onto the GPU.
+                if not predict and renpy.display.draw is not None:
+                    while renpy.display.draw.ready_one_texture():
+                        pass
+
             if not predict:
+
                 if render:
                     rv = renpy.display.render.Render(ce.width, ce.height)
                     rv.blit(ce.texture, ce.bounds[:2])
