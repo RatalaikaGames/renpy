@@ -1354,16 +1354,16 @@ void RPS_periodic() {
     while (dying) {
         struct Dying *d = dying;
         media_close(d->stream);
-        Py_DECREF(d->name);
+        names_to_decref_push(d->name);
         dying = d->next;
         free(d);
     }
+    
+    EXIT();
 
     for (int i = 0; i<names_to_decref_count; i++)
       Py_DECREF(names_to_decref[i]);
     names_to_decref_count = 0;
-
-    EXIT();
 }
 
 void RPS_advance_time(void) {
