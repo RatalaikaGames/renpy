@@ -276,7 +276,8 @@ cdef class GLTexture(GL2Model):
 
         # Update the loader.
         self.loader = loader
-        self.loader.total_texture_size += self.width * self.height * 4
+        #MBG customized
+        #self.loader.total_texture_size += self.width * self.height * 4
 
 
     def from_surface(GLTexture self, surface, properties):
@@ -550,6 +551,13 @@ cdef class GLTexture(GL2Model):
         # MBG customized
         return self.sizeTexels
 
+    # MBG customized
+    def updateSizeTexels(GLTexture self):
+        self.loader.total_texture_size -= self.sizeTexels
+        self.sizeTexels = glCheckFramebufferStatus(-1)
+        self.loader.total_texture_size += self.sizeTexels
+        
+
     def mipmap_texture(GLTexture self, GLuint tex, int tw, int th, properties={}):
         """
         Generate the mipmaps for a texture.
@@ -564,27 +572,23 @@ cdef class GLTexture(GL2Model):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level)
 
         if level == 0:
-            # MBG customized
-            self.sizeTexels = glCheckFramebufferStatus(-1)
+            self.updateSizeTexels()
             return
 
         if tw == 0 or th == 0:
-            # MBG customized
-            self.sizeTexels = glCheckFramebufferStatus(-1)
+            self.updateSizeTexels()
             return
 
         glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST)
         glGenerateMipmap(GL_TEXTURE_2D)
-        
-        # MBG customized
-        self.sizeTexels = glCheckFramebufferStatus(-1)        
+        self.updateSizeTexels()
         
     def __del__(self):
         try:
             if self.loaded:
                 self.loader.free_list.append(self.number)
 
-            self.loader.total_texture_size -= self.width * self.height * 4
+            self.loader.total_texture_size -= self.sizeTexels
         except TypeError:
             pass # Let's not error on shutdown.
 
