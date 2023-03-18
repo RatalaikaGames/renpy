@@ -71,7 +71,7 @@ class CacheEntry(object):
             rv += self.width * self.height
 
         if self.texture is not None:
-            rv += self.bounds[2] * self.bounds[3]
+            rv += self.texture.get_size_texels()
 
         return rv
 

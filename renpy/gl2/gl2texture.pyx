@@ -258,8 +258,11 @@ cdef class GLTexture(GL2Model):
         cdef unsigned char *p
 
         width, height = size
-
+        
         GL2Model.__init__(self, size, None, ("renpy.texture",), None)
+        
+        #MBG customized
+        self.sizeTexels = 0        
 
         # The number of the OpenGL texture this texture object
         # represents.
@@ -543,6 +546,10 @@ cdef class GLTexture(GL2Model):
             if level > max_level:
                 break
 
+    def get_size_texels(GLTexture self):
+        # MBG customized
+        return self.sizeTexels
+
     def mipmap_texture(GLTexture self, GLuint tex, int tw, int th, properties={}):
         """
         Generate the mipmaps for a texture.
@@ -557,14 +564,21 @@ cdef class GLTexture(GL2Model):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level)
 
         if level == 0:
+            # MBG customized
+            self.sizeTexels = glCheckFramebufferStatus(-1)
             return
 
         if tw == 0 or th == 0:
+            # MBG customized
+            self.sizeTexels = glCheckFramebufferStatus(-1)
             return
 
         glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST)
         glGenerateMipmap(GL_TEXTURE_2D)
-
+        
+        # MBG customized
+        self.sizeTexels = glCheckFramebufferStatus(-1)        
+        
     def __del__(self):
         try:
             if self.loaded:
