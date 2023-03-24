@@ -598,6 +598,7 @@ init -1500:
             timer gallery.slideshow_delay action Return("next") repeat True
 
         key "game_menu" action gallery.Return()
+        key "pad_b_press" action gallery.Return()
 
         if gallery.navigation:
             use gallery_navigation
