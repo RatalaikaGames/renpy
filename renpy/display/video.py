@@ -177,7 +177,9 @@ def get_movie_texture(channel, mask_channel=None, side_mask=False, mipmap=None):
 
     if surf is not None:
         renpy.display.render.mutated_surface(surf)
-        tex = renpy.display.draw.load_texture(surf, True, { "mipmap" : mipmap })
+        # MBG HACK - don't ever mipmap videos, it's gonna be way too slow
+        #tex = renpy.display.draw.load_texture(surf, True, { "mipmap" : mipmap })
+        tex = renpy.display.draw.load_texture(surf, True, { "mipmap" : False })
         texture[channel] = tex
         new = True
     else:
