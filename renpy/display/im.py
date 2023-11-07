@@ -71,7 +71,11 @@ class CacheEntry(object):
             rv += self.width * self.height
 
         if self.texture is not None:
-            rv += self.texture.get_size_texels()
+            #MBG - not sure what this is without a get_size_texels but this is better than nothing
+            if hasattr(self.texture,"get_size_texels"):
+                rv += self.texture.get_size_texels()
+            else:
+                rv += self.bounds[2] * self.bounds[3]
 
         return rv
 
