@@ -23,7 +23,7 @@
 # order.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from typing import Any
+#from typing import Any
 
 # All imports should go below renpy.compat.
 
@@ -104,6 +104,9 @@ elif nightly:
 
 # A verbose string giving the version.
 version = "Ren'Py " + version_only
+
+# MBG - quick hack
+rata = ("RENPY_RATA" in os.environ)
 
 # Other versions.
 script_version = 5003000
@@ -227,7 +230,7 @@ backup_blacklist = {
     "renpy.test.testkey",
     "renpy.test.testmouse",
     "renpy.test.testparser",
-    "renpy.gl2",
+#    "renpy.gl2",
     "renpy.gl",
     "renpycoverage",
     }
@@ -540,14 +543,14 @@ def import_all():
     import renpy.add_from
     import renpy.dump
 
-    import renpy.gl2.gl2draw
-    import renpy.gl2.gl2mesh
-    import renpy.gl2.gl2model
-    import renpy.gl2.gl2polygon
-    import renpy.gl2.gl2shader
-    import renpy.gl2.gl2texture
-    import renpy.gl2.live2d
-    
+    #import renpy.gl2.gl2draw
+    #import renpy.gl2.gl2mesh
+    #import renpy.gl2.gl2model
+    #import renpy.gl2.gl2polygon
+    #import renpy.gl2.gl2shader
+    #import renpy.gl2.gl2texture
+    #import renpy.gl2.live2d
+
     import renpy.minstore # depends on lots. @UnresolvedImport
     import renpy.defaultstore # depends on everything. @UnresolvedImport
 
@@ -702,8 +705,8 @@ if 1 == 0:
     from . import execution
     from . import exports
     from . import game
-    from . import gl
-    from . import gl2
+    #from . import gl
+    #from . import gl2
     from . import lint
     from . import loader
     from . import loadsave
