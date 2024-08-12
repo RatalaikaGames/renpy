@@ -339,7 +339,7 @@ def generate_cython(name, language, mod_coverage, split_name, fn, c_fn):
     else:
         coverage_args = [ ]
 
-            subprocess.check_call([
+        args = [
             cython_command,
             "-Iinclude",
             "-I" + gen,
@@ -350,44 +350,45 @@ def generate_cython(name, language, mod_coverage, split_name, fn, c_fn):
             "-X", "embedsignature=True",
             fn,
             "-o",
-            c_fn], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            c_fn]
+            
+        if 'CYTHON_EXTRA_DIRS' in os.environ:
+            args += ["-I" + s for s in os.environ['CYTHON_EXTRA_DIRS'].split(':')]
+            
+            
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        
+        stdout, stderr = p.communicate()
+            
+        # Fix-up source for static loading
+        if static:
+            parent_module = '.'.join(split_name[:-1])
+            parent_module_identifier = parent_module.replace('.', '_')
+            with open(c_fn, 'r') as f:
+                ccode = f.read()
 
-    stdout, stderr = p.communicate()
+            with open(c_fn + ".dynamic", 'w') as f:
+                f.write(ccode)
 
+            if len(split_name) > 1:
+                ccode = re.sub(r'Py_InitModule4\("([^"]+)"', 'Py_InitModule4("' + parent_module + '.\\1"', ccode) # Py2
+                ccode = re.sub(r'(__pyx_moduledef.*?"){}"'.format(re.escape(split_name[-1])), '\\1' + '.'.join(split_name) + '"', ccode, count=1, flags=re.DOTALL) # Py3
+                ccode = re.sub(r'^__Pyx_PyMODINIT_FUNC init', '__Pyx_PyMODINIT_FUNC init' + parent_module_identifier + '_', ccode, 0, re.MULTILINE) # Py2 Cython 0.28+
+                ccode = re.sub(r'^__Pyx_PyMODINIT_FUNC PyInit_', '__Pyx_PyMODINIT_FUNC PyInit_' + parent_module_identifier + '_', ccode, 0, re.MULTILINE) # Py3 Cython 0.28+
+                ccode = re.sub(r'^PyMODINIT_FUNC init', 'PyMODINIT_FUNC init' + parent_module_identifier + '_', ccode, 0, re.MULTILINE) # Py2 Cython 0.25.2
+
+            with open(c_fn, 'w') as f:
+                f.write(ccode)
+                
     with lock:
         print("-", name, "-" * (76 - len(name)))
         if stdout:
             print(stdout.decode("utf-8", "surrogateescape"))
-                c_fn])
-            if 'CYTHON_EXTRA_DIRS' in os.environ:
-                args += ["-I" + s for s in os.environ['CYTHON_EXTRA_DIRS'].split(':')]
-                
-            subprocess.check_call(args)
+            print("");
 
     if p.returncode:
         cython_failure = True
         return
-
-    # Fix-up source for static loading
-    if static:
-        parent_module = '.'.join(split_name[:-1])
-        parent_module_identifier = parent_module.replace('.', '_')
-
-        with open(c_fn, 'r') as f:
-            ccode = f.read()
-
-        with open(c_fn + ".dynamic", 'w') as f:
-            f.write(ccode)
-
-        if len(split_name) > 1:
-            ccode = re.sub(r'Py_InitModule4\("([^"]+)"', 'Py_InitModule4("' + parent_module + '.\\1"', ccode) # Py2
-            ccode = re.sub(r'(__pyx_moduledef.*?"){}"'.format(re.escape(split_name[-1])), '\\1' + '.'.join(split_name) + '"', ccode, count=1, flags=re.DOTALL) # Py3
-            ccode = re.sub(r'^__Pyx_PyMODINIT_FUNC init', '__Pyx_PyMODINIT_FUNC init' + parent_module_identifier + '_', ccode, 0, re.MULTILINE) # Py2 Cython 0.28+
-            ccode = re.sub(r'^__Pyx_PyMODINIT_FUNC PyInit_', '__Pyx_PyMODINIT_FUNC PyInit_' + parent_module_identifier + '_', ccode, 0, re.MULTILINE) # Py3 Cython 0.28+
-            ccode = re.sub(r'^PyMODINIT_FUNC init', 'PyMODINIT_FUNC init' + parent_module_identifier + '_', ccode, 0, re.MULTILINE) # Py2 Cython 0.25.2
-
-        with open(c_fn, 'w') as f:
-            f.write(ccode)
 
 def generate_all_cython():
     """
