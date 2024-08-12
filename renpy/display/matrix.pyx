@@ -177,9 +177,8 @@ cdef class Matrix:
         rv.wdw = other.wdw*self.wdw + other.xdw*self.wdx + other.ydw*self.wdy + other.zdw*self.wdz
 
         return rv
-
-            return self.m[index]
-            self.m[index] = value
+	
+	
     def __repr__(Matrix self):
         cdef int x, y
 
