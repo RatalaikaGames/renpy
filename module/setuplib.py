@@ -310,6 +310,7 @@ def cython(name, source=[], libs=[], includes=[], compile_if=True, define_macros
         generate_cython_queue.append((name, language, mod_coverage, split_name, fn, c_fn))
 
     # Build the module normally once we have the c file.
+    compile_if = False #MBG - set to false always
     if compile_if:
 
         if mod_coverage:
@@ -411,7 +412,6 @@ def generate_all_cython():
     for t in threads:
         t.join()
 
-    compile_if = False #MBG - set to false always
     if cython_failure:
         sys.exit(1)
 
