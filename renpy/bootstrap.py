@@ -184,7 +184,34 @@ def bootstrap(renpy_base):
         if not os.path.exists(basedir + "/game"):
             os.mkdir(basedir + "/game", 0o777)
 
-    gamedir = __main__.path_to_gamedir(basedir, name)
+    # RATA -  I doubt we need this...
+    #gamedir = __main__.path_to_gamedir(basedir, name)
+    
+    # 7.4 logic
+    gamedirs = [ name ]
+    game_name = name
+
+    while game_name:
+        prefix = game_name[0]
+        game_name = game_name[1:]
+
+        if prefix == ' ' or prefix == '_':
+            gamedirs.append(game_name)
+
+    gamedirs.extend([ 'game', 'data', 'launcher/game' ])
+
+    for i in gamedirs:
+
+        if i == "renpy":
+            continue
+
+        gamedir = basedir + "/" + i
+        if os.path.isdir(gamedir):
+            break
+    else:
+        gamedir = basedir
+
+    #
 
     sys.path.insert(0, basedir)
 

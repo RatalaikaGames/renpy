@@ -621,7 +621,7 @@ struct MediaState *load_sample(SDL_RWops *rw, const char *ext, double start, dou
     return rv;
 }
 
-void RPS_play(int channel, SDL_RWops *rw, const char *ext, const char *name, int fadein, int tight, int paused, double start, double end, float relative_volume, void* maybeAlreadyMediaState) {
+void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, int paused, double start, double end, float relative_volume, void* maybeAlreadyMediaState) {
 
     BEGIN();
 
@@ -700,7 +700,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, const char *name, int
     error(SUCCESS);
 }
 
-void RPS_queue(int channel, SDL_RWops *rw, const char *ext, const char *name, int fadein, int tight, double start, double end, float relative_volume) {
+void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, double start, double end, float relative_volume) {
 
     BEGIN();
 
@@ -1117,8 +1117,9 @@ void RPS_set_volume(int channel, float volume) {
     int old_volume = c->volume;
     int new_volume = (int) (volume * MAXVOLUME);
 
+    ENTER();
     c->volume = new_volume;
-    EXIT();
+    
     if (c->fade_step_len) {
 
         if (c->fade_delta > 0) {
@@ -1137,6 +1138,7 @@ void RPS_set_volume(int channel, float volume) {
             c->fade_delta = -1;
         }
     }
+    EXIT();
 
     error(SUCCESS);
 }

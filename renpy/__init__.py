@@ -227,7 +227,7 @@ backup_blacklist = {
     "renpy.test.testkey",
     "renpy.test.testmouse",
     "renpy.test.testparser",
-#    "renpy.gl2",
+    "renpy.gl2",
     "renpy.gl",
     "renpycoverage",
     }
@@ -540,13 +540,13 @@ def import_all():
     import renpy.add_from
     import renpy.dump
 
-    #import renpy.gl2.gl2draw
-    #import renpy.gl2.gl2mesh
-    #import renpy.gl2.gl2model
-    #import renpy.gl2.gl2polygon
-    #import renpy.gl2.gl2shader
-    #import renpy.gl2.gl2texture
-    #import renpy.gl2.live2d
+    import renpy.gl2.gl2draw
+    import renpy.gl2.gl2mesh
+    import renpy.gl2.gl2model
+    import renpy.gl2.gl2polygon
+    import renpy.gl2.gl2shader
+    import renpy.gl2.gl2texture
+    import renpy.gl2.live2d
 
     import renpy.minstore # depends on lots. @UnresolvedImport
     import renpy.defaultstore # depends on everything. @UnresolvedImport

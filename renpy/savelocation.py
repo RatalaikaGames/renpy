@@ -261,9 +261,13 @@ class FileLocation(object):
             if not os.path.exists(old):
                 return
 
-            old_tmp = old + tmp
-            safe_rename(old, old_tmp)
-            safe_rename(old_tmp, new)
+            os.rename(old, old + ".tmp")
+            old = old + ".tmp"
+
+            if os.path.exists(new):
+                os.unlink(new)
+
+            os.rename(old, new)
             renpy.util.expose_file(new)
 
             self.scan()
@@ -335,16 +339,7 @@ def quit(): # @ReservedAssignment
 
 
 def init():
-    location = MultiLocation()
-
-    # 1. User savedir.
-    location.add(FileLocation(renpy.config.savedir))
-
-    # 2. Game-local savedir.
-    if (not renpy.mobile) and (not renpy.macapp):
-        path = os.path.join(renpy.config.gamedir, "saves")
-        location.add(FileLocation(path))
-
+    location = FileLocation(renpy.config.savedir)
     # Scan the location once.
     location.scan()
 
