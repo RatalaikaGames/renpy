@@ -1,4 +1,4 @@
-from typing import BinaryIO
+#from typing import BinaryIO
 import zipfile
 import io
 

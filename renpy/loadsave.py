@@ -26,7 +26,7 @@ from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, r
 
 from future.utils import reraise
 
-from typing import Optional
+#from typing import Optional
 
 import io
 import zipfile

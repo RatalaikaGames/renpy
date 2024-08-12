@@ -2,7 +2,7 @@
 
 TYPING_IMPORTS = "List, Dict, Tuple, Set, Optional, Union, Any, Callable, Type".split(", ")
 
-from typing import List, Dict, Tuple, Set, Optional, Union, Any, Callable, Type, TextIO
+#from typingfrom typing import List, Dict, Tuple, Set, Optional, Union, Any, Callable, Type, TextIO
 
 import sys
 import pathlib
