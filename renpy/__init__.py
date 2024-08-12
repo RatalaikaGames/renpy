@@ -105,9 +105,6 @@ elif nightly:
 # A verbose string giving the version.
 version = "Ren'Py " + version_only
 
-# MBG - quick hack
-rata = ("RENPY_RATA" in os.environ)
-
 # Other versions.
 script_version = 5003000
 savegame_suffix = "-LT1.save"
