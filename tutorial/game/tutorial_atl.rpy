@@ -473,14 +473,14 @@ label tutorial_atl:
 
     with dissolve
 
-    e "Finally, an ATL block can be used as part of a show statement, instead of the at clause."
+    e "Finally, an ATL block can be used as part of a show statement, instead of the at clause." id tutorial_atl_da7a7759
 
 
     example:
         show logo base:
             yoffset 10
 
-    e "When ATL is used as part of a show statement, values of properties exist even when the transform is changed. So even though your click stopped the motion, the image remains in the same place." id tutorial_atl_da7a7759
+    e "When ATL is used as part of a show statement, values of properties exist even when the transform is changed. So even though your click stopped the motion, the image remains in the same place." id tutorial_atl_1dd345c6
 
     hide logo
     show eileen happy at center
@@ -570,7 +570,7 @@ label tutorial_atl:
 
     show example atl_transform
 
-    e "The simplest thing we can to is to statically position an image. This is done by giving the names of the position properties, followed by the property values."
+    e "The simplest thing we can do is to statically position an image. This is done by giving the names of the position properties, followed by the property values." id tutorial_atl_ddc55039
 
     show example atl_transform1
     show logo base at move_jump

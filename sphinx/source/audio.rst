@@ -1,5 +1,7 @@
+.. _audio:
+
 Audio
-=======
+=====
 
 Ren'Py supports playing music and sound effects in the background,
 using the following audio file formats:
@@ -7,10 +9,14 @@ using the following audio file formats:
 * Opus
 * Ogg Vorbis
 * MP3
+* MP2
+* FLAC
 * WAV (uncompressed 16-bit signed PCM only)
 
-Opus and Ogg Vorbis may not be supported in WebKit-based web browsers,
-such as Safari, but are the best formats for other platforms.
+On the web browser, Ren'Py will check a list of audio formats, and
+enable a mode that is faster and less prone to skipping if the web
+browser supports all modes on the list. If your game is using only
+mp3s, and skips on Safari, then consider changing :var:`config.webaudio_required_types`.
 
 Ren'Py supports an arbitrary number of audio channels. There are three
 normal channels defined by default:
@@ -43,7 +49,7 @@ the three music/sound statements.
 
 
 Play Statement
-------------------
+--------------
 
 The ``play`` statement is used to play sound and music. If a file is
 currently playing on a normal channel, it is interrupted and replaced with
@@ -70,6 +76,19 @@ given, the default of the channel is used. ::
 
         "We can also play a list of sounds, or music."
         play music [ "a.ogg", "b.ogg" ] fadeout 1.0 fadein 1.0
+
+When the ``if_changed`` clause is provided, and if the given track is currently playing
+on the channel, the play instruction doesn't interrupt it. ::
+
+        label market_side:
+            play music market
+            "We're entering the market."
+            jump market_main
+
+        label market_main:
+            play music market if_changed
+            "Maybe we just entered the market, maybe we were already there."
+            "If we were already there, the music didn't stop and start over, it just continued."
 
 The ``volume`` clause is also optional, and specifies a relative volume for
 the track, between 0.0 and 1.0. This makes it possible to adjust the volume a
@@ -130,9 +149,8 @@ a play or stop statement.
 A variable may be used instead of a string here. If a variable exists in the
 :ref:`audio namespace <audio-namespace>`, it's used in preference to the default namespace::
 
-    define audio.woof = "woof.mp23
 
-    # ... 
+    # ...
 
     play sound woof
 
@@ -244,6 +262,12 @@ by writing::
 Some filenames can't be accessed this way, as their names are not expressable
 as Python variables. For example, "my song.mp3", "8track.opus", and
 "this-is-a-song.ogg" won't work.
+
+
+Actions
+-------
+
+See :ref:`audio-actions`.
 
 
 Functions

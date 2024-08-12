@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -27,10 +27,11 @@
 # updating.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-import renpy.display
-import renpy.test
+from typing import Optional, Any
+
+import renpy
 
 import hashlib
 import re
@@ -64,7 +65,10 @@ class ParameterInfo(object):
     label.
     """
 
-    def __init__(self, parameters, positional, extrapos, extrakw):
+    positional_only = [ ]
+    keyword_only = [ ]
+
+    def __init__(self, parameters, positional, extrapos, extrakw, last_posonly=None, first_kwonly=None):
 
         # A list of parameter name, default value pairs.
         self.parameters = parameters
@@ -81,6 +85,37 @@ class ParameterInfo(object):
         # any. None if no such variable exists.
         self.extrakw = extrakw
 
+        # A parameters that is positional-only, see
+        # https://www.python.org/dev/peps/pep-0570/
+        # None if / not presets.
+        if last_posonly is None:
+            self.positional_only = [ ]
+
+        else:
+            rv = [ ]
+            for param in parameters:
+                rv.append(param)
+                if param[0] == last_posonly:
+                    break
+
+            self.positional_only = rv
+
+        # A parameters that is keyword-only, see
+        # https://www.python.org/dev/peps/pep-3102/
+        # None if * or *args not preset, or there are no parameters afterwards.
+        if first_kwonly is None:
+            self.keyword_only = [ ]
+
+        else:
+            rv = [ ]
+            for param in reversed(parameters):
+                rv.append(param)
+                if param[0] == first_kwonly:
+                    break
+
+            rv.reverse()
+            self.keyword_only = rv
+
     def apply(self, args, kwargs, ignore_errors=False):
         """
         Applies `args` and `kwargs` to these parameters. Returns
@@ -92,60 +127,160 @@ class ParameterInfo(object):
             best job it can.
         """
 
-        values = renpy.python.RevertableDict()
         rv = { }
 
         if args is None:
-            args = ()
+            args = [ ]
 
         if kwargs is None:
-            kwargs = { }
+            kwargs = renpy.python.RevertableDict()
+        else:
+            # Prevent original kwargs changes
+            kwargs = kwargs.copy()
 
-        for name, value in zip(self.positional, args):
-            if name in values:
-                if not ignore_errors:
-                    raise Exception("Parameter %s has two values." % name)
+        parameters = self.parameters
+        # Handle empty parameters in a fast way
+        if not parameters:
 
-            values[name] = value
+            if self.extrakw:
+                rv[self.extrakw] = kwargs
 
-        extrapos = tuple(args[len(self.positional):])
+            elif kwargs and (not ignore_errors):
+                if not kwargs.pop("_ignore_extra_kwargs", False):
+                    raise TypeError(
+                        "Unexpected keyword arguments: %s" %
+                        ", ".join("'%s'" % i for i in kwargs))
 
-        for name, value in kwargs.items():
-            if name in values:
-                if not ignore_errors:
-                    raise Exception("Parameter %s has two values." % name)
+            if self.extrapos:
+                rv[self.extrapos] = tuple(args)
 
-            values[name] = value
+            elif args and (not ignore_errors):
+                raise TypeError("Too many arguments in call (expected 0, got %d)." % len(args))
 
-        for name, default in self.parameters:
+            return rv
 
-            if name not in values:
-                if default is None:
-                    if not ignore_errors:
-                        raise Exception("Required parameter %s has no value." % name)
-                else:
+        # Fill positional-only slots and check whether its passed as keyword
+        slots = iter(self.positional_only)
+        argsi = iter(args)
+        missed_pos = [ ]
+        posonly_keyword = [ ]
+        for value in argsi:
+            try:
+                name, _ = next(slots)
+            except StopIteration:
+                argsi = iter([ value ] + list(argsi))
+                break
+
+            if name in kwargs:
+                posonly_keyword.append(name)
+
+            rv[name] = value
+
+        # Some parameters left
+        else:
+            for name, default in slots:
+                if name in kwargs:
+                    posonly_keyword.append(name)
+
+                if default is not None:
                     rv[name] = renpy.python.py_eval(default)
+                else:
+                    missed_pos.append(name)
 
+            argsi = iter([])
+
+        # Report positional-only as keyword if we have not **kwargs
+        if posonly_keyword and self.extrakw is None:
+            if not ignore_errors:
+                raise TypeError(
+                    "Some positional-only arguments passed as keyword arguments: %s" %
+                    ", ".join("'%s'" % i for i in posonly_keyword))
             else:
-                rv[name] = values[name]
-                del values[name]
+                for name in posonly_keyword:
+                    kwargs.pop(name)
 
-        # Now, values has the left-over keyword arguments, and extrapos
-        # has the left-over positional arguments.
+        # Fill positional_or_keyword slots with left args
+        poskw_slots = parameters[len(self.positional_only):-len(self.keyword_only) or None]
+        slots = iter(poskw_slots)
+        extraargs = [ ]
+        duplicated_names = [ ]
+        for value in argsi:
+            try:
+                name, _ = next(slots)
+            except StopIteration:
+                extraargs = [ value ] + list(argsi)
+                break
+
+            rv[name] = value
+
+            if name in kwargs:
+                kwargs.pop(name)
+                duplicated_names.append(name)
+
+        # Some parameters left
+        else:
+            for name, default in slots:
+                if name in kwargs:
+                    rv[name] = kwargs.pop(name)
+                elif default is not None:
+                    rv[name] = renpy.python.py_eval(default)
+                else:
+                    missed_pos.append(name)
+
+        # Report missing positional parameters
+        if missed_pos and (not ignore_errors):
+            raise TypeError(
+                "Missing required positional arguments: %s" %
+                ", ".join("'%s'" % i for i in missed_pos))
 
         if self.extrapos:
-            rv[self.extrapos] = extrapos
-        elif extrapos and not ignore_errors:
-            raise Exception("Too many arguments in call (expected %d, got %d)." % (len(self.positional), len(args)))
+            rv[self.extrapos] = tuple(extraargs)
+
+        # Report extra positional arguments
+        elif extraargs and (not ignore_errors):
+            positional = self.positional_only + poskw_slots
+            required = len([i for i in positional if i[1] is None])
+            total = len(positional)
+
+            if total == required:
+                expected = str(total)
+            else:
+                expected = "from %d to %d" % (required, total)
+
+            raise TypeError(
+                "Too many arguments in call (expected %s, got %d)." %
+                (expected, len(args)))
+
+        # Report duplicated positional parameters
+        if duplicated_names and (not ignore_errors):
+            raise TypeError(
+                "Got multiple values for arguments: %s" %
+                ", ".join("'%s'" % i for i in duplicated_names))
+
+        # Fill keyword-only parameters
+        missed_kw = [ ]
+        for name, default in self.keyword_only:
+            if name in kwargs:
+                rv[name] = kwargs.pop(name)
+            elif default is not None:
+                rv[name] = renpy.python.py_eval(default)
+            else:
+                missed_kw.append(name)
+
+        # Report missing keyword-only parameters
+        if missed_kw and (not ignore_errors):
+            raise TypeError(
+                "Missing required keyword-only arguments: %s" %
+                ", ".join("'%s'" % i for i in missed_kw))
 
         if self.extrakw:
-            rv[self.extrakw] = values
+            rv[self.extrakw] = kwargs
 
-        elif values.get("_ignore_extra_kwargs", False):
-            pass
-
-        elif values and (not ignore_errors):
-            raise Exception("Unknown keyword arguments: %s" % (", ".join(list(values.keys()))))
+        elif kwargs and (not ignore_errors):
+            if not kwargs.pop("_ignore_extra_kwargs", False):
+                raise TypeError(
+                    "Unexpected keyword arguments: %s" %
+                    ", ".join("'%s'" % i for i in kwargs))
 
         return rv
 
@@ -153,7 +288,7 @@ class ParameterInfo(object):
 def apply_arguments(parameters, args, kwargs, ignore_errors=False):
 
     if parameters is None:
-        if args or kwargs:
+        if (args or kwargs) and not ignore_errors:
             raise Exception("Arguments supplied, but parameter list not present")
         else:
             return { }
@@ -161,42 +296,63 @@ def apply_arguments(parameters, args, kwargs, ignore_errors=False):
     return parameters.apply(args, kwargs, ignore_errors)
 
 
-class ArgumentInfo(object):
+class ArgumentInfo(renpy.object.Object):
 
-    def __init__(self, arguments, extrapos, extrakw):
+    __version__ = 1
+    starred_indexes = set()
+    doublestarred_indexes = set()
+
+    def after_upgrade(self, version):
+        if version < 1:
+            arguments = self.arguments
+            extrapos = self.extrapos # type: ignore
+            extrakw = self.extrakw # type: ignore
+            length = len(arguments) + bool(extrapos) + bool(extrakw)
+            if extrapos:
+                self.starred_indexes = { length - 1 }
+                arguments.append((None, extrapos))
+
+            if extrakw:
+                self.doublestarred_indexes = { length - 1 }
+                arguments.append((None, extrakw))
+
+            if extrapos and extrakw:
+                self.starred_indexes = { length - 2 }
+
+    def __init__(self, arguments, starred_indexes=None, doublestarred_indexes=None):
 
         # A list of (keyword, expression) pairs. If an argument doesn't
         # have a keyword, it's thought of as positional.
         self.arguments = arguments
 
-        # An expression giving extra positional arguments being
-        # supplied to this function.
-        self.extrapos = extrapos
+        # Indexes of arguments to be considered as * unpacking
+        self.starred_indexes = starred_indexes or set()
 
-        # An expression giving extra keyword arguments that need
-        # to be supplied to this function.
-        self.extrakw = extrakw
+        # Indexes of arguments to be considered as ** unpacking.
+        self.doublestarred_indexes = doublestarred_indexes or set()
 
     def evaluate(self, scope=None):
         """
-        Evaluates the arguments, returning a list of arguments and a
+        Evaluates the arguments, returning a tuple of arguments and a
         dictionary of keyword arguments.
         """
 
         args = [ ]
-        kwargs = renpy.python.RevertableDict()
+        kwargs = renpy.revertable.RevertableDict()
 
-        for k, v in self.arguments:
-            if k is not None:
-                kwargs[k] = renpy.python.py_eval(v, locals=scope)
+        for i, (k, v) in enumerate(self.arguments):
+            value = renpy.python.py_eval(v, locals=scope)
+
+            if i in self.starred_indexes:
+                args.extend(value)
+
+            elif i in self.doublestarred_indexes:
+                kwargs.update(value)
+
+            elif k is not None:
+                kwargs[k] = value
             else:
-                args.append(renpy.python.py_eval(v, locals=scope))
-
-        if self.extrapos is not None:
-            args.extend(renpy.python.py_eval(self.extrapos, locals=scope))
-
-        if self.extrakw is not None:
-            kwargs.update(renpy.python.py_eval(self.extrakw, locals=scope))
+                args.append(value)
 
         return tuple(args), kwargs
 
@@ -204,19 +360,24 @@ class ArgumentInfo(object):
 
         l = [ ]
 
-        for keyword, expression in self.arguments:
-            if keyword is not None:
+        for i, (keyword, expression) in enumerate(self.arguments):
+
+            if i in self.starred_indexes:
+                l.append("*" + expression)
+
+            elif i in self.doublestarred_indexes:
+                l.append("**" + expression)
+
+            elif keyword is not None:
                 l.append("{}={}".format(keyword, expression))
             else:
                 l.append(expression)
 
-        if self.extrapos is not None:
-            l.append("*" + self.extrapos)
-
-        if self.extrakw is not None:
-            l.append("**" + self.extrakw)
-
         return "(" + ", ".join(l) + ")"
+
+
+EMPTY_PARAMETERS = ParameterInfo([ ], [ ], None, None, None, None)
+EMPTY_ARGUMENTS = ArgumentInfo([ ], None, None)
 
 
 def __newobj__(cls, *args):
@@ -235,12 +396,14 @@ class PyExpr(str):
     __slots__ = [
         'filename',
         'linenumber',
+        'py',
         ]
 
-    def __new__(cls, s, filename, linenumber):
+    def __new__(cls, s, filename, linenumber, py=3):
         self = str.__new__(cls, s)
         self.filename = filename
         self.linenumber = linenumber
+        self.py = py
 
         # Queue the string for precompilation.
         if self and (renpy.game.script.all_pyexpr is not None):
@@ -249,7 +412,7 @@ class PyExpr(str):
         return self
 
     def __getnewargs__(self):
-        return (str(self), self.filename, self.linenumber) # E1101
+        return (str(self), self.filename, self.linenumber, self.py)
 
 
 def probably_side_effect_free(expr):
@@ -270,13 +433,19 @@ class PyCode(object):
         'mode',
         'bytecode',
         'hash',
+        'py',
         ]
 
     def __getstate__(self):
-        return (1, self.source, self.location, self.mode)
+        return (1, self.source, self.location, self.mode, self.py)
 
     def __setstate__(self, state):
-        (_, self.source, self.location, self.mode) = state
+        if len(state) == 4:
+            (_, self.source, self.location, self.mode) = state
+            self.py = 2
+        else:
+            (_, self.source, self.location, self.mode, self.py) = state
+
         self.bytecode = None
 
         if renpy.game.script.record_pycode:
@@ -286,6 +455,11 @@ class PyCode(object):
 
         if isinstance(source, PyExpr):
             loc = (source.filename, source.linenumber, source)
+
+        if PY2:
+            self.py = 2
+        else:
+            self.py = 3
 
         # The source code.
         self.source = source
@@ -316,14 +490,14 @@ class PyCode(object):
         try:
             if self.hash is not None:
                 return self.hash
-        except:
+        except Exception:
             pass
 
         code = self.source
         if isinstance(code, renpy.python.ast.AST): # @UndefinedVariable
             code = renpy.python.ast.dump(code) # @UndefinedVariable
 
-        self.hash = bchr(renpy.bytecode_version) + hashlib.md5((repr(self.location) + code).encode("utf-8")).digest()
+        self.hash = bchr(renpy.bytecode_version) + hashlib.md5((repr(self.location) + code).encode("utf-8")).digest() # type:ignore
         return self.hash
 
 
@@ -349,6 +523,13 @@ class Scry(object):
     predict, this tries to only get things we _know_ will happen.
     """
 
+    _next = None # type: Node|None
+    interacts = None # type: bool|None
+
+    say = False # type: bool|None
+    menu_with_caption = False # type: bool|None
+    who = None # type: str|None
+
     # By default, all attributes are None.
     def __getattr__(self, name):
         return None
@@ -359,7 +540,7 @@ class Scry(object):
         else:
             try:
                 return self._next.scry()
-            except:
+            except Exception:
                 return None
 
 
@@ -425,16 +606,16 @@ class Node(object):
 
         f(self)
 
-    def get_init(self):
-        """
-        Returns a node that should be run at init time (that is, before
-        the normal start of the script.), or None if this node doesn't
-        care to suggest one.
+    # def get_init(self):
+    #     """
+    #     Returns a node that should be run at init time (that is, before
+    #     the normal start of the script.), or None if this node doesn't
+    #     care to suggest one.
 
-        (The only class that needs to override this is Init.)
-        """
+    #     (The only class that needs to override this is Init.)
+    #     """
 
-        return None
+    #     return None
 
     # get_init is only present on statements that define it.
     get_init = None
@@ -468,10 +649,10 @@ class Node(object):
 
         raise Exception("Node subclass forgot to define execute.")
 
-    def early_execute(self):
-        """
-        Called when the module is loaded.
-        """
+    # def early_execute(self):
+    #     """
+    #     Called when the module is loaded.
+    #     """
 
     # early_execute is only present on statements that define it.
     early_execute = None
@@ -495,7 +676,7 @@ class Node(object):
         """
 
         rv = Scry()
-        rv._next = self.next # W0201
+        rv._next = self.next # type: ignore
         return rv
 
     def restructure(self, callback):
@@ -547,16 +728,15 @@ def say_menu_with(expression, callback):
 
     if expression is not None:
         what = renpy.python.py_eval(expression)
-    elif renpy.store.default_transition and renpy.game.preferences.transitions == 2: # @UndefinedVariable
-        what = renpy.store.default_transition
+    elif renpy.store.default_transition and renpy.game.preferences.transitions == 2: # type: ignore
+        what = renpy.store.default_transition # type: ignore
     else:
         return
 
     if not what:
         return
 
-    if renpy.game.preferences.transitions: # @UndefinedVariable
-        # renpy.game.interface.set_transition(what)
+    if renpy.game.preferences.transitions: # type: ignore
         callback(what)
 
 
@@ -581,7 +761,7 @@ def eval_who(who, fast=None):
 
     try:
         return renpy.python.py_eval(who)
-    except:
+    except Exception:
         raise Exception("Sayer '%s' is not defined." % who)
 
 
@@ -712,7 +892,7 @@ class Say(Node):
             if renpy.config.say_menu_text_filter:
                 what = renpy.config.say_menu_text_filter(what) # E1102
 
-            renpy.store._last_raw_what = what
+            renpy.store._last_raw_what = what # type: ignore
 
             if self.arguments is not None:
                 args, kwargs = self.arguments.evaluate()
@@ -734,6 +914,7 @@ class Say(Node):
         finally:
             renpy.game.context().say_attributes = None
             renpy.game.context().temporary_attributes = None
+            renpy.store._last_raw_what = "" # type: ignore
 
     def predict(self):
 
@@ -768,17 +949,19 @@ class Say(Node):
         rv = Node.scry(self)
 
         who = eval_who(self.who, self.who_fast)
+        rv.who = who
+        rv.say = True
 
         if self.interact:
             renpy.exports.scry_say(who, rv)
         else:
-            rv.interacts = False
+            rv.interacts = False # type: ignore
 
         return rv
 
 
 # Copy the descriptor.
-setattr(Say, "with", Say.with_) # E1101
+setattr(Say, "with", Say.with_) # type: ignore
 
 
 class Init(Node):
@@ -1043,7 +1226,9 @@ class Image(Node):
 
     def analyze(self):
         if getattr(self, 'atl', None) is not None:
-            self.atl.mark_constant()
+            # ATL images must participate with the game defined
+            # constant names. So, we pass empty parameters to enable it.
+            self.atl.analyze(EMPTY_PARAMETERS)
 
 
 class Transform(Node):
@@ -1060,7 +1245,7 @@ class Transform(Node):
         'parameters',
         ]
 
-    default_parameters = ParameterInfo([ ], [ ], None, None)
+    default_parameters = EMPTY_PARAMETERS
 
     def __init__(self, loc, name, atl=None, parameters=default_parameters):
 
@@ -1089,7 +1274,13 @@ class Transform(Node):
         setattr(renpy.store, self.varname, trans)
 
     def analyze(self):
-        self.atl.mark_constant()
+
+        parameters = getattr(self, "parameters", None)
+
+        if parameters is None:
+            parameters = Transform.default_parameters
+
+        self.atl.analyze(parameters)
 
 
 def predict_imspec(imspec, scene=False, atl=None):
@@ -1104,7 +1295,7 @@ def predict_imspec(imspec, scene=False, atl=None):
     elif len(imspec) == 6:
         name, expression, tag, at_expr_list, layer, _zorder = imspec
 
-    elif len(imspec) == 3:
+    else:
         name, at_expr_list, layer = imspec
         tag = None
         expression = None
@@ -1113,7 +1304,7 @@ def predict_imspec(imspec, scene=False, atl=None):
         try:
             img = renpy.python.py_eval(expression)
             img = renpy.easy.displayable(img)
-        except:
+        except Exception:
             return
     else:
         img = None
@@ -1122,13 +1313,13 @@ def predict_imspec(imspec, scene=False, atl=None):
     for i in at_expr_list:
         try:
             at_list.append(renpy.python.py_eval(i))
-        except:
+        except Exception:
             pass
 
     if atl is not None:
         try:
             at_list.append(renpy.display.motion.ATLTransform(atl))
-        except:
+        except Exception:
             pass
 
     layer = renpy.exports.default_layer(layer, tag or name, expression)
@@ -1148,7 +1339,7 @@ def show_imspec(imspec, atl=None):
         name, expression, tag, at_list, layer, zorder = imspec
         behind = [ ]
 
-    elif len(imspec) == 3:
+    else:
         name, at_list, layer = imspec
         expression = None
         tag = None
@@ -1196,7 +1387,7 @@ class Show(Node):
         super(Show, self).__init__(loc)
 
         self.imspec = imspec
-        self.atl = atl
+        self.atl = atl # type: Any
 
     def diff_info(self):
         return (Show, tuple(self.imspec[0]))
@@ -1213,7 +1404,10 @@ class Show(Node):
 
     def analyze(self):
         if getattr(self, 'atl', None) is not None:
-            self.atl.mark_constant()
+            # ATL block defined for show, scene or show layer statements
+            # must participate with the game defined constant names.
+            # So, we pass empty parameters to enable it.
+            self.atl.analyze(EMPTY_PARAMETERS)
 
 
 class ShowLayer(Node):
@@ -1253,7 +1447,7 @@ class ShowLayer(Node):
 
     def analyze(self):
         if self.atl is not None:
-            self.atl.mark_constant()
+            self.atl.analyze(EMPTY_PARAMETERS)
 
 
 class Camera(Node):
@@ -1293,7 +1487,7 @@ class Camera(Node):
 
     def analyze(self):
         if self.atl is not None:
-            self.atl.mark_constant()
+            self.atl.analyze(EMPTY_PARAMETERS)
 
 
 class Scene(Node):
@@ -1317,7 +1511,7 @@ class Scene(Node):
 
         self.imspec = imgspec
         self.layer = layer
-        self.atl = atl
+        self.atl = atl # type: Any
 
     def diff_info(self):
 
@@ -1347,7 +1541,7 @@ class Scene(Node):
 
     def analyze(self):
         if getattr(self, 'atl', None) is not None:
-            self.atl.mark_constant()
+            self.atl.analyze(EMPTY_PARAMETERS)
 
 
 class Hide(Node):
@@ -1374,17 +1568,18 @@ class Hide(Node):
 
     def predict(self):
 
-        if len(self.imspec) == 3:
+        if len(self.imspec) == 7:
+            name, _expression, tag, _at_list, layer, _zorder, _behind = self.imspec
+
+        elif len(self.imspec) == 6:
+            name, _expression, tag, _at_list, layer, _zorder = self.imspec
+            _behind = None
+        else:
             name, _at_list, layer = self.imspec
             tag = None
             _expression = None
             _zorder = None
             _behind = None
-        elif len(self.imspec) == 6:
-            name, _expression, tag, _at_list, layer, _zorder = self.imspec
-            _behind = None
-        elif len(self.imspec) == 7:
-            name, _expression, tag, _at_list, layer, _zorder, _behind = self.imspec
 
         if tag is None:
             tag = name[0]
@@ -1400,15 +1595,15 @@ class Hide(Node):
         next_node(self.next)
         statement_name("hide")
 
-        if len(self.imspec) == 3:
+        if len(self.imspec) == 7:
+            name, _expression, tag, _at_list, layer, _zorder, _behind = self.imspec
+        elif len(self.imspec) == 6:
+            name, _expression, tag, _at_list, layer, _zorder = self.imspec
+        else:
             name, _at_list, layer = self.imspec
             _expression = None
             tag = None
             _zorder = 0
-        elif len(self.imspec) == 6:
-            name, _expression, tag, _at_list, layer, _zorder = self.imspec
-        elif len(self.imspec) == 7:
-            name, _expression, tag, _at_list, layer, _zorder, _behind = self.imspec
 
         layer = renpy.exports.default_layer(layer, tag or name)
 
@@ -1461,7 +1656,7 @@ class With(Node):
             if trans:
                 renpy.display.predict.displayable(trans(old_widget=None, new_widget=None))
 
-        except:
+        except Exception:
             pass
 
         return [ self.next ]
@@ -1521,7 +1716,7 @@ class Call(Node):
 
             try:
                 label = renpy.python.py_eval(label)
-            except:
+            except Exception:
                 return [ ]
 
             if not renpy.game.script.has_label(label):
@@ -1651,7 +1846,7 @@ class Menu(Node):
 
         next_node(self.next)
 
-        if self.has_caption:
+        if self.has_caption or renpy.config.choice_empty_window:
             statement_name("menu-with-caption")
         else:
             statement_name("menu")
@@ -1723,6 +1918,8 @@ class Menu(Node):
         rv = Node.scry(self)
         rv._next = None
         rv.interacts = True
+        if self.has_caption:
+            rv.menu_with_caption = True
         return rv
 
     def restructure(self, callback):
@@ -1731,7 +1928,7 @@ class Menu(Node):
                 callback(block)
 
 
-setattr(Menu, "with", Menu.with_) # E1101
+setattr(Menu, "with", Menu.with_) # type: ignore
 
 
 # Goto is considered harmful. So we decided to name it "jump"
@@ -1781,7 +1978,7 @@ class Jump(Node):
 
             try:
                 label = renpy.python.py_eval(label)
-            except:
+            except Exception:
                 return [ ]
 
             if not renpy.game.script.has_label(label):
@@ -1951,7 +2148,7 @@ class UserStatement(Node):
     def __init__(self, loc, line, block, parsed):
 
         super(UserStatement, self).__init__(loc)
-        self.code_block = None
+        self.code_block = None # type: Optional[list]
         self.parsed = parsed
         self.line = line
         self.block = block
@@ -2113,8 +2310,16 @@ class PostUserStatement(Node):
 
 
 def create_store(name):
-    if name not in renpy.config.special_namespaces:
-        renpy.python.create_store(name)
+    if name in renpy.config.special_namespaces:
+        return
+
+    # Take first two components of dot-joined name
+    maybe_special = ".".join(name.split(".")[:2])
+    if maybe_special in renpy.config.special_namespaces:
+        if not renpy.config.special_namespaces[maybe_special].allow_child_namespaces:
+            raise Exception('Creating stores within the {} namespace is not supported.'.format(maybe_special[6:]))
+
+    renpy.python.create_store(name)
 
 
 class StoreNamespace(object):
@@ -2124,6 +2329,9 @@ class StoreNamespace(object):
         self.store = store
 
     def set(self, name, value):
+        renpy.python.store_dicts[self.store][name] = value
+
+    def set_default(self, name, value):
         renpy.python.store_dicts[self.store][name] = value
 
     def get(self, name):
@@ -2232,6 +2440,9 @@ class Define(Node):
 
     def set(self):
 
+        key = None
+        new = None
+
         value = renpy.python.py_eval_bytecode(self.code.bytecode)
         ns, _special = get_namespace(self.store)
 
@@ -2327,22 +2538,26 @@ class Default(Node):
         defaults_set = d.get("_defaults_set", None)
 
         if defaults_set is None:
-            d["_defaults_set"] = defaults_set = renpy.python.RevertableSet()
+            d["_defaults_set"] = defaults_set = renpy.revertable.RevertableSet()
             d.ever_been_changed.add("_defaults_set")
 
-        if self.varname not in defaults_set:
-
-            if start or (self.varname not in d.ever_been_changed):
-                d[self.varname] = renpy.python.py_eval_bytecode(self.code.bytecode)
-
-            d.ever_been_changed.add(self.varname)
-
-            defaults_set.add(self.varname)
-
-        else:
-
+        if self.varname in defaults_set:
             if start and renpy.config.developer:
                 raise Exception("{}.{} is being given a default a second time.".format(self.store, self.varname))
+            return
+
+        # do the variable shadowing if not in this case, for compatibility reasons
+        if start and (renpy.config.developer is True):
+            fullname = '.'.join((self.store, self.varname))
+            if fullname in renpy.python.store_dicts:
+                raise Exception("{} is being given a default, but a store with that name already exists.".format(fullname))
+
+        if start or (self.varname not in d.ever_been_changed):
+            d[self.varname] = renpy.python.py_eval_bytecode(self.code.bytecode)
+
+        d.ever_been_changed.add(self.varname)
+
+        defaults_set.add(self.varname)
 
     def report_traceback(self, name, last):
         return [ (self.filename, self.linenumber, name, None) ]
@@ -2446,8 +2661,8 @@ class Translate(Node):
             next_node(self.next)
             raise Exception("Translation nodes cannot be run directly.")
 
-        if self.identifier not in renpy.game.persistent._seen_translates: # @UndefinedVariable
-            renpy.game.persistent._seen_translates.add(self.identifier) # @UndefinedVariable
+        if self.identifier not in renpy.game.persistent._seen_translates: # type: ignore
+            renpy.game.persistent._seen_translates.add(self.identifier) # type: ignore
             renpy.game.seen_translates_count += 1
             renpy.game.new_translates_count += 1
 
@@ -2482,9 +2697,6 @@ class EndTranslate(Node):
     """
 
     rollback = "never"
-
-    def __init__(self, loc):
-        super(EndTranslate, self).__init__(loc)
 
     def diff_info(self):
         return (EndTranslate,)
@@ -2664,7 +2876,7 @@ class Style(Node):
             if not renpy.exports.variant(variant):
                 return
 
-        s = renpy.style.get_or_create_style(self.style_name) # @UndefinedVariable
+        s = renpy.style.get_or_create_style(self.style_name)
 
         if self.clear:
             s.clear()

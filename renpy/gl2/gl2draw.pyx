@@ -1,6 +1,6 @@
 #cython: profile=False
 #@PydevCodeAnalysisIgnore
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -181,8 +181,8 @@ cdef class GL2Draw:
         bound_h = min(visible_h, head_h)
 
         self.info["max_window_size"] = (
-            int(round(min(bound_h * virtual_ar, bound_w))),
-            int(round(min(bound_w / virtual_ar, bound_h))),
+            round(min(bound_h * virtual_ar, bound_w)),
+            round(min(bound_w / virtual_ar, bound_h)),
             )
 
         if (not renpy.mobile) and (not maximized):
@@ -198,8 +198,8 @@ cdef class GL2Draw:
             pwidth, pheight = min(pheight * virtual_ar, pwidth), min(pwidth / virtual_ar, pheight)
 
         # Limit to integers.
-        pwidth = int(round(pwidth))
-        pheight = int(round(pheight))
+        pwidth = round(pwidth)
+        pheight = round(pheight)
 
         # Keep a minimum size.
         pwidth = max(pwidth, 256)
@@ -398,7 +398,7 @@ cdef class GL2Draw:
         renpy.display.log.write("Display Info: %s", self.display_info)
 
         extensions_string = <char *> glGetString(GL_EXTENSIONS)
-        extensions = set(extensions_string.split(" "))
+        extensions = set(extensions_string.decode("utf-8").split(" "))
 
         if renpy.config.log_gl_extensions:
 
@@ -810,9 +810,6 @@ cdef class GL2Draw:
         if surf is None:
             return
 
-        # Compute visible_children.
-        surf.is_opaque()
-
         # Load all the textures and RTTs.
         self.load_all_textures(surf)
 
@@ -932,9 +929,6 @@ cdef class GL2Draw:
             return 0
 
         what = what.subsurface((x, y, 1, 1))
-
-        # Compute visible_children.
-        what.is_opaque()
 
         # Load all the textures and RTTs.
         self.load_all_textures(what)
@@ -1201,10 +1195,7 @@ cdef class GL2DrawingContext:
         program.start()
 
         program.set_uniform("u_model_size", (model.width, model.height))
-        program.set_uniform("u_lod_bias", float(renpy.config.gl_lod_bias))
         program.set_uniform("u_transform", transform)
-        program.set_uniform("u_time", (renpy.display.interface.frame_time - renpy.display.interface.init_time) % 86400)
-        program.set_uniform("u_random", (random.random(), random.random(), random.random(), random.random()))
 
         model.program_uniforms(program)
 
@@ -1303,7 +1294,7 @@ cdef class GL2DrawingContext:
 
             properties["has_depth"] = True
 
-        children = r.visible_children
+        children = r.children
 
         if r.cached_model is not None:
             children = [ (r.cached_model, 0, 0, False, False) ]
@@ -1354,3 +1345,7 @@ cdef class GL2DrawingContext:
 
 # A set of uniforms that are defined by Ren'Py, and shouldn't be set in ATL.
 standard_uniforms = { "u_transform", "u_time", "u_random" }
+
+_types = """
+standard_uniforms : set[str]
+"""

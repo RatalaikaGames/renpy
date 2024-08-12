@@ -142,6 +142,9 @@ struct Channel {
     /* The start time of the playing sample, in ms. */
     int playing_start_ms;
 
+    /* The relative volume of the playing sample. */
+    float playing_relative_volume;
+
     /* The queued up sample. */
     struct MediaState *queued;
 
@@ -156,6 +159,9 @@ struct Channel {
 
     /* The start time of the queued sample, in ms. */
     int queued_start_ms;
+
+    /* The relative volume of the queued sample. */
+    float queued_relative_volume;
 
     /* Is this channel paused? */
     int paused;
@@ -196,7 +202,6 @@ struct Channel {
 
     /* The number of samples we've finished in the current pan. */
     unsigned int pan_done;
-
 
     /* These are used like in pan, above. Unlike the volume parameter,
        the voulme set here is persisted between sessions. */
@@ -427,7 +432,7 @@ static void pan_audio(struct Channel *c, Uint8 *stream, int length) {
 
         if ((i & 0x1f) == 0) {
             pan = interpolate_pan(c);
-            vol2 = interpolate_vol2(c);
+            vol2 = interpolate_vol2(c) * c->playing_relative_volume;
 
             // If nothing to do, skip 32 samples.
             if (pan == 0.0 && vol2 == 1.0) {
@@ -537,12 +542,14 @@ static void callback(void *userdata, Uint8 *stream, int length) {
                 c->playing_fadein = c->queued_fadein;
                 c->playing_tight = c->queued_tight;
                 c->playing_start_ms = c->queued_start_ms;
+                c->playing_relative_volume = c->queued_relative_volume;
 
                 c->queued = NULL;
                 c->queued_name = NULL;
                 c->queued_fadein = 0;
                 c->queued_tight = 0;
                 c->queued_start_ms = 0;
+                c->queued_relative_volume = 1.0;
 
                 if (c->playing_fadein) {
                     old_tight = 0;
@@ -614,7 +621,7 @@ struct MediaState *load_sample(SDL_RWops *rw, const char *ext, double start, dou
     return rv;
 }
 
-void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, int paused, double start, double end, void* maybeAlreadyMediaState) {
+void RPS_play(int channel, SDL_RWops *rw, const char *ext, const char *name, int fadein, int tight, int paused, double start, double end, float relative_volume, void* maybeAlreadyMediaState) {
 
     BEGIN();
 
@@ -648,6 +655,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
         c->playing_name = NULL;
         c->playing_tight = 0;
         c->playing_start_ms = 0;
+        c->playing_relative_volume = 1.0;
     }
 
     if (c->queued) {
@@ -657,6 +665,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
         c->queued_name = NULL;
         c->queued_tight = 0;
         c->queued_start_ms = 0;
+        c->queued_relative_volume = 1.0;
     }
 
     /* Allocate playing sample. */
@@ -678,6 +687,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
     c->playing_tight = tight;
 
     c->playing_start_ms = (int) (start * 1000);
+    c->playing_relative_volume = relative_volume;
 
     c->paused = paused;
 
@@ -690,7 +700,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
     error(SUCCESS);
 }
 
-void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, double start, double end) {
+void RPS_queue(int channel, SDL_RWops *rw, const char *ext, const char *name, int fadein, int tight, double start, double end, float relative_volume) {
 
     BEGIN();
 
@@ -703,7 +713,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 
     c = &channels[channel];
 
-    newMedia = load_sample(rw, ext, start, end, c->video);
+    newMedia = load_sample(rw, ext, start, end, relative_volume, c->video);
     
     Py_INCREF(name);
 
@@ -713,7 +723,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     if (!c->playing) {
         EXIT();
         Py_DECREF(name);
-        RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end, newMedia);
+        RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end, relative_volume, newMedia);
         return;
     }
 
@@ -742,6 +752,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     c->queued_tight = tight;
 
     c->queued_start_ms = (int) (start * 1000);
+    c->queued_relative_volume = relative_volume;
 
 
     EXIT();
@@ -778,6 +789,7 @@ void RPS_stop(int channel) {
         names_to_decref_push(c->playing_name);
         c->playing_name = NULL;
         c->playing_start_ms = 0;
+        c->playing_relative_volume = 1.0;
     }
 
     if (c->queued) {
@@ -786,6 +798,7 @@ void RPS_stop(int channel) {
         names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_start_ms = 0;
+        c->queued_relative_volume = 1.0;
     }
 
 /*     update_pause(); */
@@ -1089,7 +1102,7 @@ void RPS_set_endevent(int channel, int event) {
 
 /*
  * This sets the natural volume of the channel. (This may not take
- * effect immediately if a fade is going on.)
+ * effect immediately if a fadeout is going on.)
  */
 void RPS_set_volume(int channel, float volume) {
     struct Channel *c;
@@ -1101,15 +1114,32 @@ void RPS_set_volume(int channel, float volume) {
 
     c = &channels[channel];
 
-    ENTER();
+    int old_volume = c->volume;
+    int new_volume = (int) (volume * MAXVOLUME);
 
-    c->volume = (int) (volume * MAXVOLUME);
-
+    c->volume = new_volume;
     EXIT();
+    if (c->fade_step_len) {
+
+        if (c->fade_delta > 0) {
+            int fade_samples_remaining = c->fade_step_len * (old_volume - c->fade_vol);
+            c->fade_vol = new_volume * c->fade_vol / old_volume;
+            c->fade_step_len = fade_samples_remaining / (new_volume - c->fade_vol);
+            c->fade_step_len &= ~0x7; // Even sample.
+            c->fade_delta = 1;
+        }
+
+        if (c->fade_delta < 0) {
+            int fade_samples_remaining = c->fade_step_len * c->fade_vol;
+            c->fade_vol = new_volume * c->fade_vol / old_volume;
+            c->fade_step_len = fade_samples_remaining /  c->fade_vol;
+            c->fade_step_len &= ~0x7; // Even sample.
+            c->fade_delta = -1;
+        }
+    }
 
     error(SUCCESS);
 }
-
 
 
 float RPS_get_volume(int channel) {
@@ -1278,7 +1308,9 @@ void RPS_init(int freq, int stereo, int samples, int status, int equal_mono) {
     name_mutex = SDL_CreateMutex();
 
 #ifndef __EMSCRIPTEN__
+#if PY_VERSION_HEX < 0x03070000
     PyEval_InitThreads();
+#endif
 #endif
 
     import_pygame_sdl2();

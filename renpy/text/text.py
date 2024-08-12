@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -20,10 +20,14 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
+
+from typing import Optional, Callable
 
 import math
-import renpy.display
+
+import pygame_sdl2
+import renpy
 import traceback
 
 from renpy.text.textsupport import TAG, TEXT, PARAGRAPH, DISPLAYABLE
@@ -136,7 +140,6 @@ def outline_blits(blits, outline):
 
     return rv
 
-
 class DrawInfo(object):
     """
     This object is supplied as a parameter to the draw method of the various
@@ -158,6 +161,10 @@ class DrawInfo(object):
 
     # No implementation, this is set up in the layout object.
 
+    surface = None # type: Optional[pygame_sdl2.surface.Surface]
+    override_color = None # type: Optional[tuple[int, int, int, int]]
+    outline = 0 # type: float
+    displayable_blits = None # type: Optional[list[tuple[renpy.display.core.Displayable, int, int]]]
 
 class TextSegment(object):
     """
@@ -515,7 +522,7 @@ class Layout(object):
         width = min(32767, width)
         height = min(32767, height)
 
-        if drawable_res and (not size_only) and renpy.config.drawable_resolution_text:
+        if drawable_res and (not size_only) and renpy.config.use_drawable_resolution and renpy.config.drawable_resolution_text:
             # How much do we want to oversample the text by, compared to the
             # virtual resolution.
             self.oversample = renpy.display.draw.draw_per_virt
@@ -524,7 +531,7 @@ class Layout(object):
             self.reverse = renpy.display.draw.draw_to_virt
             self.forward = renpy.display.draw.virt_to_draw
 
-            self.outline_step = text.style.outline_scaling != "linear"
+            self.outline_step = text.style.outline_scaling == "step"
 
             self.pixel_perfect = True
 
@@ -680,6 +687,8 @@ class Layout(object):
                     textsupport.annotate_unicode(par_glyphs, False, 2)
                 elif language == "japanese-strict":
                     textsupport.annotate_unicode(par_glyphs, False, 3)
+                elif language == "anywhere":
+                    textsupport.annotate_anywhere(par_glyphs)
                 else:
                     raise Exception("Unknown language: {0}".format(language))
 
@@ -772,7 +781,7 @@ class Layout(object):
             maxx = target_x
             y = target_y
 
-            textsupport.offset_glyphs(all_glyphs, 0, int(round(splits_from.baseline * self.oversample)) - find_baseline())
+            textsupport.offset_glyphs(all_glyphs, 0, round(splits_from.baseline * self.oversample) - find_baseline())
 
         # Figure out the size of the texture. (This is a little over-sized,
         # but it simplifies the code to not have to care about borders on a
@@ -930,7 +939,7 @@ class Layout(object):
         if isinstance(n, renpy.display.core.absolute):
             return int(n)
 
-        return int(round(n * self.oversample))
+        return round(n * self.oversample)
 
     def scale_outline(self, n):
         if n is None:
@@ -950,7 +959,7 @@ class Layout(object):
             if n == 0:
                 return 0
 
-            rv = int(round(n * self.oversample))
+            rv = round(n * self.oversample)
 
             if n < 0 and rv > -1:
                 rv = -1
@@ -1003,7 +1012,7 @@ class Layout(object):
                 if isinstance(i[0], (TextSegment, SpaceSegment, DisplayableSegment)):
                     return
 
-            line.extend(tss[-1].subsegment(u"\u200B"))
+            line.extend(tss[-1].subsegment(u"\u200B")) # type: ignore
 
         for type, text in tokens: # @ReservedAssignment
 
@@ -1269,7 +1278,7 @@ class Layout(object):
                 else:
                     raise Exception("Unknown text tag %r" % text)
 
-            except:
+            except Exception:
                 renpy.game.exception_info = "While processing text tag {{{!s}}} in {!r}.:".format(text, text_displayable.get_all_text())
                 raise
 
@@ -1435,17 +1444,10 @@ class Layout(object):
         Return the time of the first glyph that should be shown after st.
         """
 
-        for l in self.lines:
-            if not l.glyphs:
-                continue
-
-            if l.max_time > st:
-                break
-
-        else:
+        if st >= self.max_time:
             return None
-
-        return 0
+        else:
+            return 0
 
 
 # The maximum number of entries in the layout cache.
@@ -1495,8 +1497,8 @@ def text_tick():
     slow_text = [ ]
 
 
-VERT_REVERSE = renpy.display.render.Matrix2D(0, -1, 1, 0)
-VERT_FORWARD = renpy.display.render.Matrix2D(0, 1, -1, 0)
+VERT_REVERSE = renpy.display.matrix.Matrix2D(0, -1, 1, 0)
+VERT_FORWARD = renpy.display.matrix.Matrix2D(0, 1, -1, 0)
 
 
 class Text(renpy.display.core.Displayable):
@@ -1576,7 +1578,7 @@ class Text(renpy.display.core.Displayable):
         self.dirty = True
 
         # The text, after substitutions.
-        self.text = None
+        self.text = None # type: list|None
 
         # A mask, for passwords and such.
         self.mask = mask
@@ -1591,15 +1593,15 @@ class Text(renpy.display.core.Displayable):
         self.slow = slow
 
         # The callback to be called when slow-text mode ends.
-        self.slow_done = None
+        self.slow_done = slow_done # type:Callable|None
 
         # The ctc indicator associated with this text.
         self.ctc = None
 
         # The index of the start and end strings in the first segment of text.
         # (None to show the whole text.)
-        self.start = None
-        self.end = None
+        self.start = None # type: int|None
+        self.end = None # type: int|None
 
         if isinstance(replaces, Text):
             self.slow = replaces.slow
@@ -1643,19 +1645,18 @@ class Text(renpy.display.core.Displayable):
 
         return rv
 
-    def __unicode__(self):
+    def _repr_info(self):
         s = ""
 
         for i in self.text:
             if isinstance(i, basestring):
-                s += i
+                s += i # type: ignore
 
             if len(s) > 25:
                 s = s[:24] + u"\u2026"
                 break
 
-        s = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
-        return u"Text \"{}\"".format(s)
+        return repr(s)
 
     def get_all_text(self):
         """
@@ -1665,7 +1666,7 @@ class Text(renpy.display.core.Displayable):
 
         for i in self.text:
             if isinstance(i, basestring):
-                s += i
+                s += i # type: ignore
 
         return s
 
@@ -1826,7 +1827,7 @@ class Text(renpy.display.core.Displayable):
         if self.dirty or self.displayables is None:
             self.update()
 
-        return list(self.displayables)
+        return list(self.displayables) # type: ignore
 
     def _tts(self):
 
@@ -1852,7 +1853,7 @@ class Text(renpy.display.core.Displayable):
 
         return rv
 
-    _tts_all = _tts
+    _tts_all = _tts # type: ignore
 
     def kill_layout(self):
         """
@@ -2000,7 +2001,6 @@ class Text(renpy.display.core.Displayable):
             for i in slow_text:
                 if i.slow:
                     i.call_slow_done(st)
-                    i.slow = False
 
             raise renpy.display.core.IgnoreEvent()
 
@@ -2008,11 +2008,6 @@ class Text(renpy.display.core.Displayable):
 
         if layout is None:
             return
-
-        if layout.redraw_typewriter(st) is None:
-            if self.slow:
-                self.call_slow_done(st)
-                self.slow = False
 
         for d, xo, yo in self.displayable_offsets:
             rv = d.event(ev, x - xo, y - yo, st)
@@ -2246,9 +2241,9 @@ class Text(renpy.display.core.Displayable):
         # Figure out if we need to redraw or call slow_done.
         if self.slow:
             if redraw is not None:
-                renpy.display.render.redraw(self, redraw)
+                renpy.display.render.redraw(self, max(redraw, 0))
             else:
-                renpy.display.interface.timeout(0)
+                self.call_slow_done(st)
 
         rv.forward = layout.forward
         rv.reverse = layout.reverse
@@ -2288,7 +2283,8 @@ class Text(renpy.display.core.Displayable):
 
         return tokens
 
-    def apply_custom_tags(self, tokens):
+    @staticmethod
+    def apply_custom_tags(tokens):
         """
         Apply new-style custom text tags.
         """

@@ -39,7 +39,7 @@ declared in or by their full name, consisting of global and local name parts: ::
         jump global_label.local_name
 
 The label statement may take an optional list of parameters. These parameters
-are processed as described in :pep:`3102`, with two exceptions:
+are processed as described in :pep:`570`, with two exceptions:
 
 * The values of default parameters are evaluated at call time.
 * The variables are dynamically, rather than lexically, scoped.
@@ -112,7 +112,7 @@ stacks can return to the proper place when loaded on a changed script. ::
 
         return
 
-The call statement may take arguments, which are processed as described in :pep:`3102`.
+The call statement may take arguments, which are processed as described in :pep:`448`.
 
 When using a call expression with an arguments list, the ``pass`` keyword must
 be inserted between the expression and the arguments list. Otherwise, the
@@ -146,7 +146,10 @@ The following labels are used by Ren'Py:
 
 ``after_load``
     If it exists, this label is called when a game is loaded. It can be
-    use to fix data when the game is updated.
+    use to fix data when the game is updated. If data is changed by this
+    label, :func:`renpy.block_rollback` should be called to prevent those
+    changes from being reverted inf the player rolls back past the load
+    point.
 
 ``splashscreen``
     If it exists, this label is called when the game is first run, before

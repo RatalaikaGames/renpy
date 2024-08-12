@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -69,7 +69,7 @@ init -1500 python:
         """
         :doc: control_action
 
-        Causes control to transfer to `label`.
+        Causes control to transfer to `label`, given as a string.
         """
 
         def __init__(self, label):
@@ -83,8 +83,8 @@ init -1500 python:
         """
         :doc: control_action
 
-        Ends the current statement, and calls `label`. Arguments and
-        keyword arguments are passed to :func:`renpy.call`.
+        Ends the current statement, and calls `label`, given as a string.
+        Arguments and keyword arguments are passed to :func:`renpy.call`.
         """
 
         args = tuple()
@@ -174,14 +174,14 @@ init -1500 python:
     @renpy.pure
     def ShowTransient(screen, transition=None, *args, **kwargs):
         """
-         :doc: control_action
+        :doc: control_action
 
-         Shows a transient screen. A transient screen will be hidden when
-         the current interaction completes. The arguments are
-         passed to the screen being shown.
+        Shows a transient screen. A transient screen will be hidden when
+        the current interaction completes. The arguments are
+        passed to the screen being shown.
 
-         If not None, `transition` is use to show the new screen.
-         """
+        If not None, `transition` is use to show the new screen.
+        """
 
         return Show(screen, transition, _transient=True, *args, **kwargs)
 
@@ -190,27 +190,40 @@ init -1500 python:
         """
         :doc: control_action
 
-        This causes the screen named `screen` to be hidden, if it is shown.
+        This causes a screen to be hidden if it is shown.
+
+        `screen`
+            Either a string giving the name of the screen to be hidden, or
+            None to hide the current screen.
 
         `transition`
             If not None, a transition that occurs when hiding the screen.
 
         `_layer`
             This is passed as the layer argument to :func:`renpy.hide_screen`.
+            Ignored if `screen` is None.
         """
 
         _layer = None
 
-        def __init__(self, screen, transition=None, _layer=None):
+        def __init__(self, screen=None, transition=None, _layer=None):
             self.screen = screen
             self.transition = transition
             self._layer = _layer
 
         def __call__(self):
-            renpy.hide_screen(self.screen, layer=self._layer)
+            if self.screen is None:
+                cs = renpy.current_screen()
+
+                if cs is None:
+                    return
+
+                renpy.hide_screen(cs.screen_name, layer=cs.layer)
+
+            else:
+                renpy.hide_screen(self.screen, layer=self._layer)
 
             if self.transition is not None:
                 renpy.transition(self.transition)
 
             renpy.restart_interaction()
-

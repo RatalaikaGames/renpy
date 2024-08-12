@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,16 +23,11 @@
 # window.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-import renpy.display
-import renpy.audio
-import renpy.text
-import renpy.test
-
+from typing import Optional, Tuple
 import _ratapy
 
-import pygame_sdl2 as pygame
 
 import sys
 import os
@@ -43,12 +38,15 @@ import copy
 import gc
 import atexit
 
+import pygame_sdl2 as pygame
+import renpy
+
 import_time = time.time()
 
 try:
     import android # @UnresolvedImport
     android.init # Check to see if we have the right module.
-except:
+except Exception:
     android = None
 
 if renpy.emscripten:
@@ -165,8 +163,6 @@ class IgnoreEvent(Exception):
     also don't want to return anything.
     """
 
-    pass
-
 
 class EndInteraction(Exception):
     """
@@ -242,14 +238,14 @@ class DisplayableArguments(renpy.object.Object):
     """
 
     # The name of the displayable without any arguments.
-    name = ()
+    name = () # type: Tuple
 
     # Arguments supplied.
-    args = ()
+    args = () # type: Tuple
 
     # The style prefix in play. This is used by DynamicImage to figure
     # out the prefix list to apply.
-    prefix = None
+    prefix = None # Optional[str]
 
     # True if lint is in use.
     lint = False
@@ -339,6 +335,17 @@ class Displayable(renpy.object.Object):
     # Does this displayable have a tooltip?
     _tooltip = None
 
+    # Should hbox and vbox skip this displayable?
+    _box_skip = False
+
+    # If not None, this should be a (width, height) tuple that overrides the
+    # amount of space offered to the displayable.
+    _offer_size = None
+
+    # Used by a transition (or transition-like object) to determine how long to
+    # delay for.
+    delay = None # type: float|None
+
     def __ne__(self, o):
         return not (self == o)
 
@@ -410,11 +417,11 @@ class Displayable(renpy.object.Object):
 
     def _unique(self):
         """
-        This is called when a displayable is "born" unique, which occurs
-        when there is only a single reference to it. What it does is to
-        manage the _duplicatable flag - setting it false unless one of
-        the displayable's children happens to be duplicatable.
+        This is called when a displayable is "unique", meaning there will
+        only be one reference to it, ever, from the tree of displayables.
         """
+
+        self._duplicatable = False
 
         return
 
@@ -447,14 +454,21 @@ class Displayable(renpy.object.Object):
 
         return True
 
-    def __unicode__(self):
-        return self.__class__.__name__
-
-    def __str__(self):
-        return self.__class__.__name__
+    def _repr_info(self):
+        return None
 
     def __repr__(self):
-        return "<{} at {:x}>".format(str(self), id(self))
+        rep = object.__repr__(self)
+        reprinfo = self._repr_info()
+        if reprinfo is None:
+            return rep
+        if reprinfo and not ((reprinfo[0] == '(') and (reprinfo[-1] == ')')):
+            reprinfo = "".join(("(", reprinfo, ")"))
+        parto = rep.rpartition(" at ")
+        return " ".join((parto[0],
+                         reprinfo,
+                         "at",
+                         parto[2]))
 
     def find_focusable(self, callback, focus_name):
 
@@ -844,7 +858,7 @@ class SceneLists(renpy.object.Object):
             self.drag_group = None
 
         if version < 6:
-            self.shown = self.image_predict_info
+            self.shown = self.image_predict_info # type: ignore
 
         if version < 7:
             self.layer_transform = { }
@@ -928,7 +942,7 @@ class SceneLists(renpy.object.Object):
             self.music = None
             self.focused = None
 
-    def replace_transient(self, prefix="hide"):
+    def replace_transient(self, prefix="hide"): # type: (str|None) -> None
         """
         Replaces the contents of the transient display list with
         a copy of the master display list. This is used after a
@@ -1145,8 +1159,14 @@ class SceneLists(renpy.object.Object):
             l.insert(add_index, sle)
 
         # By walking the tree of displayables we allow the displayables to
-        # capture the current state.
-        thing.visit_all(lambda d : None)
+        # capture the current state. In older code, we allow this to to fail.
+        # Errors might exist in older games, which are ignored when not in
+        # developer mode.
+        try:
+            thing.visit_all(lambda d : None)
+        except Exception:
+            if renpy.config.developer:
+                raise
 
     def hide_or_replace(self, layer, index, prefix):
         """
@@ -1238,7 +1258,7 @@ class SceneLists(renpy.object.Object):
 
             self.hide_or_replace(layer, i, "hide")
 
-    def remove(self, layer, thing, prefix="hide"):
+    def remove(self, layer, thing, prefix="hide"): # type: (str, str|tuple|Displayable, str|None) -> None
         """
         Thing is either a key or a displayable. This iterates through the
         named layer, searching for entries matching the thing.
@@ -1649,8 +1669,8 @@ def get_safe_mode():
 
             VK_SHIFT = 0x10
 
-            ctypes.windll.user32.GetKeyState.restype = ctypes.c_ushort
-            if ctypes.windll.user32.GetKeyState(VK_SHIFT) & 0x8000:
+            ctypes.windll.user32.GetKeyState.restype = ctypes.c_ushort # type: ignore
+            if ctypes.windll.user32.GetKeyState(VK_SHIFT) & 0x8000: # type: ignore
                 return True
             else:
                 return False
@@ -1658,7 +1678,7 @@ def get_safe_mode():
         # Safe mode doesn't work on other platforms.
         return False
 
-    except:
+    except Exception:
         return False
 
 
@@ -1679,6 +1699,8 @@ class Renderer(object):
     - "additive", true if additive blendering is supported.
     - "models", true if model-based rendering is being used.
     """
+
+    texture_cache = { }
 
     def get_texture_size(self):
         """
@@ -1825,10 +1847,14 @@ class Renderer(object):
         Translates (`x`, `y`) from physical to virtual coordinates.
         """
 
+        return (0, 0) # type
+
     def untranslate_point(self, x, y):
         """
         Untranslates (`x`, `y`) from virtual to physical coordinates.
         """
+
+        return (0, 0) # type
 
     def mouse_event(self, ev):
         """
@@ -1836,10 +1862,14 @@ class Renderer(object):
         virtual coordinates. Returns an (x, y) pait of virtual coordinates.
         """
 
+        return ev
+
     def get_mouse_pos(self):
         """
         Returns the x and y coordinates of the mouse, in virtual coordinates.
         """
+
+        return (0, 0) # type
 
     def set_mouse_pos(self, x, y):
         """
@@ -1986,6 +2016,9 @@ class Interface(object):
         # Should we clear the screenshot at the start of the next interaction?
         self.clear_screenshot = False
 
+        # Is our audio paused?
+        self.audio_paused = False
+
         for layer in renpy.config.layers + renpy.config.top_layers:
             if layer in renpy.config.layer_clipping:
                 x, y, w, h = renpy.config.layer_clipping[layer]
@@ -2103,7 +2136,7 @@ class Interface(object):
         self.frame_duration = 1.0 / 60.0
 
         # The cursor cache.
-        self.cursor_cache = None
+        self.cursor_cache = None # type: dict|None
 
         # The old mouse.
         self.old_mouse = None
@@ -2115,9 +2148,14 @@ class Interface(object):
         # Is this the first frame?
         self.first_frame = True
 
+        # Should prediction be forced? This causes the prediction coroutine to
+        # be prioritized, and is set to False when it's done, when preloading
+        # is done, or at the end of the interaction.
+        self.force_prediction = False
+
         try:
             self.setup_nvdrs()
-        except:
+        except Exception:
             pass
 
     def setup_nvdrs(self):
@@ -2152,16 +2190,16 @@ class Interface(object):
             import ctypes
             from ctypes import c_void_p, c_int
 
-            ctypes.windll.user32.SetProcessDPIAware()
+            ctypes.windll.user32.SetProcessDPIAware() # type: ignore
 
-            GetDC = ctypes.windll.user32.GetDC
+            GetDC = ctypes.windll.user32.GetDC # type: ignore
             GetDC.restype = c_void_p
             GetDC.argtypes = [ c_void_p ]
 
-            ReleaseDC = ctypes.windll.user32.ReleaseDC
+            ReleaseDC = ctypes.windll.user32.ReleaseDC # type: ignore
             ReleaseDC.argtypes = [ c_void_p, c_void_p ]
 
-            GetDeviceCaps = ctypes.windll.gdi32.GetDeviceCaps
+            GetDeviceCaps = ctypes.windll.gdi32.GetDeviceCaps # type: ignore
             GetDeviceCaps.restype = c_int
             GetDeviceCaps.argtypes = [ c_void_p, c_int ]
 
@@ -2177,7 +2215,7 @@ class Interface(object):
 
             return rv
 
-        except:
+        except Exception:
             renpy.display.log.write("Could not determine DPI scale factor:")
             renpy.display.log.exception()
             return 1.0
@@ -2200,13 +2238,14 @@ class Interface(object):
         #pygame.display.hint("SDL_AUDIO_DEVICE_APP_NAME", (renpy.config.name or "Ren'Py Game").encode("utf-8"))
 
         # Initialize audio.
+        pygame.display.hint("SDL_APP_NAME", (renpy.config.name or "Ren'Py Game").encode("utf-8"))
         #renpy.audio.audio.init()
 
         # Initialize pygame.
         try:
             pygame.display.init()
             pygame.mouse.init()
-        except:
+        except Exception:
             pass
 
         self.post_init()
@@ -2433,7 +2472,7 @@ class Interface(object):
             draw_objects[name] = draw_class(*args)
             return True
 
-#            except:
+#           except:
 #                renpy.display.log.write("Couldn't import {0} renderer:".format(name))
 #                renpy.display.log.exception()
 #
@@ -2688,7 +2727,7 @@ class Interface(object):
             if renpy.emscripten:
                 emscripten.run_script(r'''FSDownload('%s');''' % filename)
             return True
-        except:
+        except Exception:
             if renpy.config.debug:
                 raise
 
@@ -2734,14 +2773,13 @@ class Interface(object):
             old_history = renpy.store._history # @UndefinedVariable
             renpy.store._history = False
 
-            PPP("empty window")
+            PPP("empty window") # type: ignore
+
+            old_say_attributes = renpy.game.context().say_attributes
+            old_temporary_attributes = renpy.game.context().temporary_attributes
 
             try:
-
-                old_say_attributes = renpy.game.context().say_attributes
                 renpy.game.context().say_attributes = None
-
-                old_temporary_attributes = renpy.game.context().temporary_attributes
                 renpy.game.context().temporary_attributes = None
 
                 renpy.config.empty_window()
@@ -2773,7 +2811,7 @@ class Interface(object):
         be transitioning from.
         """
 
-        PPP("start of with none")
+        PPP("start of with none") # type: ignore
 
         # Show the window, if that's necessary.
         self.show_window()
@@ -3035,7 +3073,7 @@ class Interface(object):
 
     def get_mouse_name(self, cache_only=False, interaction=True):
 
-        mouse_kind = renpy.display.focus.get_mouse()
+        mouse_kind = renpy.display.focus.get_mouse() # type: str
 
         if interaction and (mouse_kind is None):
             mouse_kind = self.mouse
@@ -3138,7 +3176,6 @@ class Interface(object):
 
         self.mobile_save()
 
-        import os
         os._exit(1)
 
     def check_suspend(self, ev):
@@ -3209,7 +3246,7 @@ class Interface(object):
 
         try:
             pygame.event.post(self.time_event)
-        except:
+        except Exception:
             pass
 
     def after_longpress(self):
@@ -3302,9 +3339,6 @@ class Interface(object):
 
         self.trans_pause = trans_pause
 
-        # Cancel magic error reporting.
-        renpy.bootstrap.report_error = None
-
         context = renpy.game.context()
 
         if context.interacting:
@@ -3335,9 +3369,11 @@ class Interface(object):
                 repeat, rv = self.interact_core(preloads=preloads, trans_pause=trans_pause, pause=pause, pause_start=pause_start, **kwargs)
                 self.start_interact = False
 
-            return rv
+            return rv # type: ignore
 
         finally:
+
+            self.force_prediction = False
 
             context.interacting = False
 
@@ -3406,7 +3442,7 @@ class Interface(object):
 
         while True:
 
-            if self.event_peek():
+            if self.event_peek() and not self.force_prediction:
                 break
 
             if not (can_block and expensive):
@@ -3420,7 +3456,12 @@ class Interface(object):
 
             # Step 2: Push textures to GPU.
             elif step == 2:
-                renpy.display.draw.ready_one_texture()
+                    renpy.webloader.process_downloaded_resources()
+            # Step 3: Push textures to GPU.
+
+            if expensive and renpy.emscripten:
+                self.exec_js_cmd()
+
                 step += 1
 
             # Step 3: Predict more images.
@@ -3464,6 +3505,11 @@ class Interface(object):
                 step += 1
 
             else:
+
+                # Check to see if preloading has finished
+                if renpy.display.im.cache.done():
+                    self.force_prediction = False
+
                 break
 
         if expensive:
@@ -3480,7 +3526,7 @@ class Interface(object):
                       preloads=[],
                       roll_forward=None,
                       pause=False,
-                      pause_start=0,
+                      pause_start=0.0,
                       ):
         """
         This handles one cycle of displaying an image to the user,
@@ -3630,7 +3676,7 @@ class Interface(object):
         for w in scene.values():
             try:
                 renpy.display.predict.displayable(w)
-            except:
+            except Exception:
                 pass
 
         renpy.plog(1, "final predict")
@@ -3704,7 +3750,7 @@ class Interface(object):
                 root_widget.add(sb)
                 focus_roots.append(sb)
 
-                pb = renpy.display.behavior.PauseBehavior(trans.delay)
+                pb = renpy.display.behavior.PauseBehavior(trans.delay) # type: ignore
                 root_widget.add(pb, transition_time, transition_time)
                 focus_roots.append(pb)
 
@@ -3939,7 +3985,7 @@ class Interface(object):
                         if time_left <= 0:
                             try:
                                 pygame.event.post(self.redraw_event)
-                            except:
+                            except Exception:
                                 pass
                             pygame.time.set_timer(REDRAW, 0)
                         else:
@@ -3967,8 +4013,13 @@ class Interface(object):
                         pygame.time.set_timer(TIMEEVENT, int(time_left * 1000 + 1))
                         old_timeout_time = self.timeout_time
 
-                if can_block or (frame >= renpy.config.idle_frame):
+                if can_block or (frame >= renpy.config.idle_frame) or (self.force_prediction):
                     expensive = not (needs_redraw or (_redraw_in < .2) or (_timeout_in < .2) or renpy.display.video.playing())
+
+                    if self.force_prediction:
+                        expensive = True
+                        can_block = True
+
                     self.idle_frame(can_block, expensive)
 
                 if needs_redraw or (not can_block) or self.mouse_move or renpy.display.video.playing():
@@ -4059,7 +4110,13 @@ class Interface(object):
                     # Clear the mods when the keymap is changed, such as when
                     # an IME is selected. This fixes a problem on Windows 10 where
                     # super+space won't unset super.
-                    pygame.key.set_mods(0)
+
+                    # This only happens when the GUI key is down, as shift can
+                    # also change the keymap.
+
+                    if pygame.key.get_mods() & pygame.KMOD_GUI:
+                        pygame.key.set_mods(0)
+
                     continue
 
                 elif self.text_editing and ev.type in [ pygame.KEYDOWN, pygame.KEYUP ]:
@@ -4078,7 +4135,9 @@ class Interface(object):
                 # Handle videoresize.
                 if ev.type == pygame.VIDEORESIZE:
 
-                    renpy.game.interface.full_redraw = True
+                    if isinstance(renpy.display.draw, renpy.display.swdraw.SWDraw):
+                        renpy.display.draw.full_redraw = True
+
                     renpy.game.interface.force_redraw = True
 
                     continue
@@ -4128,6 +4187,18 @@ class Interface(object):
 
                     if ev.state & 2:
                         self.keyboard_focused = ev.gain
+
+                    # If the window becomes inactive as a result of this event
+                    # pause the audio according to preference
+                    if not renpy.game.preferences.audio_when_minimized:
+                        if not pygame.display.get_active() and not self.audio_paused:
+                            renpy.audio.audio.pause_all()
+                            self.audio_paused = True
+                        # If the window had not gone inactive or has regained activity
+                        # unpause the audio
+                        elif pygame.display.get_active() and self.audio_paused:
+                            renpy.audio.audio.unpause_all()
+                            self.audio_paused = False
 
                     pygame.key.set_mods(0)
 
@@ -4279,3 +4350,27 @@ class Interface(object):
         """
 
         self.check_background_screenshot()
+
+    def exec_js_cmd(self):
+        """
+        Execute a command from JS if required (emscripten only).
+        """
+
+        if not renpy.emscripten:
+            return
+
+        # Retrieve the command to be executed from a global JS variable
+        # (an empty string is returned if the variable is not defined)
+        cmd = emscripten.run_script_string("window._renpy_cmd")
+        if len(cmd) == 0:
+            return
+
+        # Delete command variable to prevent executing the command again
+        emscripten.run_script("delete window._renpy_cmd")
+
+        # Execute the command
+        try:
+            renpy.python.py_exec(cmd)
+        except Exception as e:
+            renpy.display.log.write(cmd)
+            renpy.display.log.write('Error while executing JS command: %s' % (e,))

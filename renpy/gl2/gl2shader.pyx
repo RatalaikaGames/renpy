@@ -5,6 +5,8 @@ from renpy.gl2.gl2mesh cimport Mesh
 from renpy.gl2.gl2texture cimport GLTexture
 from renpy.display.matrix cimport Matrix
 
+import renpy
+import random
 
 class ShaderError(Exception):
     pass
@@ -173,13 +175,13 @@ cdef class Program:
                 raise ShaderError("Spurious tokens after the name in '{}'. Arrays are not supported in Ren'Py.".format(l))
 
             if storage == "uniform":
-                location = glGetUniformLocation(self.program, name)
+                location = glGetUniformLocation(self.program, name.encode("utf-8"))
 
                 if location >= 0:
                     self.uniforms[name] = types[type](self, location)
 
             else:
-                location = glGetAttribLocation(self.program, name)
+                location = glGetAttribLocation(self.program, name.encode("utf-8"))
 
                 if location >= 0:
                     self.attributes.append(Attribute(name, location, types[type]))
@@ -188,6 +190,8 @@ cdef class Program:
         """
         This loads a shader into the GPU, and returns the number.
         """
+
+        source = source.encode("utf-8")
 
         cdef GLuint shader
         cdef GLchar *source_ptr = <char *> source
@@ -245,7 +249,19 @@ cdef class Program:
         self.find_variables(self.fragment)
 
     def missing(self, kind, name):
-        raise Exception("Shader {} has not been given {} {}.".format(self.name, kind, name))
+        cdef GLfloat viewport[4]
+
+        if name == "u_lod_bias":
+            self.set_uniform("u_lod_bias", float(renpy.config.gl_lod_bias))
+        elif name == "u_time":
+            self.set_uniform("u_time", (renpy.display.interface.frame_time - renpy.display.interface.init_time) % 86400)
+        elif name == "u_random":
+            self.set_uniform("u_random", (random.random(), random.random(), random.random(), random.random()))
+        elif name == "u_viewport":
+            glGetFloatv(GL_VIEWPORT, viewport)
+            self.set_uniform("u_viewport", (viewport[0], viewport[1], viewport[2], viewport[3]))
+        else:
+            raise Exception("Shader {} has not been given {} {}.".format(self.name, kind, name))
 
     def start(self):
         glUseProgram(self.program)

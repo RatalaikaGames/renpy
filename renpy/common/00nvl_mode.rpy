@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -361,8 +361,10 @@ init -1500 python:
                 if page:
                     checkpoint = True
                 else:
-                    if renpy.in_rollback():
+                    if renpy.roll_forward_info() is not None:
+                        renpy.checkpoint(renpy.roll_forward_info(), hard=False)
                         return
+
                     checkpoint = False
             else:
                 checkpoint = True

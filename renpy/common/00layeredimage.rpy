@@ -2,7 +2,7 @@
 
 python early in layeredimage:
 
-    from store import Transform, ConditionSwitch, Fixed, Null, config, Text, eval
+    from store import Transform, ConditionSwitch, Fixed, Null, config, Text, eval, At
     from collections import OrderedDict
 
     ATL_PROPERTIES = [ i for i in renpy.atl.PROPERTIES ]
@@ -143,10 +143,7 @@ python early in layeredimage:
             Wraps a displayable in the at list and transform arguments.
             """
 
-            d = renpy.displayable(d)
-
-            for i in self.at:
-                d = i(d)
+            d = At(d, *self.at)
 
             if self.group_args or self.transform_args:
                 d = Transform(d)
@@ -557,6 +554,12 @@ python early in layeredimage:
             have been chosen. It can be used to express complex dependencies between attributes
             or select attributes at random.
 
+        `offer_screen`
+            Sets whether or not the available area is taken into acount as for how children
+            are placed and how they are sized (when they have variable size). If False, the
+            available area is considered, and if True it is not. If None, defaults to
+            :var:`config.layeredimage_offer_screen`.
+
         Additional keyword arguments may contain transform properties. If
         any are present, a transform is created that wraps the result image.
         Remaining keyword arguments are passed to a Fixed that is created to hold
@@ -573,13 +576,15 @@ python early in layeredimage:
 
         attribute_function = None
         transform_args = { }
+        offer_screen = None
 
-        def __init__(self, attributes, at=[], name=None, image_format=None, format_function=None, attribute_function=None, **kwargs):
+        def __init__(self, attributes, at=[], name=None, image_format=None, format_function=None, attribute_function=None, offer_screen=None, **kwargs):
 
             self.name = name
             self.image_format = image_format
             self.format_function = format_function
             self.attribute_function = attribute_function
+            self.offer_screen = offer_screen
 
             self.attributes = [ ]
             self.layers = [ ]
@@ -677,6 +682,12 @@ python early in layeredimage:
 
             rv = Fixed(**self.fixed_args)
 
+            offer_screen = self.offer_screen
+            if offer_screen is None:
+                offer_screen = config.layeredimage_offer_screen
+            if offer_screen:
+                rv._offer_size = (config.screen_width, config.screen_height)
+
             for i in self.layers:
                 d = i.get_displayable(attributes)
 
@@ -708,8 +719,7 @@ python early in layeredimage:
 
                 rv = Fixed(rv, text, fit_first=True)
 
-            for i in self.at:
-                rv = i(rv)
+            rv = At(rv, *self.at)
 
             if self.transform_args:
                 rv = Transform(child=rv, **self.transform_args)
@@ -1065,7 +1075,7 @@ python early in layeredimage:
 
             else:
 
-                while parse_property(ll, rv, [ "image_format", "format_function", "attribute_function", "at" ] +
+                while parse_property(ll, rv, [ "image_format", "format_function", "attribute_function", "offer_screen", "at" ] +
                     renpy.sl2.slproperties.position_property_names +
                     renpy.sl2.slproperties.box_property_names +
                     ATL_PROPERTIES

@@ -14,15 +14,15 @@
 #endif
 
 
-PyObject *renpybidi_log2vis(PyUnicodeObject *s, int *direction) {
+PyObject *renpybidi_log2vis(PyObject *s, int *direction) {
     Py_ssize_t size;
     FriBidiChar *srcuni;
     FriBidiChar *dstuni;
-    PyUnicodeObject *rv;
+    PyObject *rv;
 
 
-    Py_UNICODE *p = PyUnicode_AS_UNICODE(s);
-    size = PyUnicode_GET_SIZE(s);
+    Py_UNICODE *p = PyUnicode_AS_UNICODE((PyUnicodeObject *) s);
+    size = PyUnicode_GET_SIZE((PyUnicodeObject *) s);
 
     srcuni = (FriBidiChar *) alloca(size * 4);
     dstuni = (FriBidiChar *) alloca(size * 4);
@@ -34,18 +34,20 @@ PyObject *renpybidi_log2vis(PyUnicodeObject *s, int *direction) {
     fribidi_log2vis(
         srcuni,
         size,
-        direction,
+        (FriBidiParType *) direction,
         dstuni,
         NULL,
         NULL,
         NULL);
 
-    rv = PyUnicode_FromUnicode(NULL, size);
-    p = PyUnicode_AS_UNICODE(rv);
+
+    p = (Py_UNICODE *) alloca(size * sizeof(Py_UNICODE));
 
     for (Py_ssize_t i = 0; i < size; i++) {
-        p[i] = dstuni[i];
+        p[i] = (Py_UNICODE) dstuni[i];
     }
+
+    rv = PyUnicode_FromUnicode(p, size);
 
     return rv;
 }

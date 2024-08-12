@@ -5,7 +5,7 @@ translate piglatin tutorial_screens_2faa22e5:
     # e "Screens are the most powerful part of Ren'Py. Screens let you customize the out-of-game interface, and create new in-game interface components."
     e "Creenssay areay hetay ostmay owerfulpay artpay ofay Enray'Ypay. Creenssay etlay ouyay ustomizecay hetay outay-ofay-amegay interfaceay, anday reatecay ewnay inay-amegay interfaceay omponentscay."
 
-# game/tutorial_screens.rpy:171
+# game/tutorial_screens.rpy:173
 translate piglatin screens_menu_7f31d730:
 
     # e "What would you like to know about screens?" nointeract
@@ -23,7 +23,7 @@ translate piglatin screens_demo_ce100e07:
     # e "When I'm speaking to you, I'm using the 'say' screen. It's responsible for taking dialogue and presenting it to the player."
     e "Henway Iay'may peakingsay otay ouyay, Iay'may usingay hetay 'aysay' creensay. Tiay'say esponsibleray orfay akingtay ialogueday anday resentingpay itay otay hetay ayerplay."
 
-# game/tutorial_screens.rpy:205
+# game/tutorial_screens.rpy:207
 translate piglatin screens_demo_1bdfb4bd:
 
     # e "And when the menu statement displays an in-game choice, the 'choice' screen is used. Got it?" nointeract
@@ -86,8 +86,8 @@ translate piglatin screens_demo_62c184f8:
 # game/tutorial_screens.rpy:265
 translate piglatin screens_showing_1b51e9a4:
 
-    # e "Here's an example of a very simple screen. The screen statement is used to tell Ren'Py this is a screen, and it's name is simple_screen."
-    e "Erehay'say anay exampleay ofay aay eryvay implesay creensay. Hetay creensay atementstay isay useday otay elltay Enray'Ypay histay isay aay creensay, anday itay'say amenay isay imple_screensay."
+    # e "Here's an example of a very simple screen. The screen statement is used to tell Ren'Py this is a screen, and its name is simple_screen." id screens_showing_1b51e9a4
+    e "Erehay'say anay exampleay ofay aay eryvay implesay creensay. Hetay creensay atementstay isay useday otay elltay Enray'Ypay histay isay aay creensay, anday itsay amenay isay imple_screensay." id screens_showing_1b51e9a4
 
 # game/tutorial_screens.rpy:267
 translate piglatin screens_showing_5a6bbad0:

@@ -1,5 +1,7 @@
-﻿
 translate italian strings:
+    # game/new_project.rpy:77
+    old "{#language name and font}"
+    new "Italiano"
 
     # about.rpy:39
     old "[version!q]"
@@ -562,8 +564,8 @@ translate italian strings:
     new "[project_dir!q] esiste già. Si prega di scegliere un altro nome."
 
     # gui7.rpy:341
-    old "What resolution should the project use? Although Ren'Py can scale the window up and down, this is the initial size of the window, the size at which assets should be drawn, and the size at which the assets will be at their sharpest.\n\nThe default of 1280x720 is a reasonable compromise."
-    new "Quale risoluzione dovrebbe usare il progetto? Sebbene Ren'Py possa scalare la finestra, questa sarà la dimensione iniziale, la dimensione alla quale i materiali dovrebbero venire disegnati, e la dimensione alla quale avranno la migliore definizione.\n\nLo standard di 1280x720 è un compromesso ragionevole."
+    old "What resolution should the project use? Although Ren'Py can scale the window up and down, this is the initial size of the window, the size at which assets should be drawn, and the size at which the assets will be at their sharpest.\n\nThe default of [default_size[0]]x[default_size[1]] is a reasonable compromise."
+    new "Quale risoluzione dovrebbe usare il progetto? Sebbene Ren'Py possa scalare la finestra, questa sarà la dimensione iniziale, la dimensione alla quale i materiali dovrebbero venire disegnati, e la dimensione alla quale avranno la migliore definizione.\n\nLo standard di [default_size[0]]x[default_size[1]] è un compromesso ragionevole."
 
     # gui7.rpy:389
     old "Creating the new project..."
@@ -1196,4 +1198,3 @@ translate italian strings:
     # front_page.rpy:91
     old "PROJECTS:"
     new "PROGETTI:"
-

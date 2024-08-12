@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -19,11 +19,13 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-init -1100 python in gui:
+init -1150 python in gui:
     from store import config, layout, _preferences, Frame, Null, persistent, Action, DictEquality
     import math
 
     config.translate_clean_stores.append("gui")
+
+    config.gui_text_position_properties = True
 
     _null = Null()
 
@@ -92,7 +94,7 @@ init -1100 python in gui:
                 gui.text_size = 30
                 # ...
 
-        It can also be called with `f` (a function) and `variant` (a string), 
+        It can also be called with `f` (a function) and `variant` (a string),
         giving the variant name.
         """
 
@@ -226,7 +228,8 @@ init -1100 python in gui:
             else:
                 prefs[self.name] = self.a
 
-            rebuild()
+            if self.rebuild:
+                rebuild()
 
         def get_selected(self):
             prefs = persistent._gui_preference
@@ -365,7 +368,10 @@ init -1100 python in gui:
         selected_color
             To gui.kind_text_selected_color, if it exists.
 
-        All other :ref:`text style properties <text-style-properties>` are also available. For
+        All other :ref:`text style properties <text-style-properties>`
+        are available. When `kind` is not None,
+        :ref:`position style properties <position-style-properties>`
+        are also available. For
         example, gui.kind_text_outlines sets the outlines style property,
         gui.kind_text_kerning sets kerning, and so on.
         """
@@ -401,8 +407,14 @@ init -1100 python in gui:
                 if (xalign > 0) and (xalign < 1):
                     rv["layout"] = "subtitle"
 
+        if (kind is not None) and config.gui_text_position_properties:
+            property_names = renpy.sl2.slproperties.text_property_names + renpy.sl2.slproperties.position_property_names
+        else:
+            property_names = renpy.sl2.slproperties.text_property_names
+
         for prefix in renpy.sl2.slparser.STYLE_PREFIXES:
-            for property in renpy.sl2.slproperties.text_property_names:
+            for property in property_names:
+
                 prop = prefix + property
 
                 text_prop = "text_" + prop
@@ -473,7 +485,7 @@ init -1100 python in gui:
 
                 try:
                     os.makedirs(dn, 0o777)
-                except:
+                except Exception:
                     pass
 
                 if os.path.exists(fn):
@@ -491,12 +503,7 @@ init -1100 python in gui:
                     if not gui._skip_backup:
                         os.rename(fn, bfn)
 
-                import cStringIO
-                sio = cStringIO.StringIO()
-                renpy.display.module.save_png(s, sio, 3)
-
-                with open(fn, "wb") as f:
-                    f.write(sio.getvalue())
+                pygame_sdl2.image.save(s, fn, 3)
 
             def fill(self, color=None):
                 if color is None:

@@ -62,10 +62,22 @@ take the `name` and `page` arguments.
 
 .. include:: inc/file_action
 
+
+.. _audio-actions:
+
 Audio Actions
 -------------
 
+The concept of channels and how they work, as well as most information
+about audio in Ren'Py, is explained at :ref:`audio`.
+
 .. include:: inc/audio_action
+
+
+Focus Actions
+-------------
+
+.. include:: inc/focus_action
 
 Other Actions
 -------------
@@ -180,6 +192,49 @@ Here's an example::
 
             if tooltip:
                 text "[tooltip]"
+
+The :ref:`sl-nearrect` displayable can be used to display "popup-style" tooltips,
+and has support for a special "tooltip" focus name, that is set to the location
+of the last focus that set a tooltip::
+
+    screen tooltip_example2():
+        frame:
+
+            padding (20, 20)
+            align (.5, .3)
+
+            has vbox
+
+            textbutton "North":
+                action Return("n")
+                tooltip "To meet a polar bear."
+
+            textbutton "South":
+                action Return("s")
+                tooltip "All the way to the tropics."
+
+            textbutton "East":
+                action Return("e")
+                tooltip "So we can embrace the dawn."
+
+            textbutton "West":
+                action Return("w")
+                tooltip "Where to go to see the best sunsets."
+
+        # This has to be the last thing shown in the screen.
+
+        $ tooltip = GetTooltip()
+
+        if tooltip:
+
+            nearrect:
+                focus "tooltip"
+                prefer_top True
+
+                frame:
+                    xalign 0.5
+                    text tooltip
+
 
 .. include:: inc/get_tooltip
 

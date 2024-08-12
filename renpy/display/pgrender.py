@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,14 +23,16 @@
 # ensures that returned surfaces have a 2px border around them.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
+
+
 
 import sys
-import pygame_sdl2 as pygame
 import pygame_sdl2.image #MBG - had to add
 import threading
-import renpy.display
-import renpy.audio
+
+import pygame_sdl2 as pygame
+import renpy
 
 
 # Sample surfaces, with and without alpha.
@@ -56,7 +58,7 @@ def set_rgba_masks():
 
     # Sort the components by absolute value.
     masks = list(sample_alpha.get_masks())
-    masks.sort(key=lambda a : abs(a))
+    masks.sort(key=abs)
 
     # Choose the masks.
     if sys.byteorder == 'big':
@@ -77,11 +79,6 @@ class Surface(pygame.Surface):
     its mode, as necessary.
     """
 
-    opaque = False
-
-    def is_opaque(self):
-        return self.opaque
-
     def convert_alpha(self, surface=None):
         return copy_surface_unscaled(self, True)
 
@@ -89,7 +86,7 @@ class Surface(pygame.Surface):
         return copy_surface(self, False)
 
     def copy(self):
-        return copy_surface(self, self)
+        return copy_surface(self, self) # type:ignore
 
     def subsurface(self, rect):
         rv = pygame.Surface.subsurface(self, rect)
@@ -129,7 +126,7 @@ def surface(rect, alpha, clear = False):
 surface_unscaled = surface
 
 
-def copy_surface(surf, alpha=True):
+def copy_surface(surf, alpha=True): # (Surface, bool|Surface) -> Surface
     """
     Creates a copy of the surface.
     """
@@ -152,8 +149,6 @@ image_load_lock = threading.RLock()
 
 
 def load_image(f, filename):
-    global count
-
     _basename, _dot, ext = filename.rpartition('.')
 
     try:

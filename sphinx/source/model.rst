@@ -282,14 +282,14 @@ Model-Based rendering adds the following properties to ATL and :func:`Transform`
     :default: None
 
     if not None, this should be a string. This string is looked up in
-    :var:`config.gl_blend_func` to  get the value for the gl_blend_func
+    :var:`config.gl_blend_func` to get the value for the gl_blend_func
     property. It's used to use alternate blend modes.
 
     The default blend modes this supports are "normal", "add", "multiply",
     "min", and "max".
 
 
-In addition, uniforms that start with u\_ and not u_renpy are made available
+In addition, uniforms that start with u\_ but not with u_renpy are made available
 as Transform properties. GL properties are made available as transform
 properties starting with gl\_. For example, the color_mask property is made
 available as gl_color_mask.
@@ -299,8 +299,8 @@ Blend Functions
 
 .. var:: config.gl_blend_func = { ... }
 
-    A dictionaryt used to map a blend mode name to a blend function. The
-    blend modes are suppled to the blend func property, given below.
+    A dictionary used to map a blend mode name to a blend function. The
+    blend modes are supplied to the blend func property, given below.
 
 The default blend modes are::
 
@@ -338,6 +338,12 @@ The following uniforms are made available to all Models.
 ``vec4 u_random``
     Four random numbers between 0.0 and 1.0 that are (with incredibly high
     likelyhood) different from frame to frame.
+
+``vec4 u_viewport``
+    This gives the current viewport being drawn into. u_viewport.xy is
+    are the coordinates of the bottom-left corner of the viewport, relative
+    to the bottom-left corner of the window. u_viewport.pq is the width
+    and height of the viewport.
 
 ``sampler2D tex0``, ``sampler2D tex1``, ``sampler2D tex2``
     If textures are available, the corresponding samplers are placed in
@@ -413,9 +419,10 @@ The following properties only take effect when a texture is being created,
 by a Transform with :tpref:`mesh` set, or by :func:`Model`, where these
 can be supplied the property method.
 
-``gl_mipmap``
-    If supplied, this determines if the textures supplied to a mesh are
-    created with mipmaps. This defaults to true.
+``gl_drawable_resolution``
+    If true or not set, the texture is rendered at the same resolution
+    as the window displaying the game. If false, it's rendered at the
+    virtual resolution of the displayable.
 
 ``gl_anisotropic``
     If supplied, this determines if the textures applied to a mesh are
@@ -425,6 +432,10 @@ can be supplied the property method.
 
     This defaults to true. Ren'Py sets this to False for certain effects,
     like the Pixellate transition.
+
+``gl_mipmap``
+    If supplied, this determines if the textures supplied to a mesh are
+    created with mipmaps. This defaults to true.
 
 ``gl_texture_wrap``
     When supplied, this determines how the textures applied to a mesh
@@ -467,6 +478,3 @@ Default Shader Parts
 --------------------
 
 .. include:: inc/shadersource
-
-
-

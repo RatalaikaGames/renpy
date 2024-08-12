@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -274,14 +274,15 @@ init -1500 python:
 
         Accesses the Json information associated with `name`.
 
-        If `key` is None, returns the entire Json other object, or `empty` if the slot
-        is empty.
+        This always returns `empty` if the slot is empty.
+
+        If not, and if `key` is None, returns the entire dictionary containing the Json data.
 
         Otherwise, this returns json[key] if `key` is defined on the json object of the save,
-        `missing` if there is a save with the given name, but it does not contain `key`, or
-        `empty` if the save slot is empty.
+        and `missing` if there is a save with the given name, but it does not contain `key`.
 
-        Json is added to a save slot by callbacks registered using :var:`config.save_json_callbacks`.
+        Such Json data is added to a save slot by callbacks registered using
+        :var:`config.save_json_callbacks`.
         """
 
         json = renpy.slot_json(__slotname(name, page, slot))
@@ -361,7 +362,7 @@ init -1500 python:
 
             try:
                 self.alt = __("Save slot %s: [text]") % (name,)
-            except:
+            except Exception:
                 self.alt = "Save slot %s: [text]" % (name,)
 
         def __call__(self):
@@ -442,7 +443,7 @@ init -1500 python:
 
             try:
                 self.alt = __("Load slot %s: [text]") % (name,)
-            except:
+            except Exception:
                 self.alt = "Load slot %s: [text]" % (name,)
 
         def __call__(self):
@@ -959,5 +960,5 @@ init 1050 python hide:
     if persistent._file_page not in config.file_page_names:
         try:
             int(persistent._file_page)
-        except:
+        except Exception:
             persistent._file_page = "1"

@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -49,7 +49,7 @@ init -1700 python:
 
                 return False
 
-            except:
+            except Exception:
                 if config.debug_equality:
                     raise
 
@@ -88,7 +88,7 @@ init -1700 python:
 
                 return True
 
-            except:
+            except Exception:
 
                 if config.debug_equality:
                     raise
@@ -120,9 +120,25 @@ init -1700 python:
     def _default_empty_window():
 
         try:
-            who = _last_say_who
-            who = renpy.eval_who(who)
-        except:
+            scry = renpy.scry()
+
+            # When running in a say statement or menu-with-caption, scry for
+            # the next say statement, and get the window from that.
+            if scry.say or scry.menu_with_caption:
+                who = None
+
+                for i in range(10):
+                    if scry.say:
+                        who = scry.who
+                        break
+
+                    scry = scry.next()
+
+            else:
+                who = _last_say_who
+                who = renpy.eval_who(who)
+
+        except Exception:
             who = None
 
         if who is None:
@@ -130,9 +146,9 @@ init -1700 python:
 
         if isinstance(who, NVLCharacter):
             nvl_show_core()
-        elif isinstance(store.narrator, ADVCharacter):
+        elif not isinstance(store.narrator, NVLCharacter):
             store.narrator.empty_window()
-        elif isinstance(store._narrator, ADVCharacter):
+        else:
             store._narrator.empty_window()
 
     config.empty_window = _default_empty_window
@@ -260,7 +276,7 @@ init -1700 python:
         who = Character(who, kind=name_only)
         try:
             who.predict(what)
-        except:
+        except Exception:
             pass
 
     def say(who, what, interact=True, *args, **kwargs):

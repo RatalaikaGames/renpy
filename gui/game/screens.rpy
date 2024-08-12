@@ -160,6 +160,7 @@ style say_dialogue:
     xsize gui.dialogue_width
     ypos gui.dialogue_ypos
 
+    adjust_spacing False
 
 ## Input screen ################################################################
 ##
@@ -210,11 +211,6 @@ screen choice(items):
     vbox:
         for i in items:
             textbutton i.caption action i.action
-
-
-## When this is true, menu captions will be spoken by the narrator. When
-## false, menu captions will be displayed as empty buttons.
-define config.narrator_menu = True
 
 
 style choice_vbox is vbox
@@ -732,13 +728,6 @@ screen preferences():
                         textbutton _("Fullscreen") action Preference("display", "fullscreen")
 
                 vbox:
-                    style_prefix "radio"
-                    label _("Rollback Side")
-                    textbutton _("Disable") action Preference("rollback side", "disable")
-                    textbutton _("Left") action Preference("rollback side", "left")
-                    textbutton _("Right") action Preference("rollback side", "right")
-
-                vbox:
                     style_prefix "check"
                     label _("Skip")
                     textbutton _("Unseen Text") action Preference("skip", "toggle")
@@ -926,8 +915,6 @@ style history_window is empty
 
 style history_name is gui_label
 style history_name_text is gui_label_text
-style history_text is gui_text
-
 style history_text is gui_text
 
 style history_label is gui_label
