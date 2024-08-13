@@ -1234,7 +1234,10 @@ PyObject *RPS_read_video(int channel) {
     ALTENTER();
 
     if (c->playing) {
+        //TODO: David, this was introduced in 7.5.0.22052520 merge, but Py_BEGIN_ALLOW_THREADS/Py_END_ALLOW_THREADS triggers an exception during PyEval_SaveThread
+        //Py_BEGIN_ALLOW_THREADS
     	surf = media_read_video(c->playing);
+        //Py_END_ALLOW_THREADS
     }
 
     ALTEXIT();
