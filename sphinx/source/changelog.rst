@@ -2,11 +2,11 @@
 Changelog (Ren'Py 7.x-)
 =======================
 
-.. _renpy-7.4.11:
+.. _renpy-7.5.0:
 .. _renpy-8.0.0:
 
-7.5
-===
+8.0 / 7.5
+=========
 
 Python 3 Support (Ren'Py 8.0)
 -----------------------------
@@ -138,39 +138,52 @@ following platforms:
 This reflects the obsolescence of 32-bit x86 computing. These platforms remain
 supported by Ren'Py 7.5, but will not be supported by Ren'Py 8.
 
-ChromeOS
---------
+Web and ChromeOS
+----------------
 
 The web platform is currently only supported on Ren'Py 7.5.
 
+Changes to the Safari and Chrome web browsers increased the memory Ren'Py
 used by about 50 times, causing RangeErrors when the web browser ran out
+of stack memory. Ren'Py 7.5 includes changes to reduces the amount of
 memory used inside web browsers. As a result, Ren'Py now runs again
 inside Chrome and Safari, including on iOS devices.
 
+The new :var:`config.webaudio_required_types` variable can be given a list of
 mime types of audio files used by the game. Ren'Py will only use the web
 browser's Web Audio system for playback if all of the mime types are supported
 in the browser. If not, webasm is used for playback, which is more likely to
 cause skipping if the computer is slow.
 
+The config.webaudio_required_types variable is intended to allow games using ogg
 or opus audio to run on Safari, and can be changed if a game only uses mp3 audio.
 
 When importing save files into a web distribution, Ren'Py will now refresh
 the list of save files without a restart.
 
-when a gui preference is changed, or when the translation changes.)
+When running as an Android application on a ChromeOS device, the "chromeos"
+variant will be selected.
 
-This is expected to be used like::
-
-    init python:
-
-        @gui.variant
-        def small():
 The Ren'Py SDK can be run on ARM Chromebooks.
 
-            ## Font sizes.
-            gui.text_size = gui.scale(30)
-            gui.name_text_size = gui.scale(36)
-            # ...
+Android and iOS
+---------------
+
+The Android configuration once again prompts as to which store to use
+for in app purchases. When no store is selected, libraries to support
+purchasing are not included in the project. These libraries would include
+the billing permission, which would flag the game as supporting in-app
+purchases even if no purchases were used.
+
+Due to issues in underlying libraries, the :func:`renpy.input` function
+and ``input`` displayable are now documented as not supporting IME-based
+(non-alphabetic) input on Android.
+
+On iOS, OpenGL ES calls are translated to the native Metal graphics system.
+Doing this should improve compatibility with recent Apple devices, and
+fixes problems running applications under the iOS simulator on Apple
+Silicon-based devices.
+
 
 Steam, Steam Deck, and Epic Games Store
 ---------------------------------------
@@ -191,6 +204,7 @@ The steam deck also causes Ren'Py to enable the "steam_deck",
 
 We have a `Ren'Py on Steam Deck Guide <https://github.com/renpy/steam-deck-guide>`_
 to help you get your game certified on that platform. Thanks go to Valve for
+supplying a Steam Deck to test on.
 
 The "Windows, Mac, and Linux for Markets" distribution has been changed to
 no longer prefix the contents of the zip file created with the directory
@@ -198,15 +212,17 @@ name and version number, meaning it's no longer required to update launch
 configurations with each release to Steam. This may require a one-time
 update to the launch configuration.
 
+Ren'Py now includes support for being launched by the Epic Games Store,
 by ignoring various command line arguments supplied by EGS.
 
-        if renpy.variant("small"):
+
 Visual Studio Code
 ------------------
 
 Ren'Py now includes support for downloading and using Visual Studio Code,
 including downloading the `Ren'Py Language <https://marketplace.visualstudio.com/items?itemName=LuqueDaniel.languague-renpy>`_
-            gui.text_size = gui.scale(30)
+extension.
+
 The Ren'Py Language extension provides rich support for Ren'Py, including
 syntax highlighting, snippets, completion, color previews, documentation,
 go to definition, function signatures, error diagnostics, outlining,
@@ -264,12 +280,17 @@ has been added to the documentation.
 The ``pause 0`` statement has been special-cased to always display one frame,
 and is the only way to guarantee at least one frame is displayed. Since 6.99.13,
 Ren'Py has been trying various methods to guarantee single frame display, and
-            # ...
+many of which led to visual glitches.
+
 When an ATL image is used as one of the children of an image button, its
 shown time begins each time it is shown.
 
 The default for the :tpref:`crop_relative` transform property has been changed to
 True.
+
+The ``function`` statement will now block execution only if producing a delay,
+which allows transforms using it to behave more naturally when catching up with
+an inherited timebase.
 
 Image Gallery
 -------------
@@ -311,6 +332,7 @@ Call Screen and Roll Forward
 The roll forward feature has been disabled by default in the ``call screen``
 statement, as it's unsafe and confusing in the general case. The problem is
 that the only side-effect of a screen that roll-forward preserves is the return
+value of the screen, or the jump location if a screen jumps. Actions with other
 side effects, like changing variables or playing music, were not preserved
 through a roll forwards.
 
@@ -319,8 +341,8 @@ on a per-screen basis by enabling the new `roll_forward` property on the
 screen. If all screens in your game support roll forward, it can be enabled
 with the new :var:`config.call_screen_roll_forward` variable.
 
-Features
---------
+New Features
+------------
 
 The ``show screen``, ``hide screen`` and ``call screen`` statements now
 take an ``expression`` modifier, which allows a Python expression to supply
@@ -391,51 +413,25 @@ The new :var:`config.at_exit_callbacks` functions are called when the game
 quits. This is intended to allow the game to save additional data created
 by the developer.
 
-means that it will only take a single click to launch the game.
+The :var:`config.default_attribute_callbacks` variable allows a game to
 specify default attributes for a tag that are used when other attributes
 do not conflict.
 
-motion.
 
-Ren'Py used to support a very old system (the ``ui`` system) allowing the
-creation of screens as Python functions. In the current state of Ren'Py, this
-system is obsolete and very much under-optimized. While old games using it will
-continue to be supported, the system has been removed from the documentation.
-
-Due to issues in underlying libraries, the :func:`renpy.input` function
-and ``input`` displayable are now documented as not supporting IME-based
-(non-alphabetic) input on Android.
-
-Rare issues with a displayable being replaced by a displayable of a different
-type are now guarded against. This should only occur when a game is updated
+Other Changes
 -------------
 
+It is now possible to copy from :func:`renpy.input` with ctrl-C, and paste
+with ctrl-V. When text input is displayed, ctrl will no longer cause skipping
+to happen.
+
 The :func:`renpy.file` function has been renamed to :func:`renpy.open_file`,
+with the old named retained. It has also gained an `encoding` parameter to
 open the file with an encoding.
 
-An issue that could cause images to not display in some cases (when a displayable
-was invalidated) has been fixed.
-
-Starting a movie no longer causes paused sounds to unpause. 
-
-AudioData objects are no longer stored in the persistent data. Such objects 
-are removed when persistent data is loaded, if present. 
-
-Platform variables like renpy.android and renpy.ios are now set to follow 
-the emulated platform, when Ren'Py is emulating ios or android.
-
-When in the iOS and Android emulator, the mobile rollback side is used.
-
-Ren'Py will now always run an `unhovered` action when a displayable (or its 
-replacement) remains shown, and the focus changes. Previously, the unhovered
-action would not run when the loss of focus was caused by showing a second
-screen.
-
-When :var:`config.log` is true, the selected choice is now logged properly.
-
-The new :func:`gui.variant` function makes it possible to work around 
-an issue in the standard gui where the calling :func:`gui.rebuild` would cause 
-gui variants to reset. 
+The :propref:`focus_mask` style property now defaults to None for drag displayables.
+This improves performance, but means that the displayable can be dragged by
+transparent pixels.
 
 When adding files to the audio namespace, Ren'Py now scans for flac
 files.
@@ -513,24 +509,10 @@ where:
 * u is present if this is an unofficial build.
 
 
-The web browser now checks for progressively downloaded images once per
-frame, allowing images to be loaded into the middle of an animation.
+.. _renpy-7.4.11:
 
-Live2D now uses saturation arithmetic to combine motion fadeins and fadeouts, 
-such that if the fadein contributes 80% of a parameter value, and the 
-fadeout contributes 20% of the value, 100% of the value comes from 
-the two motions. (Previously, the fadein and fadeout were applied 
-independently, such that together, the fadein and fadeout would 
-contribute 84% of the value, with the remaining 16% taken from 
-the default.)
-When fading from one sequence of Live2D motions to another, the original
-sequence ends when a motion fades out. 
-
-When preserving screens in the old state for a transition, the later_at_list 
-and camera lists are taken from the old state, preventing unexpected changes. 
-
-The :tpref:`gl_depth` property now causes Ren'Py to use GL_LEQUALS, 
-which more closely matches Ren'Py's semantics.
+7.4.11
+======
 
 The gui.variant Decorator
 -------------------------
@@ -563,12 +545,10 @@ as a replacement for::
             gui.name_text_size = gui.scale(36)
             # ...
 
+Which only runs once, and lost the changes if the gui was ever rebuilt.
 
-
-Ren'Py now cleans out the android build directories when producing a Android 
-App Bundle (AAB) file, preventing problems that might be caused when packaging 
-multiple games, or a single game where files are deleted.
-
+Fixes
+-----
 
 The new :var:`config.mouse_focus_clickthrough` variable determines if clicks that
 cause the game window to be focused will be processed normally.

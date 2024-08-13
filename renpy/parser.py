@@ -22,7 +22,7 @@
 # This module contains the parser for the Ren'Py script language. It's
 # called when parsing is necessary, and creates an AST from the script.
 
-from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals # type: ignore
 from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
 
@@ -196,6 +196,11 @@ def elide_filename(fn):
 
 def unelide_filename(fn):
     fn = os.path.normpath(fn)
+
+    if renpy.config.alternate_unelide_path is not None:
+        fn0 = os.path.join(renpy.config.alternate_unelide_path, fn)
+        if os.path.exists(fn0):
+            return fn0
 
     fn1 = os.path.join(renpy.config.basedir, fn)
     if os.path.exists(fn1):
@@ -499,7 +504,7 @@ def group_logical_lines(lines):
                 depth = line_depth
 
             if depth != line_depth:
-                raise ParseError(filename, number, "indentation mismatch.")
+                raise ParseError(filename, number, "Indentation mismatch.")
 
             # Advance to the next line.
             i += 1
@@ -510,6 +515,13 @@ def group_logical_lines(lines):
             rv.append((filename, number, rest, block))
 
         return rv, i
+
+    if lines:
+
+        filename, number, text = lines[0]
+
+        if depth_split(text)[0] != 0:
+            raise ParseError(filename, number, "Unexpected indentation at start of file.")
 
     return gll_core(0, 0)[0]
 
