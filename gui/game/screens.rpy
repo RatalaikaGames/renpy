@@ -160,6 +160,7 @@ style say_dialogue:
     xsize gui.dialogue_width
     ypos gui.dialogue_ypos
 
+    adjust_spacing False
 
 ## Input screen ################################################################
 ##
@@ -177,7 +178,7 @@ screen input(prompt):
     window:
 
         vbox:
-            xalign gui.dialogue_text_xalign
+            xanchor gui.dialogue_text_xalign
             xpos gui.dialogue_xpos
             xsize gui.dialogue_width
             ypos gui.dialogue_ypos
@@ -210,11 +211,6 @@ screen choice(items):
     vbox:
         for i in items:
             textbutton i.caption action i.action
-
-
-## When this is true, menu captions will be spoken by the narrator. When
-## false, menu captions will be displayed as empty buttons.
-define config.narrator_menu = True
 
 
 style choice_vbox is vbox
@@ -732,13 +728,6 @@ screen preferences():
                         textbutton _("Fullscreen") action Preference("display", "fullscreen")
 
                 vbox:
-                    style_prefix "radio"
-                    label _("Rollback Side")
-                    textbutton _("Disable") action Preference("rollback side", "disable")
-                    textbutton _("Left") action Preference("rollback side", "left")
-                    textbutton _("Right") action Preference("rollback side", "right")
-
-                vbox:
                     style_prefix "check"
                     label _("Skip")
                     textbutton _("Unseen Text") action Preference("skip", "toggle")
@@ -919,15 +908,13 @@ screen history():
 ## This determines what tags are allowed to be displayed on the history
 ## screen.
 
-define gui.history_allow_tags = { "alt", "noalt" }
+define gui.history_allow_tags = { "alt", "noalt", "rt", "rb", "art" }
 
 
 style history_window is empty
 
 style history_name is gui_label
 style history_name_text is gui_label_text
-style history_text is gui_text
-
 style history_text is gui_text
 
 style history_label is gui_label
@@ -1318,7 +1305,7 @@ screen nvl(dialogue, items=None):
             use nvl_dialogue(dialogue)
 
         ## Displays the menu, if given. The menu may be displayed incorrectly
-        ## if config.narrator_menu is set to True, as it is above.
+        ## if config.narrator_menu is set to True.
         for i in items:
 
             textbutton i.caption:

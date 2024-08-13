@@ -9,8 +9,22 @@ support can be used for many things, from setting a flag to creating
 new displayables. This chapter covers ways in which Ren'Py scripts can
 directly invoke Python, through the various Python statements.
 
-Ren'Py currently supports Python 2.7, though we strongly recommend you write
-Python that runs in Python 2 and Python 3.
+Ren'Py 7 supports Python 2.7. Ren'Py 8 supports Python 3.9.
+
+.. note::
+    If you know Python, you'll be able to take advantage of that. However,
+    not everything you know about Python will apply directly. For example.
+    Python packages that don't ship with Ren'Py may not work inside Ren'Py.
+
+    There are also some Python constructs that work, but may lead to problems
+    in saving. Please read the :doc:`save, load, and rollback <save_load_rollback>` page
+    for more details, especially the section on :ref:`what can't be saved <cant-save>`.
+    (You need to be careful with files, sockets, iterators, task, futures, and
+    generators.)
+
+    Finally, while many statements have Python equivalents, those equivalents
+    can be inferior. For example, Ren'Py can predict the ``show`` statement,
+    and load images early, but it can't predict the :func:`renpy.show` function.
 
 .. _python-statement:
 
@@ -104,7 +118,7 @@ persistent data. ::
 A priority number can be placed between ``init`` and ``python``. When
 a priority is not given, 0 is used. Init statements are run in priority
 order, from lowest to highest. Init statements of the same priority are run in
-Unicode order by filename, and then from top to bottom within a file.
+Unicode order by filepath, and then from top to bottom within a file.
 
 To avoid conflict with Ren'Py, creators should use priorities in the
 range -999 to 999. Priorities of less than 0 are generally used for
@@ -117,6 +131,16 @@ Variables that have their value set in an init python block are not
 saved, loaded, and do not participate in rollback. Therefore, these
 variables should not be changed after init is over.
 
+.. warning::
+
+    Classes created within Ren'py and inheriting nothing or explicitly
+    inheriting ``object``, and subclasses of these classes, do not support
+    ``__slots__``. Trying to do so will misbehave with rollback in older
+    versions of renpy, and will raise errors in newer versions.
+
+    In order to have slotted classes, creators should explicitly subclass
+    ``python_object``, which doesn't support rollback.
+
 .. _define-statement:
 
 Define Statement
@@ -127,13 +151,14 @@ For example::
 
     define e = Character("Eileen")
 
-is equivalent to::
+is equivalent (except for some advantages, see below) to::
 
     init python:
         e = Character("Eileen")
 
 The define statement can take an optional named store (see below), by
-prepending it to the variable name with a dot. For example::
+prepending it to the variable name with a dot. The store is created
+if it doesn't already exist. For example::
 
     define character.e = Character("Eileen")
 
@@ -152,11 +177,15 @@ or operator is generally used to concatenate sets. For example::
 One advantage of using the define statement is that it records the
 filename and line number at which the assignment occurred, and
 makes that available to the navigation feature of the launcher.
+Another advantage is that :ref:`lint` will be able to check defined
+values, for example by detecting whether the same variable is defined
+twice, potentially with different values.
 
 Variables that are defined using the define statement are treated
-as constant, are not saved or loaded, and should not be changed.
-(Ren'Py does not enforce this, but will produce undefined behavior
-when this is not the case.)
+as constant, are not saved or loaded, and should not be changed. This
+constant-nature extends to objects reachable through these variables
+through field access and subscripting. (Ren'Py does not enforce this,
+but will produce undefined behavior when this is not the case.)
 
 .. _default-statement:
 
@@ -181,10 +210,13 @@ When the variable ``points`` is not defined at game load, it's equivalent to::
         $ points = 0
 
 The default statement can take an optional named store (see below), by
-prepending it to the variable name with a dot. For example::
+prepending it to the variable name with a dot. The store is created
+if it doesn't already exist. For example::
 
     default schedule.day = 0
 
+As for the ``define`` statement, :ref:`lint` offers checks and optimizations
+related to the ``default`` statement.
 
 .. _init-offset-statement:
 
@@ -242,7 +274,7 @@ character and a flag. Other things that are usually placed into
 the store are transitions and transforms.
 
 Names beginning with underscore ``_`` are reserved for Ren'Py's
-internal use. In addition, there is an :ref:`Index of Reserved Names <reserved-names>`.
+internal use. In addition, there is an :doc:`Index of Reserved Names <reserved>`.
 
 
 Other Named Stores
@@ -257,6 +289,8 @@ Named stores can be accessed by supplying the ``in`` clause to
 store. Each store corresponds to a Python module. The default store is
 ``store``, while a named store is accessed as ``store.name``. Names in
 the modules can be imported using the Python ``from`` statement.
+Named stores can be created using ``init python in`` blocks, or using
+default or define statements.
 
 For example::
 
@@ -270,13 +304,21 @@ For example::
             serial_number += 1
             return serial_number
 
+    default character_stats.chloe_substore.friends = {"Eileen",}
+
     label start:
         $ serial = mystore.serial()
 
+        if "Lucy" in character_stats.chloe_substore.friends:
+            chloe "Lucy is my friend !"
+        elif character_stats.chloe_substore.friends:
+            chloe "I have friends, but Lucy is not one of them."
+
 
 Named stores participate in save, load, and rollback in the same way
-that the default store does. The defined statement can be used to
-define names in a named store.
+that the default store does. Special namespaces such as ``persistent``,
+``config``, ``renpy``... do not and never have supported substore creation
+within them.
 
 
 .. _python-modules:

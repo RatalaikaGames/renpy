@@ -132,22 +132,30 @@ init -1500 python in _console:
     class PrettyRepr(Repr):
         _ellipsis = str("...")
 
-        def repr_str(self, x, level):
+        def _repr_bytes(self, x, level):
             s = repr(x)
             if len(s) > self.maxstring:
                 i = max(0, (self.maxstring - 3) // 2)
                 s = s[:i] + self._ellipsis + s[len(s) - i:]
             return s
 
-        def repr_unicode(self, x, level):
+        def _repr_string(self, x, level):
             s = repr(x)
-            if not persistent._console_unicode_escaping:
-                s = s.decode("unicode-escape", errors="replace")
+
+            if persistent._console_unicode_escaping:
+                s = s.encode("ascii", "backslashreplace").decode("utf-8")
 
             if len(s) > self.maxstring:
                 i = max(0, (self.maxstring - 3) // 2)
                 s = s[:i] + self._ellipsis + s[len(s) - i:]
             return s
+
+        if PY2:
+            repr_str = _repr_bytes
+            repr_unicode = _repr_string
+        else:
+            repr_bytes = _repr_bytes
+            repr_str = _repr_string
 
         def repr_tuple(self, x, level):
             if not x: return "()"
@@ -198,8 +206,8 @@ init -1500 python in _console:
 
             if level <= 0: return "{...}"
 
-            iter_keys = self._to_shorted_list(x, self.maxdict, sort=True)
-            iter_x = self._make_pretty_items(x, iter_keys)
+            iter_keys = self._to_shorted_list(x, self.maxdict, sort=PY2)
+            iter_x = self._make_pretty_items(x, iter_keys, '{', '}')
             return self._repr_iterable(iter_x, level, '{', '}')
 
         repr_RevertableDict = repr_dict
@@ -213,8 +221,8 @@ init -1500 python in _console:
 
             if level <= 0: return left + "...})"
 
-            iter_keys = self._to_shorted_list(x, self.maxdict, sort=True)
-            iter_x = self._make_pretty_items(x, iter_keys)
+            iter_keys = self._to_shorted_list(x, self.maxdict, sort=PY2)
+            iter_x = self._make_pretty_items(x, iter_keys, left, '})')
             return self._repr_iterable(iter_x, level, left, '})')
 
         def repr_OrderedDict(self, x, level):
@@ -223,8 +231,32 @@ init -1500 python in _console:
             if level <= 0: return "OrderedDict({...})"
 
             iter_keys = self._to_shorted_list(x, self.maxdict)
-            iter_x = self._make_pretty_items(x, iter_keys)
+            iter_x = self._make_pretty_items(x, iter_keys, 'OrderedDict({', '})')
             return self._repr_iterable(iter_x, level, 'OrderedDict({', '})')
+
+        def repr_dict_keys(self, x, level):
+            if not x: return "dict_keys([])"
+
+            if level <= 0: return "dict_keys([...])"
+
+            iter_x = self._to_shorted_list(x, self.maxdict)
+            return self._repr_iterable(iter_x, level, 'dict_keys([', '])')
+
+        def repr_dict_values(self, x, level):
+            if not x: return "dict_values([])"
+
+            if level <= 0: return "dict_values([...])"
+
+            iter_x = self._to_shorted_list(x, self.maxdict)
+            return self._repr_iterable(iter_x, level, 'dict_values([', '])')
+
+        def repr_dict_items(self, x, level):
+            if not x: return "dict_items([])"
+
+            if level <= 0: return "dict_items([...])"
+
+            iter_x = self._to_shorted_list(x, self.maxdict)
+            return self._repr_iterable(iter_x, level, 'dict_items([', '])')
 
 
         class _PrettyDictItem(object):
@@ -245,7 +277,7 @@ init -1500 python in _console:
                 value = self.repr1(x.value, newlevel)
             return "%s: %s" % (key, value)
 
-        def _make_pretty_items(self, x, iter_keys):
+        def _make_pretty_items(self, x, iter_keys, left, right):
             ellipsis = self._ellipsis
             DictItem = self._PrettyDictItem
             iter_x = []
@@ -253,7 +285,7 @@ init -1500 python in _console:
                 if key is ellipsis:
                     di = ellipsis
                 elif x[key] is x:
-                    di = DictItem(key, ellipsis)
+                    di = DictItem(key, '%s%s%s' % (left, ellipsis, right))
                 else:
                     di = DictItem(key, x[key])
                 iter_x.append(di)
@@ -416,7 +448,7 @@ init -1500 python in _console:
     stdio_lines = _list()
 
     def stdout_line(l):
-        if not config.developer:
+        if not (config.console or config.developer):
             return
 
         stdio_lines.append((False, l))
@@ -425,7 +457,7 @@ init -1500 python in _console:
             stdio_lines.pop(0)
 
     def stderr_line(l):
-        if not config.developer:
+        if not (config.console or config.developer):
             return
 
         stdio_lines.append((True, l))
@@ -667,7 +699,7 @@ init -1500 python in _console:
                 # Try to eval it.
                 try:
                     renpy.python.py_compile(code, 'eval')
-                except:
+                except Exception:
                     pass
                 else:
                     result = renpy.python.py_eval(code)
@@ -682,7 +714,7 @@ init -1500 python in _console:
                 # Try to exec it.
                 try:
                     renpy.python.py_compile(code, "exec")
-                except:
+                except Exception:
                     if error is None:
                         error = self.format_exception()
                 else:
@@ -697,7 +729,7 @@ init -1500 python in _console:
             except renpy.game.CONTROL_EXCEPTIONS:
                 raise
 
-            except:
+            except Exception:
                 import traceback
                 traceback.print_exc()
 
@@ -723,7 +755,7 @@ init -1500 python in _console:
                 renpy.rollback(checkpoints=0, force=True, greedy=False, current_label="_console")
             except renpy.game.CONTROL_EXCEPTIONS:
                 raise
-            except:
+            except Exception:
                 pass
 
         renpy.call_in_new_context("_console")
@@ -745,7 +777,7 @@ init -1500 python in _console:
         return wrap
 
     @command(_("help: show this help"))
-    def help(l):
+    def help(l, doc_generate=False):
         keys = list(config.console_commands.keys())
         keys.sort()
 
@@ -758,7 +790,7 @@ init -1500 python in _console:
 
             rv += " " + __(f.help) + "\n"
 
-        if console.can_renpy():
+        if console.can_renpy() or doc_generate:
             rv += __(" <renpy script statement>: run the statement\n")
 
         rv += __(" <python expression or statement>: run the expression or statement")
@@ -780,6 +812,28 @@ init -1500 python in _console:
     @command()
     def quit(l):
         renpy.jump("_console_return")
+
+    @command(_("stack: print the return stack"))
+    def stack(l):
+        def fmt(entry):
+            if isinstance(entry, str):
+                name = entry
+            else:
+                name = "(anonymous)"
+            try:
+                lkp = renpy.game.script.lookup(entry)
+                filename, linenumber = lkp.filename, lkp.linenumber
+            except Exception:
+                filename = linenumber = "?"
+            return "{} <{}:{}>".format(name, filename, linenumber)
+
+        rs = renpy.exports.get_return_stack()
+        if rs:
+            print("Return stack (most recent call last):\n")
+            for entry in rs:
+                print(fmt(entry))
+        else:
+            print("The return stack is empty.")
 
     @command(_("load <slot>: loads the game from slot"))
     def load(l):
@@ -829,7 +883,9 @@ init -1500 python in _console:
         renpy.python.py_compile(expr, 'eval')
 
         traced_expressions.append(expr)
-        renpy.show_screen("_trace_screen")
+
+        if "_trace_screen" not in config.always_shown_screens:
+            config.always_shown_screens.append("_trace_screen")
 
     def renpy_watch(expr):
         """
@@ -860,9 +916,20 @@ init -1500 python in _console:
         if expr in traced_expressions:
             traced_expressions.remove(expr)
 
+        if not traced_expressions:
+
+            if "_trace_screen" in renpy.config.always_shown_screens:
+                config.always_shown_screens.remove("_trace_screen")
+
+            renpy.hide_screen("_trace_screen")
+
+
     def watch_after_load():
-        if config.developer and traced_expressions:
-            renpy.show_screen("_trace_screen")
+        try:
+            if config.developer and traced_expressions:
+                renpy.show_screen("_trace_screen")
+        except Exception:
+            pass
 
     config.after_load_callbacks.append(watch_after_load)
 
@@ -886,6 +953,10 @@ init -1500 python in _console:
     @command(_("unwatchall: stop watching all expressions"))
     def unwatchall(l):
         traced_expressions[:] = [ ]
+
+        if "_trace_screen" in renpy.config.always_shown_screens:
+            config.always_shown_screens.remove("_trace_screen")
+
         renpy.hide_screen("_trace_screen")
 
     def renpy_unwatchall():
@@ -1018,7 +1089,7 @@ screen _console:
 
 default _console.traced_expressions = _console.TracedExpressionsList()
 
-screen _trace_screen:
+screen _trace_screen():
 
     zorder 1501
 
@@ -1037,7 +1108,7 @@ screen _trace_screen:
 
                         try:
                             value = repr_func(eval(expr))
-                        except:
+                        except Exception:
                             value = "eval failed"
                         del repr_func
 
@@ -1060,3 +1131,6 @@ label _console:
 
 label _console_return:
     return
+
+init -1010 python:
+    config.per_frame_screens.append("_trace_screen")

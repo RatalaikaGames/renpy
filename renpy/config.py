@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -24,7 +24,10 @@
 # methods that perform standard tasks, like the say and menu methods.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
+
+#from typing import Optional, List
+
 
 import collections
 import os
@@ -226,8 +229,10 @@ font_replacement_map = { }
 
 # A callback that is called when a with statement (but not
 # the with clause of a say or menu statement) executes. If not None,
-# it's called with a single argument, the transition supplied to the
-# with clause.
+# it's called with a two arguments, the transition supplied to the
+# with clause and the transition it is paired with. The latter is
+# None except in the case of the implicit None transition produced
+# by inline with statements.
 with_callback = None
 
 # The framerate limit, in frames per second.
@@ -302,6 +307,9 @@ character_callback = None
 # Character callback list.
 all_character_callbacks = [ ]
 
+# Should autsave be enabled?
+has_autosave = True
+
 # The number of autosave slots we have.
 autosave_slots = 10
 
@@ -343,7 +351,7 @@ auto_save_extra_info = None
 
 # The directory (underneath ~/RenPy, ~/Library/RenPy, or ~/.renpy) where the
 # game-specific data is saved.
-save_directory = None
+save_directory = None # type: str
 
 # These are used to deal with the case where a picture is missing.
 missing_scene = None
@@ -386,11 +394,11 @@ quit_action = None
 screenshot_crop = None
 
 # Various directories.
-gamedir = None
-basedir = None
-renpy_base = None
-commondir = None
-logdir = None # Where log and error files go.
+gamedir = ""
+basedir = ""
+renpy_base = ""
+commondir = None  # type: Optional[str]
+logdir = None  # type: Optional[str] # Where log and error files go.
 
 # Should we enable OpenGL mode?
 gl_enable = True
@@ -425,10 +433,10 @@ predict_screens = True
 choice_screen_chosen = True
 
 # Should the narrator speak menu labels?
-narrator_menu = False
+narrator_menu = True
 
 # A list of screen variants to use.
-variants = [ None ]
+variants = [ None ] # type: List
 
 # A function from (auto_parameter, variant) -> displayable.
 imagemap_auto_function = None
@@ -665,6 +673,9 @@ pass_joystick_events = False
 # A list of screens that should be shown when the overlay is enabled.
 overlay_screens = [ ]
 
+# A list of screens that should always be shown.
+always_shown_screens = [ ]
+
 # A map from tag to the default layer that tag should be displayed on.
 tag_layer = { }
 
@@ -822,6 +833,9 @@ say_arguments_callback = None
 # Should we show an atl interpolation for one frame?
 atl_one_frame = True
 
+# Should function statements in ATL block fast-forward?
+atl_function_always_blocks = False
+
 # Should we keep the show layer state?
 keep_show_layer_state = True
 
@@ -967,6 +981,9 @@ ftfont_vertical_extent_scale = { }
 
 # The default shader.
 default_shader = "renpy.geometry"
+
+# If True, the volume of a channel is shown when it is mute.
+preserve_volume_when_muted = False
 
 
 def say_attribute_transition_callback(*args):
@@ -1147,6 +1164,10 @@ gl_lod_bias = -.5
 # of that tag.
 adjust_attributes = { }
 
+# A dictionary from a tag to a function that produces default attributes
+# for that tag.
+default_attribute_callbacks = { }
+
 # The compatibility mode for who/what substitutions.
 # 0: ver < 7.4
 # 1: 7.4 <= ver <= 7.4.4
@@ -1158,6 +1179,9 @@ compat_viewport_minimum = False
 
 # Should webaudio be used on the web platform?
 webaudio = True
+
+# A list of audio types that are required to fully enable webaudio.
+webaudio_required_types = [ "audio/ogg", "audio/mp3" ]
 
 # If not None, a callback that can be used to alter audio filenames.
 audio_filename_callback = None
@@ -1181,7 +1205,7 @@ raise_image_exceptions = True
 relative_transform_size = True
 
 # Should tts of layers be from front to back?
-tts_front_to_back = True
+tts_front_to_back = False
 
 # Should live2d loading be logged to log.txt
 log_live2d_loading = False
@@ -1192,9 +1216,58 @@ debug_prediction = False
 # Should mouse events that cause a window to gain focus be passed through.
 mouse_focus_clickthrough = False
 
-# Should the current displayable always run its unfocus handler, even when 
 # focus is taken away by default.
 always_unfocus = True
+
+# A list of callbacks that are called when the game exits.
+at_exit_callbacks = [ ]
+
+# Should character statistics be included in the lint report
+# when config.developer is true?
+lint_character_statistics = True
+
+# Should vpgrids be allowed to raise under/overfull errors ?
+allow_unfull_vpgrids = False
+
+# Should vbox and hbox skip non-visible children?
+box_skip = True
+
+# What should be the default value of the crop_relative tpref ?
+crop_relative_default = True
+
+# A list of functions that are called when a character is called with
+# interact=False
+nointeract_callbacks = [ ]
+
+# Should the full size of the screen be offered to a LayeredImage?
+layeredimage_offer_screen = True
+
+# The default for rolling forward in call screen.
+call_screen_roll_forward = False
+
+# A function that's called with ("", interact=False) when no window is
+# displayed during a choice menu.
+choice_empty_window = None
+
+# The encoding that's used by renpy.open_file by default. False
+# means to use binary mode.
+open_file_encoding = os.environ.get("RENPY_OPEN_FILE_ENCODING", False)
+
+# A callback that can modify the gl2 window flags.
+gl2_modify_window_flags = None
+
+# Should the skip key (ctrl) function during text?
+skip_during_text = False
+
+# An alternate path to use when uneliding. (Mostly used by the launcher to enable
+# the style inspector.)
+alternate_unelide_path = None
+
+# Should modal block pause?
+modal_blocks_pause = True
+
+# Should modal block timers?
+modal_blocks_timer = False
 
 del os
 del collections
@@ -1203,7 +1276,7 @@ del collections
 def init():
 
 
-    import renpy.display
+    import renpy
 
     global scene
     scene = renpy.exports.scene
@@ -1226,7 +1299,7 @@ def init():
         (r'\.(mp2|mp3|ogg|opus|wav)$', renpy.audio.audio.autoreload),
         ]
 
-    from renpy.uguu import GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_DST_COLOR, GL_MIN, GL_MAX
+    from renpy.uguu import GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_DST_COLOR, GL_MIN, GL_MAX # type: ignore
 
     gl_blend_func["normal"] = (GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_FUNC_ADD, GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
     gl_blend_func["add"] = (GL_FUNC_ADD, GL_ONE, GL_ONE, GL_FUNC_ADD, GL_ZERO, GL_ONE)

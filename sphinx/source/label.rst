@@ -1,5 +1,9 @@
+.. _labels-control-flow:
+
 Labels & Control Flow
 =====================
+
+.. _label-statement:
 
 Label Statement
 ---------------
@@ -39,7 +43,7 @@ declared in or by their full name, consisting of global and local name parts: ::
         jump global_label.local_name
 
 The label statement may take an optional list of parameters. These parameters
-are processed as described in :pep:`3102`, with two exceptions:
+are processed as described in :pep:`570`, with two exceptions:
 
 * The values of default parameters are evaluated at call time.
 * The variables are dynamically, rather than lexically, scoped.
@@ -89,7 +93,14 @@ explicitly given.
 If the optional ``from`` clause is present, it has the effect of including a label
 statement with the given name as the statement immediately following the call
 statement. An explicit label helps to ensure that saved games with return
-stacks can return to the proper place when loaded on a changed script. ::
+stacks can return to the proper place when loaded on a changed script.
+
+The call statement may take arguments, which are processed as described in :pep:`448`.
+
+When using a call expression with an arguments list, the ``pass`` keyword must
+be inserted between the expression and the arguments list. Otherwise, the
+arguments list will be parsed as part of the expression, not as part of the
+call. ::
 
     label start:
 
@@ -112,12 +123,16 @@ stacks can return to the proper place when loaded on a changed script. ::
 
         return
 
-The call statement may take arguments, which are processed as described in :pep:`3102`.
+.. warning::
 
-When using a call expression with an arguments list, the ``pass`` keyword must
-be inserted between the expression and the arguments list. Otherwise, the
-arguments list will be parsed as part of the expression, not as part of the
-call.
+    Publishing a game without ``from`` clauses for each ``call`` statement
+    is dangerous, if you intend to publish updates of the game later on.
+    If no such clauses are added, and if you edit the file containing the
+    ``call`` instruction, there is a potential risk for saves made inside
+    the called label to become broken.
+
+    Using the "Add from clauses to calls" option when building a game's
+    distribution can solve that issue.
 
 .. _return-statement:
 
@@ -146,7 +161,10 @@ The following labels are used by Ren'Py:
 
 ``after_load``
     If it exists, this label is called when a game is loaded. It can be
-    use to fix data when the game is updated.
+    use to fix data when the game is updated. If data is changed by this
+    label, :func:`renpy.block_rollback` should be called to prevent those
+    changes from being reverted inf the player rolls back past the load
+    point.
 
 ``splashscreen``
     If it exists, this label is called when the game is first run, before

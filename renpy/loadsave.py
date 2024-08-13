@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -22,8 +22,11 @@
 # This file contains functions that load and save the game state.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
+
 from future.utils import reraise
+
+#from typing import Optional
 
 import io
 import zipfile
@@ -35,34 +38,9 @@ import os
 import sys
 
 import renpy
-
-import pickle
-import renpy.compat.pickle as cPickle
-
 from json import dumps as json_dumps
 
-# Dump that chooses which pickle to use:
-
-
-def dump(o, f):
-    if renpy.config.use_cpickle:
-        cPickle.dump(o, f, cPickle.HIGHEST_PROTOCOL)
-    else:
-        pickle.dump(o, f, pickle.HIGHEST_PROTOCOL)
-
-
-def dumps(o):
-    if renpy.config.use_cpickle:
-        return cPickle.dumps(o, cPickle.HIGHEST_PROTOCOL)
-    else:
-        return pickle.dumps(o, pickle.HIGHEST_PROTOCOL)
-
-
-def loads(s):
-    if renpy.config.use_cpickle:
-        return cPickle.loads(s)
-    else:
-        return pickle.loads(s)
+from renpy.compat.pickle import dump, loads
 
 
 # This is used as a quick and dirty way of versioning savegame
@@ -91,9 +69,9 @@ def save_dump(roots, log):
 
         elif isinstance(o, basestring):
             if len(o) <= 80:
-                o_repr = repr(o).encode("utf-8")
+                o_repr = repr(o)
             else:
-                o_repr = repr(o[:80] + "...").encode("utf-8")
+                o_repr = repr(o[:80]) + "..."
 
         elif isinstance(o, (tuple, list)):
             o_repr = "<" + o.__class__.__name__ + ">"
@@ -102,7 +80,11 @@ def save_dump(roots, log):
             o_repr = "<" + o.__class__.__name__ + ">"
 
         elif isinstance(o, types.MethodType):
-            o_repr = "<method {0}.{1}>".format(o.__self__.__class__.__name__, o.__func__.__name__)
+
+            if PY2:
+                o_repr = "<method {0}.{1}>".format(o.__self__.__class__.__name__, o.__func__.__name__) # type: ignore
+            else:
+                o_repr = "<method {0}.{1}>".format(o.__self__.__class__.__name__, o.__name__)
 
         elif isinstance(o, object):
             o_repr = "<{0}>".format(type(o).__name__)
@@ -137,7 +119,7 @@ def save_dump(roots, log):
 
             try:
                 reduction = o.__reduce_ex__(2)
-            except:
+            except Exception:
                 reduction = [ ]
                 o_repr = "BAD REDUCTION " + o_repr
 
@@ -161,11 +143,11 @@ def save_dump(roots, log):
             else:
                 size += visit(state, path + ".__getstate__()")
 
-            for i, oo in enumerate(get(3, [])):
+            for i, oo in enumerate(get(3, [])): # type: ignore
                 size += 1
                 size += visit(oo, "{0}[{1}]".format(path, i))
 
-            for i in get(4, []):
+            for i in get(4, []): # type: ignore
 
                 if len(i) != 2:
                     continue
@@ -227,14 +209,14 @@ def find_bad_reduction(roots, log):
 
             try:
                 reduction = o.__reduce_ex__(2)
-            except:
+            except Exception:
 
                 import copy
 
                 try:
                     copy.copy(o)
                     return None
-                except:
+                except Exception:
                     pass
 
                 return "{} = {}".format(path, repr(o)[:160])
@@ -294,7 +276,7 @@ def find_bad_reduction(roots, log):
 class SaveAbort(Exception):
     pass
 
-
+         
 class SaveRecord(object):
     """
     This is passed to the save locations. It contains the information that
@@ -353,8 +335,14 @@ def save(slotname, extra_info='', mutate_flag=False):
     :func:`renpy.take_screenshot` should be called before this function.
     """
 
+    # Update persistent file, if needed. This is for the web and mobile
+    # platforms, to make sure the persistent file is updated whenever the
+    # game is saved. (But not auto-saved, for performance reasons.)
+    if not mutate_flag:
+        renpy.persistent.update()
+
     if mutate_flag:
-        renpy.python.mutate_flag = False
+        renpy.revertable.mutate_flag = False
 
     roots = renpy.game.log.freeze(None)
 
@@ -364,7 +352,7 @@ def save(slotname, extra_info='', mutate_flag=False):
     logf = io.BytesIO()
     try:
         dump((roots, renpy.game.log), logf)
-    except:
+    except Exception:
 
         t, e, tb = sys.exc_info()
 
@@ -373,7 +361,7 @@ def save(slotname, extra_info='', mutate_flag=False):
 
         try:
             bad = find_bad_reduction(roots, renpy.game.log)
-        except:
+        except Exception:
             reraise(t, e, tb)
 
         if bad is None:
@@ -384,7 +372,7 @@ def save(slotname, extra_info='', mutate_flag=False):
 
         reraise(t, e, tb)
 
-    if mutate_flag and renpy.python.mutate_flag:
+    if mutate_flag and renpy.revertable.mutate_flag:
         raise SaveAbort()
 
     screenshot = renpy.game.interface.get_screenshot()
@@ -435,7 +423,7 @@ def autosave_thread_function(take_screenshot):
             save("auto-1", mutate_flag=True, extra_info=extra_info)
             autosave_counter = 0
 
-        except:
+        except Exception:
             pass
 
     finally:
@@ -449,6 +437,9 @@ def autosave():
     global autosave_counter
 
     if not renpy.config.autosave_frequency:
+        return
+
+    if not renpy.config.has_autosave:
         return
 
     # That is, autosave is running.
@@ -491,6 +482,9 @@ def force_autosave(take_screenshot=False, block=False):
     """
 
     global autosave_thread
+
+    if not renpy.config.has_autosave:
+        return
 
     if renpy.game.after_rollback or renpy.exports.in_rollback():
         return
@@ -559,7 +553,7 @@ def scan_saved_game(slotname):
     if json is None:
         return None
 
-    extra_info = json.get("_save_name", "")
+    extra_info = json.get("_save_name", "") # type: ignore
 
     screenshot = c.get_screenshot()
 
@@ -610,7 +604,7 @@ def list_saved_games(regexp=r'.', fast=False):
         if c is not None:
             json = c.get_json()
             if json is not None:
-                extra_info = json.get("_save_name", "")
+                extra_info = json.get("_save_name", "") # type: ignore
             else:
                 extra_info = ""
 
@@ -673,7 +667,7 @@ def newest_slot(regexp=None):
             if mtime is None:
                 continue
 
-            if mtime >= max_mtime:
+            if mtime >= max_mtime: # type: ignore
                 rv = i
                 max_mtime = mtime
 
@@ -697,6 +691,10 @@ def slot_json(slotname):
 
     Returns the json information for `slotname`, or None if the slot is
     empty.
+
+    Much like the ``d`` argument to the :var:`config.save_json_callback`
+    function, it will be returned as a dictionary. More precisely, the
+    dictionary will contain the same data as it did when the game was saved.
     """
 
     return get_cache(slotname).get_json()

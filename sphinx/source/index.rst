@@ -84,10 +84,11 @@ Tools
 -----
 
 .. toctree::
-    :maxdepth: 1
+   :maxdepth: 1
 
-    developer_tools
-    director
+   launcher
+   developer_tools
+   director
 
 Other Functionality
 -------------------
@@ -151,6 +152,7 @@ End-User Documentation
 .. toctree::
    :maxdepth: 1
 
+   security
    problems
    environment_variables
    self_voicing
@@ -197,4 +199,3 @@ Example Scripts
 
    thequestion
    thequestion_nvl
-

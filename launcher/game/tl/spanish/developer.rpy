@@ -126,7 +126,7 @@
 
     # 00console.rpy:255
     old "Press <esc> to exit console. Type help for help.\n"
-    new "Presiona <esc> para salir de la consola. Escribe 'help' para la ayuda.\n"
+    new "Presiona <esc> para salir de la consola. Escribe 'help' para obtener ayuda.\n"
 
     # 00console.rpy:259
     old "Ren'Py script enabled."
@@ -162,15 +162,15 @@
 
     # 00console.rpy:533
     old "load <slot>: loads the game from slot"
-    new "load <slot>: carga el juego desde el 'slot'"
+    new "load <slot>: carga el juego desde la ranura"
 
     # 00console.rpy:546
     old "save <slot>: saves the game in slot"
-    new "save <slot>: graba el juego en el 'slot'"
+    new "save <slot>: guarda el juego en la ranura"
 
     # 00console.rpy:557
     old "reload: reloads the game, refreshing the scripts"
-    new "reload: recarga el juego, actualizando los scripts"
+    new "reload: recarga el juego, actualizando los 'scripts'"
 
     # 00console.rpy:565
     old "watch <expression>: watch a python expression"
@@ -207,3 +207,7 @@
     # renpy/common/00console.rpy:929
     old "unescape: Disables escaping of unicode symbols in unicode strings and print it as is (default)."
     new "unescape: Desactiva el escape de símbolos Unicode en cadenas Unicode y lo imprime como está (predeterminado)."
+
+    # renpy/common/00console.rpy:784
+    old "stack: print the return stack"
+    new "stack: imprime la pila de retorno"

@@ -47,7 +47,7 @@ translate piglatin styles_6189ee12:
     # e "While the default GUI uses variables to provide styles with sensible defaults, if you're replacing the GUI or creating your own screens, you'll need to learn about styles yourself."
     e "Hileway hetay efaultday Uigay usesay ariablesvay otay rovidepay ylesstay ithway ensiblesay efaultsday, ifay ouyay'eray eplacingray hetay Uigay oray reatingcay ouryay ownay creenssay, ouyay'llay eednay otay earnlay aboutay ylesstay ourselfyay."
 
-# game/indepth_style.rpy:66
+# game/indepth_style.rpy:68
 translate piglatin styles_menu_a4a6913e:
 
     # e "What would you like to know about styles?" nointeract
@@ -146,8 +146,8 @@ translate piglatin style_basics_6007040b:
 # game/indepth_style.rpy:196
 translate piglatin style_basics_35db9a05:
 
-    # e "In a screen, a displayable can be given the style_prefix property to give a prefix for that displayable and it's children."
-    e "Niay aay creensay, aay isplayableday ancay ebay ivengay hetay yle_prefixstay ropertypay otay ivegay aay refixpay orfay hattay isplayableday anday itay'say ildrenchay."
+    # e "In a screen, a displayable can be given the style_prefix property to give a prefix for that displayable and its children." id style_basics_35db9a05
+    e "Niay aay creensay, aay isplayableday ancay ebay ivengay hetay yle_prefixstay ropertypay otay ivegay aay refixpay orfay hattay isplayableday anday itsay ildrenchay." id style_basics_35db9a05
 
 # game/indepth_style.rpy:198
 translate piglatin style_basics_422a87f7:
@@ -422,14 +422,14 @@ translate piglatin style_button_255a18e4:
 # game/indepth_style.rpy:593
 translate piglatin style_button_9b53ce93:
 
-    # e "I'll start off with this style, which everything will inherit from. To make our lives easier, it inherits from the default style, rather than the customizes buttons in this game's GUI."
-    e "Iay'llay artstay offay ithway histay ylestay, hichway everythingay illway inheritay omfray. Otay akemay ouray iveslay easieray, itay inheritsay omfray hetay efaultday ylestay, atherray hantay hetay ustomizescay uttonsbay inay histay amegay'say Uigay."
+    # e "I'll start off with this style, which everything will inherit from. To make our lives easier, it inherits from the default style, rather than the customized buttons in this game's GUI." id style_button_9b53ce93
+    e "Iay'llay artstay offay ithway histay ylestay, hichway everythingay illway inheritay omfray. Otay akemay ouray iveslay easieray, itay inheritsay omfray hetay efaultday ylestay, atherray hantay hetay ustomizedcay uttonsbay inay histay amegay'say Uigay." id style_button_9b53ce93
 
 # game/indepth_style.rpy:595
 translate piglatin style_button_aece4a8c:
 
-    # e "The first style property is the background property. It adds a background to the a button or window. Since this is a button, idle and hover variants choose different backgrounds when focused."
-    e "Hetay irstfay ylestay ropertypay isay hetay ackgroundbay ropertypay. Tiay addsay aay ackgroundbay otay hetay aay uttonbay oray indowway. Incesay histay isay aay uttonbay, idleay anday overhay ariantsvay oosechay ifferentday ackgroundsbay henway ocusedfay."
+    # e "The first style property is the background property. It adds a background to a button or window. Since this is a button, idle and hover variants choose different backgrounds when focused." id style_button_aece4a8c
+    e "Hetay irstfay ylestay ropertypay isay hetay ackgroundbay ropertypay. Tiay addsay aay ackgroundbay otay aay uttonbay oray indowway. Incesay histay isay aay uttonbay, idleay anday overhay ariantsvay oosechay ifferentday ackgroundsbay henway ocusedfay." id style_button_aece4a8c
 
 # game/indepth_style.rpy:597
 translate piglatin style_button_b969f04a:
@@ -542,8 +542,8 @@ translate piglatin style_bar_cca67222:
 # game/indepth_style.rpy:817
 translate piglatin style_bar_7d361bac:
 
-    # e "The thumb style property gives a thumb image, that's placed based on the bars value. In the case of a scrollbar, it's resized if possible."
-    e "Hetay humbtay ylestay ropertypay ivesgay aay humbtay imageay, hattay'say acedplay asedbay onay hetay arsbay aluevay. Niay hetay asecay ofay aay crollbarsay, itay'say esizedray ifay ossiblepay."
+    # e "The thumb style property gives a thumb image, that's placed based on the bar's value. In the case of a scrollbar, it's resized if possible." id style_bar_7d361bac
+    e "Hetay humbtay ylestay ropertypay ivesgay aay humbtay imageay, hattay'say acedplay asedbay onay hetay arbay'say aluevay. Niay hetay asecay ofay aay crollbarsay, itay'say esizedray ifay ossiblepay." id style_bar_7d361bac
 
 # game/indepth_style.rpy:819
 translate piglatin style_bar_b6dfb61b:

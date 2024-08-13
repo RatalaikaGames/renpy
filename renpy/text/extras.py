@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -22,11 +22,13 @@
 # Other text-related things.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-import renpy.text
 
-from renpy.text.textsupport import TAG, PARAGRAPH
+
+import renpy
+
+from renpy.text.textsupport import DISPLAYABLE, PARAGRAPH, TAG
 import renpy.text.textsupport as textsupport
 
 # A list of text tags, mapping from the text tag prefix to if it
@@ -179,6 +181,9 @@ def filter_alt_text(s):
 
     tokens = textsupport.tokenize(str(s))
 
+    if renpy.config.custom_text_tags or renpy.config.self_closing_custom_text_tags or (renpy.config.replace_text is not None):
+        tokens = renpy.text.text.Text.apply_custom_tags(tokens)
+
     rv = [ ]
 
     active = set()
@@ -201,7 +206,8 @@ def filter_alt_text(s):
                     active.discard(kind)
                 else:
                     active.add(kind)
-
+        elif tokentype == DISPLAYABLE:
+            rv.append(text._tts())
         else:
             if not active:
                 rv.append(text)
@@ -230,6 +236,9 @@ class ParameterizedText(object):
     different style properties. For example, one can write::
 
         image top_text = ParameterizedText(xalign=0.5, yalign=0.0)
+
+        label start:
+            show top_text "This text is shown at the center-top of the screen"
     """
 
     def __init__(self, style='default', **properties):

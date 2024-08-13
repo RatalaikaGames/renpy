@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -41,7 +41,7 @@ init python:
         try:
             if (language is None) or os.path.exists(os.path.join(config.renpy_base, "templates", language)):
                 legacy = True
-        except:
+        except Exception:
             pass
 
         if new and legacy:
@@ -74,11 +74,11 @@ label new_project:
                 cancel=Jump("front_page"),
                 )
         else:
-            new_project_language = (_preferences.language or "english").title()
+            new_project_language = __("{#language name and font}")
             gui_kind = "new_gui_project"
 
             # When translating this, feel free to replace [new_project_language] with the translation of your language.
-            interface.info(_("You will be creating an [new_project_language]{#this substitution may be localized} language project. Change the launcher language in preferences to create a project in another language."))
+            interface.info(_("You will be creating an [new_project_language]{#this substitution may be localized} language project. Change the launcher language in preferences to create a project in another language."), cancel=Jump("front_page"))
 
     python:
         project_name = ""

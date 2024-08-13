@@ -1,5 +1,3 @@
-.. _statement-equivalents:
-
 =====================
 Statement Equivalents
 =====================
@@ -9,12 +7,16 @@ a Python equivalent. This usually consists of a Python function,
 but may also consist of a pattern of Python calls that perform an action
 equivalent to the statement.
 
+Note that using statement equivalents in lieu of the original statements
+usually removes any possible :ref:`lint` checks and prediction
+optimizations, making your game less easily checkable and possibly less
+fluid.
 
 Dialogue
 ========
 
-The Ren'Py say statement is equivalent to calling the character object
-as a function. The following displays the same line twice::
+The Ren'Py :ref:`say-statement` is equivalent to calling the character
+object as a function. The following displays the same line twice::
 
     e "Hello, world."
 
@@ -63,7 +65,7 @@ arguments to character calls.
 Choice Menus
 ============
 
-The menu statement has an equivalent Python function.
+The :doc:`menu statement <menus>` has an equivalent Python function.
 
 .. include:: inc/se_menu
 
@@ -72,14 +74,14 @@ Displaying Images
 =================
 
 The image, scene, show, and hide statements each have an equivalent
-Python function.
+Python function (see :doc:`displaying_images` for the original statements).
 
 .. include:: inc/se_images
 
 Transitions
 ===========
 
-The equivalent of the with statement is the :func:`renpy.with_statement`
+The equivalent of the :ref:`with-statement` is the :func:`renpy.with_statement`
 function.
 
 .. include:: inc/se_with
@@ -87,13 +89,20 @@ function.
 Jump
 ====
 
-The equivalent of the jump statement is the :func:`renpy.jump` function.
+The equivalent of the :ref:`jump-statement` is the :func:`renpy.jump` function.
 
 .. include:: inc/se_jump
 
 Call
 ====
 
-The equivalent of the call statement is the :func:`renpy.call` function.
+The equivalent of the :ref:`call-statement` is the :func:`renpy.call` function.
 
 .. include:: inc/se_call
+
+Pause
+=====
+
+The equivalent of the :ref:`pause-statement` is the :func:`renpy.pause` function.
+
+.. include:: inc/se_pause

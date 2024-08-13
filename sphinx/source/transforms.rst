@@ -39,12 +39,12 @@ each default transform will position an image. ::
                 |                                                           |
                 |                                                           |
                 |                                                           |
-   offscreenleft|                          truecenter                       |offscreenright
+                |                          truecenter                       |
                 |                                                           |
                 |                                                           |
                 |                                                           |
                 |                                                           |
-                |left                   center, default                right|
+   offscreenleft|left                   center, default                right|offscreenright
                 +-----------------------------------------------------------+
 
 The offscreenleft and offscreenright transforms position images off the
@@ -108,5 +108,5 @@ Creator-Defined Transforms
 ==========================
 
 A creator can define a transform using the
-:ref:`animation and transformation language <atl>`, or the
+:doc:`animation and transformation language <atl>`, or the
 :class:`Transform` function.

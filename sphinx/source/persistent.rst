@@ -12,7 +12,11 @@ Persistent data is loaded when Ren'Py starts, and when Ren'Py detects
 that the persistent data has been updated on disk.
 
 The persistent object is special in that an access to an undefined field will
-have a None value, rather than causing an exception.
+have a None value, rather than causing an exception. If something other than
+None is to be the default of a persistent value,
+the :ref:`default <default-statement>` statement should be used::
+
+    default persistent.main_background = "princess_not_saved"
 
 An example use of persistent is the creation of an unlockable image gallery.
 This is done by storing a flag in persistent that determines if the gallery has
@@ -86,16 +90,17 @@ Multi-Game persistence is a feature that lets you share information between
 Ren'Py games. This may be useful if you plan to make a series of games, and
 want to have them share information.
 
-To use multipersistent data, a MultiPersistent object must be created inside
-an ``init`` block. The user can then update this object, and save it to disk by
+To use multipersistent data, a MultiPersistent object must be created at init
+time (preferably using ``define``).
+The user can then update this object, and save it to disk by
 calling its save method. Undefined fields default to None. To ensure the
-object can be loaded again, we suggest not assigning the object instances
-of user-defined types.
+object can be loaded again in a different game, we strongly advise against
+storing instances of user-defined types in the object.
 
 .. class:: MultiPersistent(key, save_on_quit=False)
 
-    Creates a new ``MultiPersistent`` object. This should only be called inside an
-    ``init`` block, and it returns a new ``MultiPersistent`` with the given key.
+    Creates a new ``MultiPersistent`` object. This should only be called at init time,
+    and it returns a new ``MultiPersistent`` with the given key.
 
     `key`
         The key used to to access the multipersistent data. Games using the
@@ -112,8 +117,7 @@ of user-defined types.
 
 As an example, take the first part of a two-part game::
 
-    init python:
-        mp = MultiPersistent("demo.renpy.org")
+    define mp = MultiPersistent("demo.renpy.org")
 
     label start:
 
@@ -128,8 +132,7 @@ As an example, take the first part of a two-part game::
 
 And the second part::
 
-    init python:
-        mp = MultiPersistent("demo.renpy.org")
+    define mp = MultiPersistent("demo.renpy.org")
 
     label start:
 

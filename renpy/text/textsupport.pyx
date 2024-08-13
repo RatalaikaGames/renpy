@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -44,6 +44,24 @@ cdef class Glyph:
         else:
             return "<Glyph {0!r} vs={1} time={2}>".format(self.character, self.variation, self.time)
 
+    _types = """
+        x: int
+        y: int
+        delta_x_offset : int
+        character : int
+        variation : int
+        split : int
+        ruby : int
+        ascent : int
+        line_spacing : int
+        width : float
+        advance : float
+        time : float
+        hyperlink : int
+        draw : bool
+        """
+
+
 cdef class Line:
 
     def __init__(self, int y, int height, list glyphs):
@@ -54,6 +72,15 @@ cdef class Line:
 
     def __repr__(self):
         return "<Line y={0}, height={1}>".format(self.y, self.height)
+
+    _types = """
+        y : int
+        height : int
+        glyphs : list[Glyph]
+        max_time : float
+        eop : bool
+        """
+
 
 # The maximum width of text we lay out. This should be quite a bit smaller
 # than the maximum SDL surface width. (16384)
@@ -77,7 +104,7 @@ def tokenize(unicode s):
     cdef int TAG_STATE = 3
     cdef int state = TEXT_STATE
 
-    cdef Py_UNICODE c
+    cdef Py_UCS4 c
     cdef unicode buf = u''
 
     cdef list rv = [ ]
@@ -159,6 +186,25 @@ def annotate_western(list glyphs):
             g.split = SPLIT_INSTEAD
         else:
             g.split = SPLIT_NONE
+
+
+def annotate_anywhere(list glyphs):
+    """
+    allow all characters without ruby to be used for linebreaking.
+    """
+
+    cdef Glyph g
+
+    for g in glyphs:
+
+        # Don't split ruby.
+        if g.ruby != RUBY_NONE:
+            continue
+
+        if g.character == 0x20 or g.character == 0x200b:
+            g.split = SPLIT_INSTEAD
+        else:
+            g.split = SPLIT_BEFORE
 
 # This is used to tailor the unicode break algorithm. If a character in this
 # array is mapped to not
@@ -989,4 +1035,4 @@ def offset_glyphs(list glyphs, short x, short y):
         g.x += x
         g.y += y
 
-
+"This exists to force a recompile for Ren'Py 8.0.2 and 7.5.2."

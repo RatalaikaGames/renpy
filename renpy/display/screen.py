@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -20,9 +20,11 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-import renpy.display
+#from typing import Optional
+
+import renpy
 import time
 import collections
 
@@ -200,6 +202,7 @@ class Screen(renpy.object.Object):
     """
 
     sensitive = "True"
+    roll_forward = None
 
     def __init__(self,
                  name,
@@ -212,7 +215,8 @@ class Screen(renpy.object.Object):
                  parameters=False,
                  location=None,
                  layer="screens",
-                 sensitive="True"):
+                 sensitive="True",
+                 roll_forward=None):
 
         # The name of this screen.
         if isinstance(name, basestring):
@@ -264,6 +268,11 @@ class Screen(renpy.object.Object):
         # Is this screen sensitive? An expression.
         self.sensitive = sensitive
 
+        # Does the screen participate in roll_forward when used with the
+        # call screen statement? True for yes, False for no, None for
+        # config.call_screen_roll_forward.
+        self.roll_forward = roll_forward
+
         global prepared
         global analyzed
 
@@ -299,6 +308,7 @@ class ScreenDisplayable(renpy.display.layout.Container):
         'children',
         'transforms',
         'widgets',
+        'base_widgets',
         'old_widgets',
         'hidden_widgets',
         'old_transforms',
@@ -321,6 +331,7 @@ class ScreenDisplayable(renpy.display.layout.Container):
         self.base_widgets = { }
         self.old_widgets = None
         self.old_transforms = None
+        self.old_transfers = False
         self.hidden_widgets = { }
         self.cache = { }
         self.phase = UPDATE
@@ -352,10 +363,10 @@ class ScreenDisplayable(renpy.display.layout.Container):
 
         # The scope associated with this statement. This is passed in
         # as keyword arguments to the displayable.
-        self.scope = renpy.python.RevertableDict(scope)
+        self.scope = renpy.revertable.RevertableDict(scope)
 
         # The child associated with this screen.
-        self.child = None
+        self.child = None # type: renpy.display.layout.MultiBox|None
 
         # Widget properties given to this screen the last time it was
         # shown.
@@ -426,8 +437,12 @@ class ScreenDisplayable(renpy.display.layout.Container):
         # The lifecycle phase we are in - one of PREDICT, SHOW, UPDATE, or HIDE.
         self.phase = PREDICT
 
-    def __unicode__(self):
-        return "Screen {}".format(" ".join(self.screen_name))
+    @property
+    def name(self):
+        return " ".join(self.screen_name)
+
+    def _repr_info(self):
+        return self.name
 
     def visit(self):
         return [ self.child ]
@@ -454,6 +469,9 @@ class ScreenDisplayable(renpy.display.layout.Container):
 
         hiding = (self.phase == OLD) or (self.phase == HIDE)
 
+        if self.modal and not callable(self.modal):
+            renpy.display.focus.mark_modal()
+
         try:
             push_current_screen(self)
 
@@ -462,8 +480,6 @@ class ScreenDisplayable(renpy.display.layout.Container):
         finally:
             pop_current_screen()
 
-        if self.modal and not callable(self.modal):
-            raise renpy.display.layout.IgnoreLayers()
 
     def copy(self):
         rv = ScreenDisplayable(self.screen, self.tag, self.layer, self.widget_properties, self.scope, **self.properties)
@@ -570,13 +586,13 @@ class ScreenDisplayable(renpy.display.layout.Container):
         updated_screens.add(self)
 
         if self.screen is None:
-            self.child = renpy.display.layout.Null()
+            self.child = renpy.display.layout.MultiBox(layout='fixed')
             return { }
 
         # Do not update if restarting or hiding.
         if self.restarting or (self.phase == HIDE) or (self.phase == OLD):
             if not self.child:
-                self.child = renpy.display.layout.Null()
+                self.child = renpy.display.layout.MultiBox(layout='fixed')
 
             return self.widgets
 
@@ -668,7 +684,7 @@ class ScreenDisplayable(renpy.display.layout.Container):
             end = time.time()
 
             if self.profile.time:
-                profile_log.write("* %.2f ms", 1000 * (end - start))
+                profile_log.write("* %.2f ms", 1000 * (end - start)) # type: ignore
 
             if self.profile.debug:
                 profile_log.write("\n")
@@ -749,7 +765,12 @@ class ScreenDisplayable(renpy.display.layout.Container):
 
 # The name of the screen that is currently being displayed, or
 # None if no screen is being currently displayed.
-_current_screen = None
+_current_screen = None # type: renpy.display.screen.ScreenDisplayable|None
+
+if 0 == 1:
+    _current_screen = renpy.display.screen.ScreenDisplayable() # type: ignore # fake out typing.
+else:
+    _current_screen = None
 
 # The stack of old current screens.
 current_screen_stack = [ ]
@@ -965,7 +986,7 @@ def prepare_screens():
 
 def define_screen(*args, **kwargs):
     """
-    :doc: screens
+    :undocumented:
     :args: (name, function, modal="False", zorder="0", tag=None, variant=None)
 
     Defines a screen with `name`, which should be a string.
@@ -1026,8 +1047,8 @@ def get_screen(name, layer=None):
     """
     :doc: screens
 
-    Returns the ScreenDisplayable with the given `name` on layer. `name`
-    is first interpreted as a tag name, and then a screen name. If the
+    Returns the ScreenDisplayable with the given `name` on `layer`. `name`
+    is first interpreted as a tag name, and then as a screen name. If the
     screen is not showing, returns None.
 
     This can also take a list of names, in which case the first screen
@@ -1040,6 +1061,20 @@ def get_screen(name, layer=None):
         else:
             text "The say screen is hidden."
 
+    The ScreenDisplayable objects returned by this function have the
+    following documented fields:
+
+    .. attribute:: ScreenDisplayable.layer
+
+        The layer the screen is being displayed on.
+
+    .. attribute:: ScreenDisplayable.name
+
+        The name of the screen.
+
+    .. attribute:: ScreenDisplayable.zorder
+
+        The zorder the screen is being displayed at.
     """
 
     if layer is None:
@@ -1080,6 +1115,25 @@ def has_screen(name):
         return True
     else:
         return False
+
+
+def get_screen_roll_forward(screen_name):
+    """
+    Given a screeen name, determines if roll forward is enable for the
+    screen.
+    """
+
+    name = screen_name
+
+    if not isinstance(name, tuple):
+        name = tuple(name.split())
+
+    screen = get_screen_variant(name[0])
+
+    if screen is None:
+        raise Exception("Screen %s is not known.\n" % (name[0],))
+
+    return screen.roll_forward
 
 
 def show_screen(_screen_name, *_args, **kwargs):
@@ -1221,7 +1275,7 @@ def predict_screen(_screen_name, *_args, **kwargs):
 
         renpy.display.predict.displayable(d)
 
-    except:
+    except Exception:
         if renpy.config.debug_prediction:
             import traceback
 
@@ -1290,7 +1344,17 @@ def use_screen(_screen_name, *_args, **kwargs):
     _current_screen.old_transfers = old_transfers
 
 
-def current_screen():
+def current_screen(): # type: () -> ScreenDisplayable|None
+    """
+    :doc: screens
+    :name: renpy.current_screen
+
+    Returns the ScreenDisplayable corresponding to the screen currently being
+    updated, rendered, or processed.
+
+    See :func:`get_screen` for documented fields on ScreenDisplayable.
+    """
+
     return _current_screen
 
 
@@ -1409,6 +1473,11 @@ def show_overlay_screens(suppress_overlay):
         for i in renpy.config.overlay_screens:
             if get_screen(i) is not None:
                 hide_screen(i)
+
+    for i in renpy.config.always_shown_screens:
+        if get_screen(i) is None:
+            show_screen(i)
+
 
 
 def per_frame():

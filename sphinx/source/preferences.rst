@@ -1,5 +1,3 @@
-.. _preference-variables:
-
 ====================
 Preference Variables
 ====================
@@ -11,7 +9,7 @@ to set the default value of a preference.
 
 For example::
 
-    default preferences.text_cps = 142
+    default preferences.text_cps = 40
 
 sets the default text speed to 40 characters per second. The default statement
 only sets the value of the preference if the default has changed since the
@@ -22,14 +20,14 @@ can then change it again.)
 
 .. var:: preferences.afm_after_click = False
 
-    If True, auto-forward move will be continue after a click. If False,
-    a click will end auto-forward mode. The equivalent of the
-    "auto-forward after click" preference.
+    If True, the auto-forward mode will be continued after a click. If False,
+    a click will end auto-forward mode. The equivalent of the "auto-forward
+    after click" preference.
 
 .. var:: preferences.afm_enable = False
 
     If True, auto-forward move is enabled, otherwise False. The equivalent
-    of the "auto-forward" preference.
+    of the "auto-forward time" preference.
 
 .. var:: preferences.afm_time = 15
 
@@ -94,7 +92,7 @@ can then change it again.)
     This determines if tearing (True) or frameskip (False) is the preferred
     behavior when the game can't keep up with its intended framerate.
 
-.. var:: preferences.mouse_move = False
+.. var:: preferences.mouse_move = True
 
     If True, the mouse will automatically move to a selected button. If False,
     it will not. The equivalent of the "automatic mouse move" preference.
@@ -153,8 +151,17 @@ can then change it again.)
     :var:`config.mouse` value. If False, it will not. The equivalent of the
     "system cursor" preference.
 
+.. var:: preferences.audio_when_minimized = True
+
+    If False, audio channels are stopped when the window is minimized,
+    and resumed when the window is restored. If True, window state will
+    have no effect on audio.
+    The equivalent of the "audio when minimized" preference.
+
 Mixer Functions
 ---------------
+
+See :ref:`volume` for more details about mixers.
 
 .. function:: preferences.set_volume(mixer, volume)
 
@@ -162,21 +169,23 @@ Mixer Functions
 
     `mixer`
         A string giving the name of the mixer. By default, the mixers
-        are "music", "sfx", and "voice".
+        are "main", "music", "sfx", and "voice" ("main" being a special mixer).
 
     `volume`
         A number between 0.0 and 1.0.
 
-.. function:: preferences.get_volume(mixer):
+.. function:: preferences.get_volume(mixer)
 
     Gets the volume for `mixer`. If the mixer is muted, this returns
     0.0.
 
-.. function:: preferences.set_mute(mixer, mute):
+.. function:: preferences.set_mute(mixer, mute)
 
     Sets the mute setting for `mixer`. If `mute` is true, the mixer is muted.
+    If `mute` is false, the mixer's volume is reverted to its value before
+    it was muted.
 
-.. function:: preferences.get_mute(mute):
+.. function:: preferences.get_mute(mixer)
 
     Gets the mute setting for `mixer`.
 
@@ -189,17 +198,17 @@ These config variables set the default volumes on various audio mixers.
 .. var:: config.default_music_volume = 1.0
 
     The default volume of the music mixer, which is used for the music and
-    movie audio channels. This should be a number between 0.0 and 1.0,
+    movie channels. This should be a number between 0.0 and 1.0,
     with 1.0 being full volume.
 
 .. var:: config.default_sfx_volume = 1.0
 
-    The default volume of the sfx mixer, which is used for the sound
-    audio channel. This should be a number between 0.0 and 1.0,
+    The default volume of the sfx mixer, which is used for the sound and
+    audio channels. This should be a number between 0.0 and 1.0,
     with 1.0 being full volume.
 
 .. var:: config.default_voice_volume = 1.0
 
     The default volume of the voice mixer, which is used for the voice
-    audio channel (And hence the voice statement, auto-voice, etc.).
+    channel (and hence the voice statement, auto-voice, etc.).
     This should be a number between 0.0 and 1.0, with 1.0 being full volume.

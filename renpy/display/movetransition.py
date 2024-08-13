@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -25,13 +25,13 @@
 # so that prediction of images works.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-import renpy.display
+
+
+import renpy
 
 # Utility function used by MoveTransition et al.
-
-
 def position(d):
 
     xpos, ypos, xanchor, yanchor, _xoffset, _yoffset, _subpixel = d.get_placement()
@@ -235,7 +235,7 @@ def OldMoveTransition(delay, old_widget=None, new_widget=None, factory=None, ent
 
         def merge(sle, d):
             rv = sle.copy()
-            rv.show_time = 0
+            rv.show_time = None
             rv.displayable = d
             return rv
 
@@ -419,10 +419,10 @@ class MoveInterpolate(renpy.display.core.Displayable):
 
     def get_placement(self):
 
-        if self.st > self.delay:
+        if self.st > self.delay: # type: ignore
             done = 1.0
         else:
-            done = self.st / self.delay
+            done = self.st / self.delay # type: ignore
 
         if self.time_warp is not None:
             done = self.time_warp(done)
@@ -537,7 +537,7 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
 
                 rv.raw_layers[layer] = d
                 rv.layers[layer] = f
-                rv.add(f)
+                rv.add(f, True, True)
 
             return rv
 

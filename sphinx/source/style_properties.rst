@@ -1,10 +1,8 @@
-.. _style-properties:
-
 ================
 Style Properties
 ================
 
-The style properties associated with :ref:`styles <styles>` control how
+The style properties associated with :doc:`styles <style>` control how
 Displayables are shown. Style properties can be either given without a prefix,
 in which case they apply to all states of the displayable, or with a prefix
 that limits the property to a limited number of states.
@@ -243,7 +241,7 @@ or on the screen when not inside a layout.
 .. style-property:: alt string or None
 
     Alternative text used for the displayable when self-voicing is
-    enabled. See the :ref:`self voicing <self-voicing>` section for
+    enabled. See the :doc:`self voicing <self_voicing>` section for
     more information.
 
 .. style-property:: xpos position
@@ -319,10 +317,10 @@ or on the screen when not inside a layout.
     Gives a number of pixels that are added to the vertical position
     computed using ypos and yalign.
 
-.. style-property:: offset tuple of (position, position)
+.. style-property:: offset tuple of (int, int)
 
-    Equivalent to setting xpos to the first component of the tuple,
-    and ypos to the second component of the tuple.
+    Equivalent to setting xoffset to the first component of the tuple,
+    and yoffset to the second component of the tuple.
 
 .. style-property:: xmaximum int
 
@@ -536,6 +534,9 @@ Text Style Properties
         Allows breaking only at whitespace. Suitable for most
         languages.
 
+    ``"anywhere"``
+        Allows breaking at anywhere without ruby.
+
     The three Japanese breaking modes are taken from the `CSS3 text module <http://www.w3.org/TR/css3-text/#line-break>`_.
 
 .. style-property:: layout string
@@ -604,28 +605,32 @@ Text Style Properties
 
     will always produce a 1 pixel-wide border.
 
-    Outlines only work with TrueType fonts.
+    Outlines only work with TrueType fonts. Outlines only work when applied
+    to an entire Text displayable. They do not work when applied to a hyperlink,
+    text tag, or other method that applies to only a portion of the text.
 
 .. style-property:: outline_scaling string
 
-    This determines how outline suzels or offsets are scaled when the
+    This determines how outline sizes and offsets are scaled when the
     window is scaled.
 
-    ``"step"``
-        The default, best for text that uses thin outlines and text
-        that uses multiple outlines. The window scaling factor is
-        rounded down to an integer and applied ot the outline size
-        and offsets.
-
-        The window scaling factor is always above 1.
-
     ``"linear"``
-        Best for text with thick outlines. The window scaling factor
+        The default, best for text with thick outlines. The window scaling factor
         is applied to the outline size, and then rounded to an integer.
-        This looks better for thick outlines, but small outlines can
-        dissappear.
+        This looks better for thick outlines, but concentric outlines of similar
+        thickness may become indistinguishable.
 
         The resulting width is always at least 1 pixel.
+
+    ``"step"``
+        Best for text that uses thin outlines and text
+        that uses multiple outlines. The window scaling factor is
+        rounded down to an integer and applied to the outline size
+        and offsets. This ensures that multiple outlines all scale together,
+        without risk of eclipsing one another, but this yields different visual
+        results depending on the size of the game window.
+
+        The window scaling factor is always above 1.
 
 .. style-property:: rest_indent int
 
@@ -774,7 +779,7 @@ buttons. :ref:`margin-style-properties` also form part of this group.
 .. style-property:: modal boolean or callable
 
     If True, the window is treated as modal. Events will stop propagating
-    through layers whole the mouse is within the window or button. If False,
+    through layers while the mouse is within the window or button. If False,
     the window is not modal.
 
     This may also be a callable function. If it is, the function is called
@@ -802,7 +807,8 @@ Button Style Properties
 
 .. style-property:: activate_sound string
 
-    A sound that is played when the button is clicked.
+    A sound that is played when the button is activated (clicked). This is also
+    played when a bar or drag is activated.
 
 .. style-property:: mouse string
 
@@ -826,8 +832,13 @@ Button Style Properties
         If a non-displayable callable (like a function, method, or object
         with a ``__call__`` method) is given, the function is called with two
         arguments, the x and y offset from the top-left corner of the
-        displayable. If the function returns True, the displayable is
-        focused.
+        displayable.
+
+        If the function returns a callable when called with two arguments,
+        that callable is called with four arguments - the x and y offsets, and the width
+        and height of the displayable.
+
+        If the function returns true, the displayable is focused.
     None
         If none is given, the entire button can be focused.
 
@@ -1044,6 +1055,8 @@ These are used with the fixed layout.
     (the fixed will fill the screen vertically). Similarly, "height" only changes
     the height.
 
+    The position of the child is ignored for the purpose of fit\_first.
+
 .. style-property:: xfit boolean
 
     If True, the size of the fixed layout is shrunk horizontally to match the
@@ -1053,6 +1066,11 @@ These are used with the fixed layout.
 
     If True, the size of the fixed layout is shrunk vertically to match the
     bottom side of the bottommost child of the fixed.
+
+When these properties are supplied, the children of the fixed are first
+offered the full area given to the fixed by its parent. Once the size
+and placement of the children are known, these properties are then used
+to select the size of the fixed.
 
 
 .. _margin-style-properties:

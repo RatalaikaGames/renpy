@@ -5,7 +5,7 @@ Text
 ====
 
 Ren'Py contains several ways of displaying text. The :ref:`say <say-statement>`
-and :ref:`menu <menu-statement>` statements are primarily concerned with the
+and :doc:`menu <menus>` statements are primarily concerned with the
 display of text to the user. The user interface often contains text,
 displayed using the :ref:`text <sl-text>`, :ref:`textbutton <sl-textbutton>`,
 and :ref:`label <sl-label>` screen language statements. These
@@ -53,6 +53,11 @@ ensure that their writing is not accidentally misinterpreted by the engine.
 
     \\\\ (backslash-backslash)
         Includes a backslash character in the text.
+
+    \\% (backslash-percent)
+        Includes a protected percent character in the text. It's also
+        possible to write it as %% : both protections will result in a
+        single % character being written in the end.
 
 [ (left bracket)
     The left bracket is used to introduce interpolation of a value
@@ -124,13 +129,30 @@ text to lowercase. The ``!c`` flag acts only on the first character,
 capitalizing it. These flags may be combined, for example using ``!cl`` would
 capitalize the first character, and force the remaining text to lowercase.
 
+It should be noted that:
+
+- the order in which the flags are given does not change the result : ``!cl``
+  will do just the same as ``!lc``.
+- Supplementarly exclamation marks will be ignored, and will not circumvent
+  the previuous rule : ``!l!c`` will do the same as ``!c!l`` or ``!cl``.
+
+The transformations are done in the following order:
+
+#. ``r``/``s`` (repr or str)
+#. ``t`` (translate)
+#. ``i`` (recursive interpolation)
+#. ``q`` (quoting)
+#. ``u`` (uppercase)
+#. ``l`` (lowercase)
+#. ``c`` (capitalize)
+
 
 Styling and Text Tags
 =====================
 
 In Ren'Py, text gains style information in two ways. The first is from
 the style that is applied to the entire block of text. Please see the
-section about the :ref:`style system <styles>` for more details,
+section about the :doc:`style system <style>` for more details,
 especially the section on :ref:`text style properties <text-style-properties>`.
 
 The second way is through text tags. Text tags are suitable for
@@ -223,7 +245,7 @@ Tags that apply to all text are:
 
 .. text-tag:: alt
 
-    The alt tag prevents text from being rendered, while still maing the
+    The alt tag prevents text from being rendered, while still making the
     text available for the text-to-speech system. ::
 
        g "Good to see you! {image=heart.png}{alt}heart{/alt}"
@@ -457,7 +479,7 @@ Text tags that only apply to dialogue are:
         """
 
 
-It's also possible to define :ref:`custom text tags <custom-text-tags>` using
+It's also possible to define :doc:`custom text tags <custom_text_tags>` using
 Python.
 
 Style Text Tags
@@ -566,7 +588,8 @@ changes are required:
 3. The :propref:`yoffset` of the new style should be set, in order to move the
    ruby text above the baseline.
 4. The :propref:`ruby_style` field of the text's style should be set
-   to the newly-created style.
+   to the newly-created style, for both dialogue and history window
+   text.
 
 For example::
 
@@ -575,6 +598,10 @@ For example::
         yoffset -20
 
     style say_dialogue:
+        line_leading 12
+        ruby_style style.ruby_style
+
+    style history_text:
         line_leading 12
         ruby_style style.ruby_style
 
@@ -686,7 +713,7 @@ For example::
 Text Displayables
 =================
 
-Text can also be used as a :ref:`displayable <displayables>`, which
+Text can also be used as a :doc:`displayable <displayables>`, which
 allows you to apply transforms to text, displaying it as if it was an
 image and moving it around the screen.
 

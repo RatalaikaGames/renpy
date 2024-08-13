@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -36,6 +36,7 @@ fields = [
     "xdz", "ydz", "zdz", "wdz",
     "xdw", "ydw", "zdw", "wdw",
     ]
+# not the same as documented
 
 cdef inline bint absne(float a, float b):
     return abs(a - b) > .0001
@@ -98,6 +99,9 @@ cdef class Matrix:
             0.0, 0.0, 0.0, 1.0,
     """
 
+    _types = "".join(["{} : float\n".format(i) for i in fields])
+
+
     def __init__(Matrix self, l):
 
         memset(self.m(), 0, sizeof(float) * 16)
@@ -135,6 +139,8 @@ cdef class Matrix:
         for i in range(16):
             rv[fields[i]] = self.m()[i]
 
+        rv["origin"] = getattr(self, "origin", None)
+
         return rv
 
     def __setstate__(self, state):
@@ -147,6 +153,8 @@ cdef class Matrix:
         for i in range(16):
             if fields[i] in state:
                 self.m()[i] = state[fields[i]]
+
+        self.origin = state.get("origin", None)
 
     def __mul__(Matrix self, Matrix other):
 
@@ -173,20 +181,8 @@ cdef class Matrix:
         rv.wdw = other.wdw*self.wdw + other.xdw*self.wdx + other.ydw*self.wdy + other.zdw*self.wdz
 
         return rv
-
-    def __getitem__(Matrix self, int index):
-        if 0 <= index < 16:
-            return self.m()[index]
-
-        raise IndexError("Matrix index out of range.")
-
-    def __setitem__(Matrix self, int index, float value):
-        if 0 <= index < 16:
-            self.m()[index] = value
-            return
-
-        raise IndexError("Matrix index out of range.")
-
+	
+	
     def __repr__(Matrix self):
         cdef int x, y
 
@@ -212,16 +208,16 @@ cdef class Matrix:
         elif components == 4:
             return (ox, oy, oz, ow)
 
-    def __richcmp__(Matrix self, Matrix other, op):
-
-        if op != 2:
-            return NotImplemented
-
+    def __eq__(Matrix self, other):
         if self is other:
             return True
 
+        if type(self) != type(other):
+            return False
+
         cdef int i
         cdef double total
+        cdef Matrix other_matrix = other
 
         total = 0
 
@@ -229,6 +225,9 @@ cdef class Matrix:
             total += abs(self.m()[i] - other.m()[i])
 
         return total < .0001
+
+    def __ne__(Matrix self, other):
+        return not (self == other)
 
     cpdef bint is_unit_aligned(Matrix self):
         """

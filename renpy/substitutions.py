@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,7 +23,9 @@
 # operations.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
+
+
 
 import renpy
 import string
@@ -162,7 +164,13 @@ class Formatter(string.Formatter):
         if literal:
             yield (literal, None, None, None)
 
+    def get_field(self, field_name, args, kwargs):
+        obj, arg_used = super(Formatter, self).get_field(field_name, args, kwargs)
+
+        return (obj, kwargs), arg_used
+
     def convert_field(self, value, conversion):
+        value, kwargs = value
 
         if conversion is None:
             return value
@@ -192,7 +200,7 @@ class Formatter(string.Formatter):
 
         if "i" in conversion:
             try:
-                value = substitute(value, translate=False)[0]
+                value = self.vformat(value, (), kwargs)
             except RuntimeError: # PY3 RecursionError
                 raise ValueError("Substitution {!r} refers to itself in a loop.".format(value))
 
@@ -267,8 +275,8 @@ def substitute(s, scope=None, force=False, translate=True):
         kwargs = renpy.store.__dict__ # @UndefinedVariable
 
     try:
-        s = formatter.vformat(s, (), kwargs)
-    except:
+        s = formatter.vformat(s, (), kwargs) # type: ignore
+    except Exception:
         if renpy.display.predict.predicting: # @UndefinedVariable
             return " ", True
         raise

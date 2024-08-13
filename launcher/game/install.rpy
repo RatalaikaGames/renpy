@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -62,7 +62,7 @@ init python:
             if not os.path.exists(os.path.dirname(dstfn)):
                 try:
                     os.makedirs(os.path.dirname(dstfn))
-                except:
+                except Exception:
                     pass
 
             renpy.write_log(fn + " -> " + dstfn)
@@ -73,7 +73,7 @@ init python:
 
             try:
                 os.chmod(dstfn, 0o755)
-            except:
+            except Exception:
                 pass
 
         interface.info(_("Successfully installed [name!t]."), name=name)
@@ -82,12 +82,17 @@ init python:
 label install_live2d:
     python hide:
 
+        if PY2:
+            _prefix = r"lib/py2-"
+        else:
+            _prefix = r"lib/py3-"
+
         patterns = [
-            (r".*/Core/dll/linux/x86_64/(libLive2DCubismCore.so)", r"lib/linux-x86_64/\1"),
-            (r".*/Core/dll/windows/x86_64/(Live2DCubismCore.dll)", r"lib/windows-x86_64/\1"),
-            (r".*/Core/dll/windows/x86/(Live2DCubismCore.dll)", r"lib/windows-i686/\1"),
-            (r".*/Core/dll/macos/(libLive2DCubismCore.dylib)", r"lib/mac-x86_64/\1"),
-            (r".*/Core/dll/experimental/rpi/(libLive2DCubismCore.so)", r"lib/linux-armv7l/\1"),
+            (r".*/Core/dll/linux/x86_64/(libLive2DCubismCore.so)", _prefix + r"linux-x86_64/\1"),
+            (r".*/Core/dll/windows/x86_64/(Live2DCubismCore.dll)", _prefix + r"windows-x86_64/\1"),
+            (r".*/Core/dll/windows/x86/(Live2DCubismCore.dll)", _prefix + r"windows-i686/\1"),
+            (r".*/Core/dll/macos/(libLive2DCubismCore.dylib)", _prefix + r"mac-x86_64/\1"),
+            (r".*/Core/dll/experimental/rpi/(libLive2DCubismCore.so)", _prefix + r"linux-armv7l/\1"),
 
             (r".*/Core/dll/android/(armeabi-v7a/libLive2DCubismCore.so)", r"rapt/prototype/renpyandroid/src/main/jniLibs/\1"),
             (r".*/Core/dll/android/(arm64-v8a/libLive2DCubismCore.so)", r"rapt/prototype/renpyandroid/src/main/jniLibs/\1"),
@@ -100,7 +105,48 @@ label install_live2d:
 
     jump front_page
 
-screen install():
+screen install_preferences():
+
+    frame:
+        style "l_indent"
+        has vbox
+
+        text _("This screen allows you to install libraries that can't be distributed with Ren'Py. Some of these libraries may require you to agree to a third-party license before being used or distributed.")
+
+    add SPACER
+
+    if not achievement.has_steam:
+
+        textbutton _("Install Steam Support"):
+            action Jump("install_steam")
+
+        add HALF_SPACER
+
+        frame:
+            style "l_indent"
+            has vbox
+
+            text _("Before installing Steam support, please make sure you are a {a=https://partner.steamgames.com/}Steam partner{/a}.")
+
+    else:
+
+        textbutton _("Install Steam Support")
+
+        add HALF_SPACER
+
+        frame:
+            style "l_indent"
+            has vbox
+
+            text _("Steam support has already been installed.")
+
+    add SPACER
+
+    textbutton _("Install Live2D Cubism SDK for Native"):
+        action Jump("prompt_live2d")
+
+
+screen install_live2d():
 
     frame:
         style_group "l"
@@ -125,10 +171,6 @@ screen install():
 
                         has vbox
 
-                        text _("This screen allows you to install libraries that can't be distributed with Ren'Py. Some of these libraries may require you to agree to a third-party license before being used or distributed.")
-
-                        add HALF_SPACER
-
                         add SPACER
 
                         textbutton _("Install Live2D Cubism SDK for Native"):
@@ -146,33 +188,6 @@ screen install():
 
                             text _("Live2D in Ren'Py doesn't support the Web, Android x86_64 (including emulators and Chrome OS), and must be added to iOS projects manually. Live2D must be reinstalled after upgrading Ren'Py or installing Android support.")
 
-                        add SPACER
-
-
-                        if not achievement.has_steam:
-
-                            textbutton _("Install Steam Support"):
-                                action Jump("install_steam")
-
-                            add HALF_SPACER
-
-                            frame:
-                                style "l_indent"
-                                has vbox
-
-                                text _("Before installing Steam support, please make sure you are a {a=https://partner.steamgames.com/}Steam partner{/a}.")
-
-                        else:
-
-                            textbutton _("Install Steam Support")
-
-                            add HALF_SPACER
-
-                            frame:
-                                style "l_indent"
-                                has vbox
-
-                                text _("Steam support has already been installed.")
 
 
     textbutton _("Cancel") action Return(False) style "l_left_button"
@@ -180,8 +195,8 @@ screen install():
 
     timer 2.0 action renpy.restart_interaction repeat True
 
-label install:
-    call screen install
+label prompt_live2d:
+    call screen install_live2d
     jump preferences
 
 label install_steam:

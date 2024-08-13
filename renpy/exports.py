@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -19,17 +19,17 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# This file contains functions that are exported to the script namespace as 
+# This file contains functions that are exported to the script namespace.
 # the renpy namespace. (So renpy.say, renpy.pause, and so on.)
 
-from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from __future__ import division, absolute_import, with_statement, print_function, unicode_literals # type: ignore
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-import re
 import gc
+import io
+import re
 
-import renpy.display
-import renpy.audio
+import renpy
 import _ratapy
 
 from renpy.pyanalysis import const, pure, not_const
@@ -65,7 +65,7 @@ from renpy.display.screen import define_screen, show_screen, hide_screen, use_sc
 from renpy.display.screen import has_screen, get_screen, get_displayable, get_widget, ScreenProfile as profile_screen
 from renpy.display.screen import get_displayable_properties, get_widget_properties
 
-from renpy.display.focus import focus_coordinates
+from renpy.display.focus import focus_coordinates, capture_focus, clear_capture_focus, get_focus_rect
 from renpy.display.predict import screen as predict_screen
 
 from renpy.display.image import image_exists, image_exists as has_image, list_images
@@ -81,7 +81,7 @@ from renpy.loadsave import load, save, list_saved_games, can_load, rename_save, 
 from renpy.loadsave import list_slots, newest_slot, slot_mtime, slot_json, slot_screenshot, force_autosave
 
 from renpy.python import py_eval as eval
-from renpy.python import rng as random
+from renpy.rollback import rng as random
 from renpy.atl import atl_warper
 from renpy.easy import predict, displayable, split_properties
 from renpy.parser import unelide_filename, get_parse_errors
@@ -132,63 +132,6 @@ import sys
 import threading
 import fnmatch
 
-
-def public_api():
-    """
-    :undocumented:
-
-    This does nothing, except to make warnings about unused imports go away.
-    """
-    ParameterizedText, filter_text_tags
-    register_sfont, register_mudgefont, register_bmfont
-    Keymap
-    run, run_action, run_unhovered, run_periodic, map_event
-    Minigame
-    curry, partial
-    play
-    movie_start_fullscreen, movie_start_displayable, movie_stop
-    load, save, list_saved_games, can_load, rename_save, copy_save, unlink_save, scan_saved_game
-    list_slots, newest_slot, slot_mtime, slot_json, slot_screenshot, force_autosave
-    eval
-    random
-    atl_warper
-    show_display_say, predict_show_display_say, display_say
-    sound
-    music
-    time
-    define_screen, show_screen, hide_screen, use_screen, has_screen
-    current_screen, get_screen, get_widget, profile_screen, get_widget_properties
-    focus_coordinates
-    predict, predict_screen
-    displayable, split_properties
-    unelide_filename, get_parse_errors
-    change_language, known_languages, translate_string
-    transform_text
-    language_tailor
-    register_persistent
-    register_statement
-    check_text_tags
-    map_event, queue_event, clear_keymap_cache
-    const, pure, not_const
-    image_exists, has_image, list_images
-    get_available_image_tags, get_available_image_attributes, check_image_attributes, get_ordered_image_attributes
-    get_registered_image
-    load_image, load_surface
-    profile_memory, diff_memory, profile_rollback
-    TEXT_TAG
-    TEXT_TEXT
-    TEXT_PARAGRAPH
-    TEXT_DISPLAYABLE
-    not_infinite_loop
-    register_sl_statement, register_sl_displayable
-    eval_who
-    is_selected, is_sensitive
-    add_python_directory
-    try_compile, try_eval
-    register_shader, has_live2d
-
-
-del public_api
 
 # The number of bits in the architecture.
 if sys.maxsize > (2 << 32):
@@ -437,8 +380,8 @@ def default_layer(layer, tag, expression=False):
     if layer is not None:
         return layer
 
-    if expression:
-        return 'master'
+    if (tag is None) or expression:
+        return renpy.config.default_tag_layer
 
     if isinstance(tag, tuple):
         tag = tag[0]
@@ -472,11 +415,11 @@ def can_show(name, layer=None, tag=None):
     if tag is None:
         tag = name[0]
 
-    layer = default_layer(layer, None)
+    layer = default_layer(layer, tag)
 
     try:
         return renpy.game.context().images.apply_attributes(layer, tag, name)
-    except:
+    except Exception:
         return None
 
 
@@ -649,7 +592,8 @@ def set_tag_attributes(name, layer=None):
     tag = name[0]
     name = renpy.game.context().images.apply_attributes(layer, tag, name)
 
-    renpy.game.context().images.predict_show(layer, name, False)
+    if name is not None:
+        renpy.game.context().images.predict_show(layer, name, False)
 
 
 def show(name, at_list=[ ], layer=None, what=None, zorder=None, tag=None, behind=[ ], atl=None, transient=False, munge_name=True):
@@ -758,7 +702,7 @@ def show(name, at_list=[ ], layer=None, what=None, zorder=None, tag=None, behind
         img._unique()
 
     # Update the list of images we have ever seen.
-    renpy.game.persistent._seen_images[name] = True # @UndefinedVariable
+    renpy.game.persistent._seen_images[tuple(str(i) for i in name)] = True
 
     if tag and munge_name:
         name = (tag,) + name[1:]
@@ -835,7 +779,7 @@ def scene(layer='master'):
     renpy.display.interface.ongoing_transition.pop(layer, None)
 
 
-def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None, screen="input", mask=None, **kwargs): # @ReservedAssignment
+def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=None, pixel_width=None, screen="input", mask=None, copypaste=True, **kwargs): # @ReservedAssignment
     """
     :doc: input
 
@@ -872,11 +816,17 @@ def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=N
         If not None, a single-character string that replaces the input text that
         is shown to the player, such as to conceal a password.
 
+    `copypaste`
+        When true, copying from and pasting to this input is allowed.
+
     If :var:`config.disable_input` is True, this function only returns
     `default`.
 
     Keywords prefixed with ``show_`` have the prefix stripped and
     are passed to the screen.
+
+    Due to limitations in supporting libraries, on Android and the web platform
+    this function is limited to alphabetic characters.
     """
 
     if renpy.config.disable_input:
@@ -902,7 +852,7 @@ def input(prompt, default='', allow=None, exclude='{}', length=None, with_none=N
 
     if has_screen(screen):
         widget_properties = { }
-        widget_properties["input"] = dict(default=default, length=length, allow=allow, exclude=exclude, editable=not fixed, pixel_width=pixel_width, mask=mask)
+        widget_properties["input"] = dict(default=default, length=length, allow=allow, exclude=exclude, editable=not fixed, pixel_width=pixel_width, mask=mask, copypaste=copypaste)
 
         show_screen(screen, _transient=True, _widget_properties=widget_properties, prompt=prompt, **show_properties)
 
@@ -1047,16 +997,16 @@ def menu(items, set_expr, args=None, kwargs=None, item_arguments=None):
     if not choices:
         return None
 
+    old_menu_args = menu_args
+    old_menu_kwargs = menu_kwargs
+
     # Show the menu.
     try:
-        old_menu_args = menu_args
-        old_menu_kwargs = menu_kwargs
-
         menu_args = args
         menu_kwargs = kwargs
 
         if nvl:
-            rv = renpy.store.nvl_menu(new_items) # @UndefinedVariable
+            rv = renpy.store.nvl_menu(new_items) # type: ignore
         else:
             rv = renpy.store.menu(new_items)
 
@@ -1089,7 +1039,7 @@ def choice_for_skipping():
     * An auto-save is triggered.
     """
 
-    if renpy.config.skipping and not renpy.game.preferences.skip_after_choices:
+    if renpy.config.skipping and not renpy.game.preferences.skip_after_choices: # type: ignore
         renpy.config.skipping = None
 
     if renpy.config.autosave_on_choice and not renpy.game.after_rollback:
@@ -1143,7 +1093,7 @@ def display_menu(items,
     """
     :doc: se_menu
     :name: renpy.display_menu
-    :args: (items, interact=True, screen="choice")
+    :args: (items, *, interact=True, screen="choice")
 
     This displays a menu to the user. `items` should be a list of 2-item tuples.
     In each tuple, the first item is a textual label, and the second item is
@@ -1175,6 +1125,10 @@ def display_menu(items,
     if interact:
         renpy.exports.mode(mode)
         choice_for_skipping()
+
+        if not predict_only:
+            if renpy.config.choice_empty_window and (not renpy.game.context().scene_lists.shown_window):
+                renpy.config.choice_empty_window("", interact=False)
 
     choices = [ ]
 
@@ -1208,7 +1162,7 @@ def display_menu(items,
 
     scope = dict(scope)
 
-    scope.update(menu_kwargs)
+    scope.update(menu_kwargs) # type: ignore
 
     # Show the menu.
     if has_screen(screen):
@@ -1248,11 +1202,11 @@ def display_menu(items,
             else:
                 me = MenuEntry((label, action))
 
-            me.caption = label
-            me.action = action
-            me.chosen = chosen
-            me.args = item_args
-            me.kwargs = item_kwargs
+            me.caption = label # type: ignore
+            me.action = action # type: ignore
+            me.chosen = chosen # type: ignore
+            me.args = item_args # type: ignore
+            me.kwargs = item_kwargs # type: ignore
 
             item_actions.append(me)
 
@@ -1352,7 +1306,7 @@ def predict_say(who, what):
     """
 
     if who is None:
-        who = renpy.store.narrator # E1101 @UndefinedVariable
+        who = renpy.store.narrator # type: ignore
 
     if isinstance(who, basestring):
         return renpy.store.predict_say(who, what)
@@ -1372,7 +1326,7 @@ def scry_say(who, scry):
 
     try:
         scry.interacts = who.will_interact()
-    except:
+    except Exception:
         scry.interacts = True
 
 
@@ -1409,7 +1363,7 @@ def say(who, what, *args, **kwargs):
         what = what % tag_quoting_dict
 
     if who is None:
-        who = renpy.store.narrator # E1101 @UndefinedVariable
+        who = renpy.store.narrator # type: ignore
 
     if renpy.config.say_arguments_callback:
         args, kwargs = renpy.config.say_arguments_callback(who, *args, **kwargs)
@@ -1485,16 +1439,18 @@ def imagemap(ground, selected, hotspots, unselected=None, overlays=False,
     return rv
 
 
-def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
+def pause(delay=None, music=None, with_none=None, hard=False, predict=False, checkpoint=None, modal=True):
     """
-    :doc: other
-    :args: (delay=None, hard=False)
+    :doc: se_pause
+    :args: (delay=None, *, hard=False, predict=False, modal=False)
 
     Causes Ren'Py to pause. Returns true if the user clicked to end the pause,
     or false if the pause timed out or was skipped.
 
     `delay`
         If given, the number of seconds Ren'Py should pause for.
+
+    The following should be given as keyword arguments:
 
     `hard`
         This must be given as a keyword argument. When True, Ren'Py may prevent
@@ -1513,6 +1469,19 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
         player.
 
         tl;dr - Don't use renpy.pause with hard=True.
+
+    `predict`
+        If True, Ren'Py will end the pause when all prediction, including
+        prediction scheduled with :func:`renpy.start_predict` and
+        :func:`renpy.start_predict_screen`, has been finished.
+
+        This also causes Ren'Py to prioritize prediction over display smoothness
+        for the duration of the pause. Because of that, it's recommended to not
+        display animations during prediction.
+
+    `modal`
+        If True or None, the pause will not end when a modal screen is being displayed.
+        If false, the pause will end while a modal screen is being displayed.
     """
 
     if renpy.config.skipping == "fast":
@@ -1561,7 +1530,14 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
     else:
         renpy.ui.saybehavior(afm=afm)
 
-    rv = renpy.ui.interact(mouse='pause', type='pause', roll_forward=roll_forward, pause=delay)
+    if predict:
+        renpy.display.interface.force_prediction = True
+        renpy.ui.add(renpy.display.behavior.PredictPauseBehavior())
+
+    try:
+        rv = renpy.ui.interact(mouse='pause', type='pause', roll_forward=roll_forward, pause=delay, pause_modal=modal)
+    except (renpy.game.JumpException, renpy.game.CallException) as e:
+        rv = e
 
     if checkpoint:
         renpy.exports.checkpoint(rv, keep_rollback=True, hard=renpy.config.pause_after_rollback or (delay is None))
@@ -1571,6 +1547,9 @@ def pause(delay=None, music=None, with_none=None, hard=False, checkpoint=None):
 
     if with_none:
         renpy.game.interface.do_with(None, None)
+
+    if isinstance(rv, (renpy.game.JumpException, renpy.game.CallException)):
+        raise rv
 
     return rv
 
@@ -1658,16 +1637,10 @@ def with_statement(trans, always=False, paired=None, clear=True):
     if renpy.config.skipping:
         trans = None
 
-    if not (renpy.game.preferences.transitions or always):
+    if not (renpy.game.preferences.transitions or always): # type: ignore
         trans = None
 
     renpy.exports.mode('with')
-
-    if isinstance(paired, dict):
-        paired = paired.get(None, None)
-
-        if (trans is None) and (paired is None):
-            return
 
     if isinstance(trans, dict):
 
@@ -1721,6 +1694,9 @@ def rollback(force=False, checkpoints=1, defer=False, greedy=True, label=None, a
         occured. Abnormal mode ends when an interaction begins.
     """
 
+    if defer and not renpy.game.log.log:
+        return
+
     if defer and len(renpy.game.contexts) > 1:
         renpy.game.contexts[0].defer_rollback = (force, checkpoints)
         return
@@ -1747,7 +1723,7 @@ def toggle_fullscreen():
     Toggles the fullscreen mode.
     """
 
-    renpy.game.preferences.fullscreen = not renpy.game.preferences.fullscreen
+    renpy.game.preferences.fullscreen = not renpy.game.preferences.fullscreen # type: ignore
 
 
 def toggle_music():
@@ -1786,7 +1762,7 @@ def get_all_labels():
         if isinstance(i, basestring):
             rv.append(i)
 
-    return renpy.python.RevertableSet(rv)
+    return renpy.revertable.RevertableSet(rv)
 
 
 def take_screenshot(scale=None, background=False):
@@ -1839,13 +1815,15 @@ def utter_restart(keep_renderer=False):
 
     raise renpy.game.UtterRestartException()
 
-
 def reload_script():
     """
     :doc: other
 
     Causes Ren'Py to save the game, reload the script, and then load the
     save.
+
+    This should only be called during development. It works on Windows, macOS,
+    and Linux, but may not work on other platforms.
     """
 
     # Avoid reloading in a replay.
@@ -1854,9 +1832,12 @@ def reload_script():
 
     s = get_screen("menu")
 
-    session.pop("_reload_screen", None)
-    session.pop("_reload_screen_args", None)
-    session.pop("_reload_screen_kwargs", None)
+    session = renpy.session
+
+    # If one of these variables is already in session, we're recovering from
+    # a failed reload.
+    if ("_reload_screen" in session) or ("_main_menu_screen" in session):
+        utter_restart()
 
     if not renpy.store.main_menu:
 
@@ -1929,6 +1910,7 @@ def jump_out_of_context(label):
 def call(label, *args, **kwargs):
     """
     :doc: se_call
+    :args: (label, *args, from_current=False, **kwargs)
 
     Causes the current Ren'Py statement to terminate, and a jump to a
     `label` to occur. When the jump returns, control will be passed
@@ -2026,7 +2008,7 @@ license = "" # @ReservedAssignment
 try:
     import platform as _platform
     platform = "-".join(_platform.platform().split("-")[:2])
-except:
+except Exception:
     if renpy.android:
         platform = "Android"
     elif renpy.ios:
@@ -2056,7 +2038,10 @@ def transition(trans, layer=None, always=False, force=False):
             transition(t, layer=layer, always=always, force=force)
         return
 
-    if (not always) and not renpy.game.preferences.transitions:
+    if (not always) and not renpy.game.preferences.transitions: # type: ignore
+        trans = None
+
+    if renpy.config.skipping:
         trans = None
 
     renpy.game.interface.set_transition(trans, layer, force=force)
@@ -2128,7 +2113,7 @@ def exists(filename):
     try:
         renpy.loader.transfn(filename)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -2147,7 +2132,7 @@ def restart_interaction():
 
     try:
         renpy.game.interface.restart_interaction = True
-    except:
+    except Exception:
         pass
 
 
@@ -2234,7 +2219,7 @@ def log(msg):
 
     try:
         msg = unicode(msg)
-    except:
+    except Exception:
         pass
 
     try:
@@ -2254,19 +2239,21 @@ def log(msg):
         logfile.write(wrapped + "\n")
         logfile.flush()
 
-    except:
+    except Exception:
         renpy.config.log = None
 
 
 def force_full_redraw():
     """
-    :doc: other
+    :undocumented:
 
     Forces the screen to be redrawn in full. Call this after using pygame
     to redraw the screen directly.
     """
 
-    renpy.game.interface.full_redraw = True
+    # This had been used for the software renderer, but gl rendering rerdraws
+    # the screen every frame, so it's removed.
+    return
 
 
 def do_reshow_say(who, what, interact=False, *args, **kwargs):
@@ -2351,7 +2338,7 @@ def seen_label(label):
     system, and false otherwise. This can be used to unlock scene galleries, for
     example.
     """
-    return label in renpy.game.persistent._seen_ever # @UndefinedVariable
+    return label in renpy.game.persistent._seen_ever # type: ignore
 
 
 def mark_label_seen(label):
@@ -2361,7 +2348,7 @@ def mark_label_seen(label):
     Marks the named label as if it has been already executed on the current user's
     system.
     """
-    renpy.game.persistent._seen_ever[label] = True
+    renpy.game.persistent._seen_ever[str(label)] = True # type: ignore
 
 
 def mark_label_unseen(label):
@@ -2371,8 +2358,8 @@ def mark_label_unseen(label):
     Marks the named label as if it has not been executed on the current user's
     system yet.
     """
-    if label in renpy.game.persistent._seen_ever:
-        del renpy.game.persistent._seen_ever[label]
+    if label in renpy.game.persistent._seen_ever: # type: ignore
+        del renpy.game.persistent._seen_ever[label] # type: ignore
 
 
 def seen_audio(filename):
@@ -2384,7 +2371,7 @@ def seen_audio(filename):
     """
     filename = re.sub(r'^<.*?>', '', filename)
 
-    return filename in renpy.game.persistent._seen_audio # @UndefinedVariable
+    return filename in renpy.game.persistent._seen_audio # type: ignore
 
 
 def mark_audio_seen(filename):
@@ -2396,7 +2383,7 @@ def mark_audio_seen(filename):
     """
     filename = re.sub(r'^<.*?>', '', filename)
 
-    renpy.game.persistent._seen_audio[filename] = True
+    renpy.game.persistent._seen_audio[filename] = True # type: ignore
 
 
 def mark_audio_unseen(filename):
@@ -2408,8 +2395,8 @@ def mark_audio_unseen(filename):
     """
     filename = re.sub(r'^<.*?>', '', filename)
 
-    if filename in renpy.game.persistent._seen_audio:
-        del renpy.game.persistent._seen_audio[filename]
+    if filename in renpy.game.persistent._seen_audio: # type: ignore
+        del renpy.game.persistent._seen_audio[filename] # type: ignore
 
 
 def seen_image(name):
@@ -2425,7 +2412,7 @@ def seen_image(name):
     if not isinstance(name, tuple):
         name = tuple(name.split())
 
-    return name in renpy.game.persistent._seen_images # @UndefinedVariable
+    return name in renpy.game.persistent._seen_images # type: ignore
 
 
 def mark_image_seen(name):
@@ -2438,7 +2425,7 @@ def mark_image_seen(name):
     if not isinstance(name, tuple):
         name = tuple(name.split())
 
-    renpy.game.persistent._seen_images[name] = True
+    renpy.game.persistent._seen_images[tuple(str(i) for i in name)] = True
 
 
 def mark_image_unseen(name):
@@ -2451,11 +2438,11 @@ def mark_image_unseen(name):
     if not isinstance(name, tuple):
         name = tuple(name.split())
 
-    if name in renpy.game.persistent._seen_images:
-        del renpy.game.persistent._seen_images[name]
+    if name in renpy.game.persistent._seen_images: # type: ignore
+        del renpy.game.persistent._seen_images[name] # type: ignore
 
 
-def file(fn): # @ReservedAssignment
+def open_file(fn, encoding=None): # @ReservedAssignment
     """
     :doc: file
 
@@ -2466,9 +2453,32 @@ def file(fn): # @ReservedAssignment
     The object supports a wide subset of the fields and methods found on Python's
     standard file object, opened in binary mode. (Basically, all of the methods that
     are sensible for a read-only file.)
-    """
-    return renpy.loader.load(fn)
 
+    `encoding`
+        If given, the file is open in text mode with the given encoding.
+        If None, the default, the encoding is taken from :var:`config.open_file_encoding`.
+        If False, the file is opened in binary mode.
+    """
+
+    rv = renpy.loader.load(fn)
+
+    if encoding is None:
+        encoding = renpy.config.open_file_encoding
+
+    if encoding:
+        rv = io.TextIOWrapper(rv, encoding=encoding, errors="surrogateescape") # type: ignore
+
+    return rv
+
+def file(fn, encoding=None):
+    """
+    :doc: file
+
+    An alias for :func:`renpy.open_file`, for compatibility with older
+    versions of Ren'Py.
+    """
+
+    return open_file(fn, encoding=encoding)
 
 def notl_file(fn): # @ReservedAssignment
     """
@@ -2519,7 +2529,12 @@ def get_at_list(name, layer=None, camera=False):
     tag = name[0]
     layer = default_layer(layer, tag)
 
-    return renpy.game.context().scene_lists.at_list[layer].get(tag, None)
+    transforms = renpy.game.context().scene_lists.at_list[layer].get(tag, None)
+
+    if transforms is None:
+        return None
+
+    return list(transforms)
 
 
 def show_layer_at(at_list, layer='master', reset=True, camera=False):
@@ -2684,12 +2699,24 @@ def scry():
     Returns the scry object for the current statement.
 
     The scry object tells Ren'Py about things that must be true in the
-    future of the current statement. Right now, the scry object has one
-    field:
+    future of the current statement. Right now, the scry object has the
+    following fields:
 
     ``nvl_clear``
         Is true if an ``nvl clear`` statement will execute before the
         next interaction.
+
+    ``say``
+        Is true if an ``say`` statement will execute before the
+        next interaction.
+
+    ``menu_with_caption``
+        Is true if a ``menu`` statement with a caption will execute
+        before the next interaction.
+
+    ``who``
+        If a ``say`` or ``menu-with-caption`` statement will execute
+        before the next interaction, this is the character object it will use.
     """
 
     name = renpy.game.context().current
@@ -2710,6 +2737,7 @@ loaded_modules = set()
 def load_module(name, **kwargs):
     """
     :doc: other
+    :args: (name)
 
     This loads the Ren'Py module named name. A Ren'Py module consists of Ren'Py script
     that is loaded into the usual (store) namespace, contained in a file named
@@ -2735,6 +2763,7 @@ def load_module(name, **kwargs):
     renpy.config.locked = False
 
     initcode = renpy.game.script.load_module(name)
+    initcode.sort(key=lambda i: i[0])
 
     context = renpy.execution.Context(False)
     context.init_phase = True
@@ -2743,7 +2772,7 @@ def load_module(name, **kwargs):
     context.make_dynamic(kwargs)
     renpy.store.__dict__.update(kwargs) # @UndefinedVariable
 
-    for prio, node in initcode: # @UnusedVariable
+    for _prio, node in initcode: # @UnusedVariable
         if isinstance(node, renpy.ast.Node):
             renpy.game.context().run(node)
         else:
@@ -2857,7 +2886,7 @@ def shown_window():
     renpy.game.context().scene_lists.shown_window = True
 
 
-class placement(renpy.python.RevertableObject):
+class placement(renpy.revertable.RevertableObject):
 
     def __init__(self, p):
         super(placement, self).__init__()
@@ -2948,12 +2977,12 @@ IgnoreEvent = renpy.display.core.IgnoreEvent
 redraw = renpy.display.render.redraw
 
 
-class Displayable(renpy.display.core.Displayable, renpy.python.RevertableObject):
+class Displayable(renpy.display.core.Displayable, renpy.revertable.RevertableObject):
     pass
 
 
-class Container(renpy.display.layout.Container, renpy.python.RevertableObject):
-    _list_type = renpy.python.RevertableList
+class Container(renpy.display.layout.Container, renpy.revertable.RevertableObject):
+    _list_type = renpy.revertable.RevertableList
 
 
 def get_roll_forward():
@@ -2965,7 +2994,7 @@ def cache_pin(*args):
     :undocumented: Cache pin is deprecated.
     """
 
-    new_pins = renpy.python.RevertableSet()
+    new_pins = renpy.revertable.RevertableSet()
 
     for i in args:
 
@@ -2984,7 +3013,7 @@ def cache_unpin(*args):
     :undocumented: Cache pin is deprecated.
     """
 
-    new_pins = renpy.python.RevertableSet()
+    new_pins = renpy.revertable.RevertableSet()
 
     for i in args:
 
@@ -3041,9 +3070,12 @@ def start_predict(*args):
         $ renpy.start_predict("images/concert*.*")
 
     matches all files starting with concert in the images directory.
+
+    Prediction will occur during normal gameplay. To wait for prediction
+    to complete, use the `predict` argument to :func:`renpy.pause`.
     """
 
-    new_predict = renpy.python.RevertableSet(renpy.store._predict_set)
+    new_predict = renpy.revertable.RevertableSet(renpy.store._predict_set)
 
     for i in args:
         for d in expand_predict(i):
@@ -3063,7 +3095,7 @@ def stop_predict(*args):
     Wildcard patterns can be used as described in :func:`renpy.start_predict`.
     """
 
-    new_predict = renpy.python.RevertableSet(renpy.store._predict_set)
+    new_predict = renpy.revertable.RevertableSet(renpy.store._predict_set)
 
     for i in args:
         for d in expand_predict(i):
@@ -3080,9 +3112,12 @@ def start_predict_screen(_screen_name, *args, **kwargs):
     Causes Ren'Py to start predicting the screen named `_screen_name`
     with the given arguments. This replaces any previous prediction
     of `_screen_name`. To stop predicting a screen, call :func:`renpy.stop_predict_screen`.
+
+    Prediction will occur during normal gameplay. To wait for prediction
+    to complete, use the `predict` argument to :func:`renpy.pause`.
     """
 
-    new_predict = renpy.python.RevertableDict(renpy.store._predict_screen)
+    new_predict = renpy.revertable.RevertableDict(renpy.store._predict_screen)
     new_predict[_screen_name] = (args, kwargs)
     renpy.store._predict_screen = new_predict
 
@@ -3094,7 +3129,7 @@ def stop_predict_screen(name):
     Causes Ren'Py to stop predicting the screen named `name`.
     """
 
-    new_predict = renpy.python.RevertableDict(renpy.store._predict_screen)
+    new_predict = renpy.revertable.RevertableDict(renpy.store._predict_screen)
     new_predict.pop(name, None)
     renpy.store._predict_screen = new_predict
 
@@ -3102,6 +3137,7 @@ def stop_predict_screen(name):
 def call_screen(_screen_name, *args, **kwargs):
     """
     :doc: screens
+    :args: (_screen_name, *args, _with_none=True, _mode="screen", **kwargs)
 
     The programmatic equivalent of the call screen statement.
 
@@ -3112,11 +3148,11 @@ def call_screen(_screen_name, *args, **kwargs):
     Positional arguments, and keyword arguments that do not begin with
     _ are passed to the screen.
 
-    If the keyword argument `_with_none` is false, "with None" is not
-    run at the end of end of the interaction.
+    If `_with_none` is false, "with None" is not run at the end of end
+    of the interaction.
 
-    If the keyword argument `_mode` in kwargs, it will be mode of this
-    interaction, otherwise it will be "screen" mode.
+    If `_mode` is passed, it will be the mode of this interaction,
+    otherwise the mode will be "screen".
     """
 
     mode = "screen"
@@ -3132,6 +3168,15 @@ def call_screen(_screen_name, *args, **kwargs):
     show_screen(_screen_name, _transient=True, *args, **kwargs)
 
     roll_forward = renpy.exports.roll_forward_info()
+
+    # If roll
+    can_roll_forward = renpy.display.screen.get_screen_roll_forward(_screen_name)
+
+    if can_roll_forward is None:
+        can_roll_forward = renpy.config.call_screen_roll_forward
+
+    if not can_roll_forward:
+        roll_forward = None
 
     try:
         rv = renpy.ui.interact(mouse="screen", type="screen", roll_forward=roll_forward)
@@ -3298,13 +3343,13 @@ def variant(name):
     """
     :doc: screens
 
-    Returns true if a `name` is a screen variant that can be chosen
-    by Ren'Py. See :ref:`screen-variants` for more details. This function
-    can be used as the condition in a Python if statement to set up the
-    appropriate styles for the selected screen variant.
+    Returns true if `name` is a screen variant that corresponds to the
+    context in which Ren'Py is currently executing. See :ref:`screen-variants`
+    for more details. This function can be used as the condition in an
+    if statement to switch behavior based on the selected screen variant.
 
     `name` can also be a list of variants, in which case this function
-    returns True if any of the variants is selected.
+    returns True if any of the variants would.
     """
 
     if isinstance(name, basestring):
@@ -3353,10 +3398,12 @@ def get_side_image(prefix_tag, image_tag=None, not_showing=None, layer=None):
 
     It begins by determining a set of image attributes. If `image_tag` is
     given, it gets the image attributes from the tag. Otherwise, it gets
-    them from the currently showing character.
+    them from the currently showing character. If no attributes are available
+    for the tag, this returns None.
 
-    It then looks up an image with the tag `prefix_tag` and those attributes,
-    and returns it if it exists.
+    It then looks up an image with the tag `prefix_tag`, and the image tage (either
+    from `image_tag` or the currently showing character) and the set of image
+    attributes as attributes. If such an image exists, it's returned.
 
     If not_showing is True, this only returns a side image if the image the
     attributes are taken from is not on the screen. If Nome, the value
@@ -3416,11 +3463,11 @@ def set_physical_size(size):
     width = int(size[0])
     height = int(size[1])
 
-    renpy.game.preferences.fullscreen = False
+    renpy.game.preferences.fullscreen = False # type: ignore
 
     if get_renderer_info()["resizable"]:
 
-        renpy.game.preferences.physical_size = (width, height)
+        renpy.game.preferences.physical_size = (width, height) # type: ignore
 
         if renpy.display.draw is not None:
             renpy.display.draw.resize()
@@ -3439,7 +3486,7 @@ def reset_physical_size():
 
 
 @renpy_pure
-def fsencode(s):
+def fsencode(s, force=False):
     """
     :doc: file_rare
     :name: renpy.fsencode
@@ -3447,7 +3494,7 @@ def fsencode(s):
     Converts s from unicode to the filesystem encoding.
     """
 
-    if not PY2:
+    if (not PY2) and (not force):
         return s
 
     if not isinstance(s, str):
@@ -3466,10 +3513,7 @@ def fsdecode(s):
     Converts s from filesystem encoding to unicode.
     """
 
-    if not PY2:
-        return s
-
-    if not isinstance(s, pystr):
+    if isinstance(s, str):
         return s
 
     fsencoding = sys.getfilesystemencoding() or "utf-8"
@@ -3723,7 +3767,7 @@ def invoke_in_thread(fn, *args, **kwargs):
     def run():
         try:
             fn(*args, **kwargs)
-        except:
+        except Exception:
             import traceback
             traceback.print_exc()
 
@@ -3768,9 +3812,9 @@ def write_log(s, *args):
 
 def predicting():
     """
-    :doc: screens
+    :doc: other
 
-    Returns true if Ren'Py is currently predicting the screen.
+    Returns true if Ren'Py is currently in a predicting phase.
     """
 
     return renpy.display.predict.predicting
@@ -3848,7 +3892,7 @@ def add_layer(layer, above=None, below=None, menu_clear=True):
     layers.insert(index, layer)
 
     if menu_clear:
-        renpy.config.menu_clear_layers.append(layer) # @UndefinedVariable
+        renpy.config.menu_clear_layers.append(layer) # type: ignore # Set in 00gamemenu.rpy.
 
 
 def maximum_framerate(t):
@@ -3943,7 +3987,7 @@ def get_refresh_rate(precision=5):
     precision *= 1.0
 
     info = renpy.display.get_info()
-    rv = info.refresh_rate
+    rv = info.refresh_rate # type: ignore
     rv = round(rv / precision) * precision
 
     return rv
@@ -4135,13 +4179,13 @@ def get_sdl_dll():
                 dll = ctypes.cdll[i]
                 # See if it has SDL_GetError..
                 dll.SDL_GetError
-            except:
+            except Exception:
                 continue
 
             sdl_dll = dll
             return dll
 
-    except:
+    except Exception:
         pass
 
     sdl_dll = None
@@ -4164,7 +4208,7 @@ def get_sdl_window_pointer():
 
         return window.get_sdl_window_pointer()
 
-    except:
+    except Exception:
         return None
 
 
@@ -4241,7 +4285,7 @@ def check_permission(permission):
 
     try:
         return activity.checkSelfPermission(permission) == 0 # PackageManager.PERMISSION_GRANTED
-    except:
+    except Exception:
         return False
 
 
@@ -4262,4 +4306,4 @@ def request_permission(permission):
     if not renpy.android:
         return False
 
-    return get_sdl_dll().SDL_AndroidRequestPermission(permission.encode("utf-8"))
+    return get_sdl_dll().SDL_AndroidRequestPermission(permission.encode("utf-8")) # type: ignore

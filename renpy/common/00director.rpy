@@ -856,7 +856,7 @@ init python in director:
                 if "file" in p:
                     try:
                         self.audio = eval(p["file"])
-                    except:
+                    except Exception:
                         return
 
                     self.audio = audio_code_to_filename(self.channel, self.audio)
@@ -935,7 +935,7 @@ init python in director:
 
                 try:
                     self.audio = eval(p)
-                except:
+                except Exception:
                     return
 
                 self.audio = audio_code_to_filename(self.channel, self.audio)
@@ -1523,7 +1523,7 @@ screen director_lines(state):
 
                     text "[line_pos]":
                         xpos (gui._scale(300) - 10)
-                        xalign 1.0
+                        xanchor 1.0
                         text_align 1.0
                         style "director_text"
 

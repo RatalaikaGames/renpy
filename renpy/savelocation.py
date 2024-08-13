@@ -1,4 +1,4 @@
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -25,13 +25,15 @@
 # The current save location is stored in the location variable in loadsave.py.
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
-from renpy.compat import *
+from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
+
+
 
 import os
 import zipfile
 import json
 
-import renpy.display
+import renpy
 import threading
 
 from renpy.loadsave import clear_slot
@@ -54,7 +56,7 @@ class FileLocation(object):
         self.directory = directory
 
         self.active = True
-
+        
         renpy.util.expose_directory(self.directory)
 
         self.active = True
@@ -102,7 +104,7 @@ class FileLocation(object):
 
                 try:
                     new_mtimes[slotname] = os.path.getmtime(os.path.join(self.directory, fn))
-                except:
+                except Exception:
                     pass
 
             self.mtimes = new_mtimes
@@ -172,17 +174,17 @@ class FileLocation(object):
                         data = zf.read("json")
                         data = json.loads(data)
                         return data
-                    except:
+                    except Exception:
                         pass
 
                     try:
                         extra_info = zf.read("extra_info").decode("utf-8")
                         return { "_save_name" : extra_info }
-                    except:
+                    except Exception:
                         pass
 
                     return { }
-            except:
+            except Exception:
                 return None
 
     def screenshot(self, slotname):
@@ -205,10 +207,10 @@ class FileLocation(object):
                     try:
                         png = False
                         zf.getinfo('screenshot.tga')
-                    except:
+                    except Exception:
                         png = True
                         zf.getinfo('screenshot.png')
-            except:
+            except Exception:
                 return None
 
             if png:
@@ -320,7 +322,7 @@ class FileLocation(object):
 
         try:
             os.unlink(self.persistent)
-        except:
+        except Exception:
             pass
 
     def __eq__(self, other):
@@ -331,8 +333,6 @@ class FileLocation(object):
 
     def __ne__(self, other):
         return not (self == other)
-
-
 
 def quit(): # @ReservedAssignment
     pass

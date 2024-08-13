@@ -1,5 +1,5 @@
 #cython: profile=False
-# Copyright 2004-2021 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -222,6 +222,9 @@ cpdef render(d, object widtho, object heighto, double st, double at):
     style = d.style
     xmaximum = style.xmaximum
     ymaximum = style.ymaximum
+
+    if d._offer_size is not None:
+        width, height = d._offer_size
 
     if xmaximum is not None:
         if isinstance(xmaximum, float):
@@ -494,8 +497,6 @@ def render_screen(root, width, height):
 
     invalidated = False
 
-    rv.is_opaque()
-
     return rv
 
 def mark_sweep():
@@ -587,7 +588,7 @@ FLATTEN = 4
 
 cdef class Render:
 
-    def __init__(Render self, float width, float height, draw_func=None, layer_name=None, bint opaque=False): #@DuplicatedSignature
+    def __init__(Render self, float width, float height, layer_name=None): #@DuplicatedSignature
         """
         Creates a new render corresponding to the given widget with
         the specified width and height.
@@ -648,20 +649,6 @@ cdef class Render:
 
         # The displayable(s) that this is a render of. (Set by render)
         self.render_of = [ ]
-
-        # If set, this is a function that's called to draw this render
-        # instead of the default.
-        self.draw_func = draw_func
-
-        # Is this displayable opaque? (May be set on init, or later on
-        # if we have opaque children.) This may be True, False, or None
-        # to indicate we don't know yet.
-        self.opaque = opaque
-
-        # A list of our visible children. (That is, children above and
-        # including our uppermost opaque child.) If nothing is opaque,
-        # includes all children.
-        self.visible_children = self.children
 
         # Should children be clipped to a rectangle?
         self.xclipping = False
@@ -729,6 +716,45 @@ cdef class Render:
         self.loaded = False
 
         live_renders.append(self)
+
+    _types = """\
+        mark: bool
+        cache_killed: bool
+        killed: bool
+        width: int
+        height: int
+        layer_name: str
+        children : list[tuple[Render, int, int, bool, bool]]
+        forward: renpy.display.matrix.Matrix
+        reverse: renpy.display.matrix.Matrix
+        alpha: float
+        over: float
+        nearest: bool
+        focuses: list[renpy.display.focus.Focus]
+        pass_focuses: list[Render]
+        focus_screen: renpy.display.screen.ScreenDisplayable
+        render_of: list[renpy.display.core.Displayable]
+        xclipping: bool
+        yclipping: bool
+        modal: bool
+        text_input: bool
+        parents: set[Render]
+        depends_on_list: list[Render]
+        operation: int
+        operation_complete: float
+        operation_alpha: bool
+        operation_parameter: float
+        surface: Any
+        alpha_surface: Any
+        half_cache: Any
+        mesh: Any
+        shaders: tuple
+        uniforms: dict
+        properties: dict
+        cached_texture: Any
+        cached_model: Any
+        loaded: bool
+        """
 
     def __repr__(self): #@DuplicatedSignature
         if self.killed:
@@ -1004,7 +1030,7 @@ cdef class Render:
                     newchild = child.subsurface(crop)
                     renpy.display.draw.mutated_surface(newchild)
 
-            except:
+            except Exception:
                 raise Exception("Creating subsurface failed. child size = ({}, {}), crop = {!r}".format(childw, childh, crop))
 
 
@@ -1142,9 +1168,6 @@ cdef class Render:
             del self.render_of[:]
             del self.children[:]
 
-        self.opaque = None
-        self.visible_children = self.children
-
         self.focuses = None
         self.pass_focuses = None
 
@@ -1199,7 +1222,33 @@ cdef class Render:
             screen = self.focus_screen
 
         if self.modal:
-            focuses[:] = [ ]
+
+            if self.modal == "window":
+
+                x1, y1 = transform.transform(0, 0)
+                x2, y2 = transform.transform(self.width, self.height)
+
+                minx = min(x1, x2)
+                maxx = max(x1, x2)
+                miny = min(y1, y2)
+                maxy = max(y1, y2)
+
+                new_focuses = [ ]
+
+                rect = (minx, miny, maxx - minx, maxy - miny)
+
+                for f in focuses:
+
+                    if f.inside(rect):
+                        continue
+
+                    new_focuses.append(f)
+
+                focuses[:] = new_focuses
+
+            elif not callable(self.modal):
+
+                focuses[:] = [ ]
 
         if self.focuses:
 
@@ -1331,7 +1380,12 @@ cdef class Render:
                         if mask.is_pixel_opaque(cx, cy):
                             rv = d, arg, screen
                     else:
-                        if mask(cx, cy):
+                        mask_result = mask(cx, cy)
+
+                        if callable(mask_result):
+                            mask_result = mask_result(cx, cy, w - mx, w - my)
+
+                        if mask_result:
                             rv = d, arg, screen
 
                 elif xo <= x < xo + w and yo <= y < yo + h:
@@ -1346,7 +1400,14 @@ cdef class Render:
                     rv = None
 
         if (rv is None) and self.modal:
-            if renpy.display.layout.check_modal(self.modal, None, x, y, self.width, self.height):
+            w = self.width
+            h = self.height
+
+            if self.modal == "default":
+                w = None
+                h = None
+
+            if renpy.display.layout.check_modal(self.modal, None, x, y, w, h):
                 return Modal
 
         return rv
@@ -1397,41 +1458,6 @@ cdef class Render:
         return rv
 
 
-    def is_opaque(self):
-        """
-        Returns true if this displayable is opaque, or False otherwise.
-        Also sets self.visible_children.
-        """
-
-        if self.opaque is not None:
-            return self.opaque
-
-        # A rotated image is never opaque. (This isn't actually true, but it
-        # saves us from the expensive calculations require to prove it is.)
-        if self.forward:
-            self.opaque = False
-            return False
-
-        rv = False
-        vc = [ ]
-
-        for i in self.children:
-            child, xo, yo, focus, main = i
-
-            if xo <= 0 and yo <= 0:
-                cw, ch = child.get_size()
-                if cw + xo < self.width or ch + yo < self.height:
-                    if child.is_opaque():
-                        vc = [ ]
-                        rv = True
-
-            vc.append(i)
-
-        self.visible_children = vc
-        self.opaque = rv
-        return rv
-
-
     def is_pixel_opaque(self, x, y):
         """
         Determine if the pixel at x and y is opaque or not.
@@ -1439,9 +1465,6 @@ cdef class Render:
 
         if x < 0 or y < 0 or x >= self.width or y >= self.height:
             return False
-
-        if self.is_opaque():
-            return True
 
         return renpy.display.draw.is_pixel_opaque(self, x, y)
 
@@ -1696,3 +1719,9 @@ class Canvas(object):
 
     def get_surface(self):
         return self.surf
+
+_types = """
+screen_render : Render|None
+IDENTITY : renpy.display.matrix.Matrix
+blit_lock : threading.Condition
+"""

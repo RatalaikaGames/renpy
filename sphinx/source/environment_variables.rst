@@ -22,7 +22,7 @@ The following environment variables control the behavior of Ren'Py:
 
 ``RENPY_EDIT_PY``
     The path to an .edit.py file telling Ren'Py how to invoke a text editor.
-    See :ref:`text-editor-integration` for more information.
+    See :doc:`editor` for more information.
 
 ``RENPY_GL_ENVIRON``
     Sets the OpenGL texture environment.
@@ -52,6 +52,22 @@ The following environment variables control the behavior of Ren'Py:
 
 ``RENPY_LESS_UPDATES``
     This causes Ren'Py to reduce the number of screen updates that occur.
+
+``RENPY_MULTIPERSISTENT``
+    The path to a directory where Ren'Py stores multipersistent data.
+
+``RENPY_NO_STEAM``
+    If present in the environment, Ren'Py will not initialize Steamworks.
+
+``RENPY_OPEN_FILE_ENCODING``
+    Sets the default encoding for :func:`renpy.open_file`. This is mostly
+    used to help Python 2 games run on Python 3 based versions of Ren'Py
+    try "utf-8" and "latin-1" to see if it helps a those games run. (But
+    remember to set this back for newer games.)
+
+``RENPY_PATH_TO_SAVES``
+    The path to a directory where Ren'Py stores it's saves. The actual saves
+    for a game are stored in a game-specific path underneath this directory.
 
 ``RENPY_SCREENSHOT_PATTERN``
     A pattern used to create screenshot filenames. It should contain a single

@@ -1,5 +1,3 @@
-.. _layered-images:
-
 Layered Images
 ==============
 
@@ -268,8 +266,10 @@ of combinations of layers.
 Statement Reference
 -------------------
 
-Note that with the conditions in the ``if`` statement, all expressions are
+Note that with the exception of the conditions in the ``if`` statement, all expressions are
 evaluated at init time, when the layered image is first defined.
+
+.. _layeredimage-statement:
 
 Layeredimage
 ^^^^^^^^^^^^
@@ -297,6 +297,17 @@ Layeredimage takes the following properties:
 
 `at`
     A transform or list of transforms that are applied to the layered image.
+
+`offer_screen`
+    If this is True, the layeredimage will place its children, and size its
+    children with variable size, like it was given an area matching the whole
+    screen of the game. If it is False, the said behaviors will be done while
+    taking into account the available area, which for example will be smaller
+    in an hbox containing other elements, and the display of the layeredimage
+    will not be consistent every time it is shown.
+
+    If None, the default, falls back to :var:`config.layeredimage_offer_screen`,
+    which defaults to True.
 
 Attribute
 ^^^^^^^^^
@@ -353,12 +364,13 @@ Group
 ^^^^^
 
 The ``group`` statement groups together alternative layers. When an attribute is
-inside a group, it is an error to include any of the other attributes in
-that group. (But it's fine to include the same attribute twice. The ``multiple``
-keyword removes this restriction.)
+inside a group, and unless the group is ``multiple``, it is an error to include any
+of the other attributes in that group. (But it's fine for several attributes
+to have same name, even within the same group.)
 
 The ``group`` statement takes a name. The name isn't used for very much, but is
-used to generate the default names of attributes inside the group.
+used to generate the default names of attributes inside the group. That is not the
+case for ``multiple`` groups for which the name doesn't have any use or impact.
 
 The name may be followed by the ``auto`` keyword. If it's present, after any
 attributes in the group have been declared, Ren'Py will scan its list of images
@@ -368,8 +380,9 @@ declared with the attribute statement.
 
 This can be followed by the ``multiple`` keyword. If present, more than one
 member of the group can be selected at the same time. This is useful to have
-a group auto-define multiple attributes that are not exclusive. This conflicts
-with the default keyword being given to one of the attributes.
+a group auto-define multiple attributes that are not exclusive, or to apply the
+same properties to a set of attributes at once.
+This conflicts with the ``default`` keyword being given to one of the attributes.
 
 Properties can then be declared on the first line of the group, and it can
 take a block that contains properties and attributes.
@@ -377,9 +390,9 @@ take a block that contains properties and attributes.
 There are two properties that are specific to groups.
 
 `variant`
-    If given, this should be a string. If present, it adds a variant element
-    that becomes part of automatically-generated image names and the pattern
-    used to search for automatically-defined attributes.
+    If given, this should be a string. If present, it adds an element that becomes
+    part of automatically-generated image names, and of the pattern used to search
+    for images when automatically defining attributes in ``auto`` groups.
 
 `prefix`
     If given, this is a prefix that is concatenated using an underscore with
@@ -387,9 +400,29 @@ There are two properties that are specific to groups.
     "leftarm", and the attribute name "hip" is encountered, the attribute
     "leftarm_hip" is defined instead.
 
-The group statement also takes the same properties ``attribute`` does.  Properties
+The group statement also takes the same properties ``attribute`` does. Properties
 supplied to the group are passed to the attributes inside the group, unless
 overridden by the same property of the attribute itself.
+
+Several ``group`` blocks with the same name being defined in the same layeredimage
+are considered to be different parts of a single group. For example::
+
+    layeredimage eileen sitting:
+        attribute base default
+        group arms variant "behind":
+            attribute on_hips
+            attribute on_knees
+            attribute mixed
+        attribute table default
+        group arms variant "infront":
+            attribute on_table default
+            attribute holding_margarita
+            attribute mixed
+
+In our example, the ``eileen_sitting_arms_behind_mixed.png`` will contain her left
+arm behind the table, and ``eileen_sitting_arms_infront_mixed.png`` will contain
+her right arm on the table. When calling ``show eileen sitting mixed``, the two
+images will be shown at the same time, respectively behind and in front of the table.
 
 **Pattern.** The image pattern used consists of:
 
@@ -438,7 +471,7 @@ The always statement takes the following properties:
 If
 ^^
 
-The ``if`` statement (or more fully the if-elif-else) statement allows you
+The ``if`` statement (or more fully the if-elif-else statement) allows you
 to supply one or more conditions that are evaluated at runtime. Each
 condition is associated with a layer, with the first true condition
 being the one that is shown. If no condition is true, the ``else`` layer
@@ -589,3 +622,41 @@ image, like this::
     image side augustina = LayeredImageProxy("augustina", Transform(crop=(0, 0, 362, 362), xoffset=-80))
 
 .. include:: inc/li_proxy
+
+Selecting attributes to display
+-------------------------------
+
+Several factors influence what gets displayed following a given ``show`` instruction.
+To provide more clarity as to what happens in which order, this section showcases
+the life of a set of attributes, from the show instruction to the on-screen display.
+
+- The ``show`` statement provides the initial set of attributes, following the
+  image tag.
+- If a :var:`config.adjust_attributes` function exists to match
+  the image tag, it is called, and returns a potentially different set of
+  attributes. If so, it replaces the former set, which is forgotten.
+- If a :var:`config.default_attribute_callbacks` function exists and if its trigger
+  conditions are met, it is called and potentially adds attributes to the set.
+- The two previous stages are not specific to layeredimages, because it is only
+  after this stage that renpy determines which image or layeredimage
+  will be called to display. For that reason, the given set of attributes must
+  lead to one, and only one, defined image (or layeredimage, Live2D...), using
+  the behavior described in the :ref:`show statement section<show-statement>`.
+- Then, the provided attributes are combined with the attributes defined in the
+  layeredimage, discarding some previously shown attributes and conserving others.
+  This is also the point where unrecognized attributes are detected and related
+  errors are raised. If no such error is raised, the new attributes, along with
+  those which were not discarded, will be recognized by renpy as the set of
+  attributes associated with that image tag. This computing takes some of the
+  incompatibility constraints into account, but not all. For instance
+  incompatibilities due to attributes being in the same non-multiple group will
+  trigger at this point in time, but the if_any/if_all/if_not clauses will not.
+  That's why an attribute called but negated by such a clause will be considered
+  active by renpy, and will for example become visible without having to be called
+  again if at some point the condition of the if\_x clause is no longer fulfilled.
+- If an attribute_function has been provided to the layeredimage, it is called
+  with the set of remaining attributes. It returns a potentially different set of
+  attributes.
+- This set is once again confronted with the incompatibility constraints of the
+  layeredimage, this time in full. That is the final stage, and remaining attributes
+  are called into display.
