@@ -25,10 +25,9 @@
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
-
-
-import re
 import gc
+import io
+import re
 
 import renpy
 import _ratapy
@@ -2435,7 +2434,7 @@ def mark_image_unseen(name):
         del renpy.game.persistent._seen_images[name] # type: ignore
 
 
-def file(fn): # @ReservedAssignment
+def open_file(fn, encoding=None): # @ReservedAssignment
     """
     :doc: file
 
@@ -2446,9 +2445,32 @@ def file(fn): # @ReservedAssignment
     The object supports a wide subset of the fields and methods found on Python's
     standard file object, opened in binary mode. (Basically, all of the methods that
     are sensible for a read-only file.)
-    """
-    return renpy.loader.load(fn)
 
+    `encoding`
+        If given, the file is open in text mode with the given encoding.
+        If None, the default, the encoding is taken from :var:`config.open_file_encoding`.
+        If False, the file is opened in binary mode.
+    """
+
+    rv = renpy.loader.load(fn)
+
+    if encoding is None:
+        encoding = renpy.config.open_file_encoding
+
+    if encoding:
+        rv = io.TextIOWrapper(rv, encoding=encoding, errors="surrogateescape")
+
+    return rv
+
+def file(fn, encoding=None):
+    """
+    :doc: file
+
+    An alias for :func:`renpy.open_file`, for compatibility with older
+    versions of Ren'Py.
+    """
+
+    return open_file(fn, encoding=encoding)
 
 def notl_file(fn): # @ReservedAssignment
     """
@@ -3298,13 +3320,13 @@ def variant(name):
     """
     :doc: screens
 
-    Returns true if a `name` is a screen variant that can be chosen
-    by Ren'Py. See :ref:`screen-variants` for more details. This function
-    can be used as the condition in a Python if statement to set up the
-    appropriate styles for the selected screen variant.
+    Returns true if `name` is a screen variant that corresponds to the
+    context in which Ren'Py is currently executing. See :ref:`screen-variants`
+    for more details. This function can be used as the condition in an
+    if statement to switch behavior based on the selected screen variant.
 
     `name` can also be a list of variants, in which case this function
-    returns True if any of the variants is selected.
+    returns True if any of the variants would.
     """
 
     if isinstance(name, basestring):
@@ -3767,9 +3789,9 @@ def write_log(s, *args):
 
 def predicting():
     """
-    :doc: screens
+    :doc: other
 
-    Returns true if Ren'Py is currently predicting the screen.
+    Returns true if Ren'Py is currently in a predicting phase.
     """
 
     return renpy.display.predict.predicting

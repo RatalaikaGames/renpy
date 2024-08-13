@@ -290,20 +290,24 @@ init -1500 python:
 
     #########################################################################
 
-    def GetTooltip(screen=None):
+    def GetTooltip(screen=None, last=False):
         """
         :doc: get_tooltip
 
         Returns the tooltip of the currently focused displayable, or None
-        if no displatable is focused.
+        if no displayable is focused.
 
         `screen`
             If not None, this should be the name or tag of a screen. If
             given, this function only returns the tooltip if the focused
             displayable is part of the screen.
+
+        `last`
+            If true, returns the last non-None value this function would
+            have returned.
         """
 
-        return renpy.display.focus.get_tooltip(screen)
+        return renpy.display.focus.get_tooltip(screen, last)
 
 
     class __TooltipAction(Action, FieldEquality):
@@ -717,6 +721,33 @@ init -1500 python:
 
         def __call__(self):
             renpy.capture_focus(self.name)
+            renpy.restart_interaction()
+
+    @renpy.pure
+    class ToggleFocus(Action, DictEquality):
+        """
+        :doc: focus_action
+
+        If the focus rectangle exists, clears it, otherwise captures it.
+
+        `name`
+            The name of the focus rectangle to store. This should be a string.
+            The name "tooltip" is special, as it is automatically captured
+            when the tooltip is changed.
+        """
+
+        def __init__(self, name="default"):
+            self.name = name
+
+        def __call__(self):
+            name = self.name
+
+            if renpy.get_focus_rect(name) is not None:
+                renpy.clear_capture_focus(name)
+
+            else:
+                renpy.capture_focus(name)
+
             renpy.restart_interaction()
 
     @renpy.pure

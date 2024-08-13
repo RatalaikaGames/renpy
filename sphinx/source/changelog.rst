@@ -225,7 +225,8 @@ The rectangles aside of which the nearrect places things can be captured by
 the new :func:`CaptureFocus` action, which captures the location of the current
 button on the screen. After being captured, the :func:`GetFocusRect` function
 can get the focus rectangle, and the :func:`ClearFocus` can clear the
-captured focus.
+captured focus,  and the :func:`ToggleFocus` action
+captures and clears focus based on the current focus state.
 
 ATL and Transforms
 ------------------
@@ -378,14 +379,19 @@ means that it will only take a single click to launch the game.
 specify default attributes for a tag that are used when other attributes
 do not conflict.
 
-When a Live2D motion contains a curve with a shorter duration then the motion
-it is part of, the last value of the curve is retained to the end of the 
 motion.
+
+Ren'Py used to support a very old system (the ``ui`` system) allowing the
+creation of screens as Python functions. In the current state of Ren'Py, this
+system is obsolete and very much under-optimized. While old games using it will
+continue to be supported, the system has been removed from the documentation.
 
 Rare issues with a displayable being replaced by a displayable of a different
 type are now guarded against. This should only occur when a game is updated
 -------------
-Modal displayables now prevent pauses from ending.
+
+The :func:`renpy.file` function has been renamed to :func:`renpy.open_file`,
+open the file with an encoding.
 
 An issue that could cause images to not display in some cases (when a displayable
 was invalidated) has been fixed.
