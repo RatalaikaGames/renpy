@@ -20,9 +20,25 @@ such changes only take effect when the GUI is regenerated.
 7.5.0
 -----
 
+The "Windows, Mac, and Linux for Markets" distribution has been changed to
+no longer prefix the contents of the zip file created with the directory
+name and version number. If you'd like to retain the old behavior, add
+to your game::
+
+    init python:
+        build.package("market", "zip", "windows linux mac renpy all", "Windows, Mac, Linux for Markets")
+
+For the noalt text tag to work with history, you'll need to edit
+screens.rpy to make sure that :var:`gui.history_allow_tags` contains
+"noalt". The defaultfor this variable is::
+
+    define gui.history_allow_tags = { "alt", "noalt" }
+
+(This change was necessary in 7.4, but only documented now.)
+
 The behavior of Ren'Py changed sometime in the 7.4 series, such that
 rollback through a load behaved correctly, and reverted the changes
-peformed in the ``after_load`` label, and by :var:`config.after_load_callbacks`.
+performed in the ``after_load`` label, and by :var:`config.after_load_callbacks`.
 (The previous behavior was undefined, with some changes reverted and some not,
 leaving the game in an inconsistent state.) If your game has to migrate
 data after a load, it's now recommended to call :func:`renpy.block_rollback`

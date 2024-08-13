@@ -699,8 +699,7 @@ class SayBehavior(renpy.display.layout.Null):
             if ev.type == renpy.display.core.TIMEEVENT and st >= skip_delay:
 
                 if ev.modal:
-                    renpy.config.skipping = None
-                    renpy.exports.restart_interaction()
+                    return None
                 elif renpy.game.preferences.skip_unseen:
                     return True
                 elif renpy.config.skipping == "fast":
@@ -742,10 +741,10 @@ class DismissBehavior(renpy.display.core.Displayable):
         return rv
 
     def find_focusable(self, callback, focus_name):
-        super(DismissBehavior, self).find_focusable(callback, focus_name)
-
         if self.modal and not callable(self.modal):
             renpy.display.focus.mark_modal()
+
+        super(DismissBehavior, self).find_focusable(callback, focus_name)
 
     def render(self, width, height, st, at):
         rv = renpy.display.render.Render(0, 0)
@@ -1135,7 +1134,10 @@ class ImageButton(Button):
                                           **properties)
 
     def visit(self):
-        return list(self.state_children.values())
+        if self.imagebutton_child is None:
+            return list(self.state_children.values())
+        else:
+            return list(self.state_children.values()) + [ self.imagebutton_child ]
 
     def get_child(self):
 
@@ -1149,6 +1151,8 @@ class ImageButton(Button):
                 self.imagebutton_child._unique()
             else:
                 self.imagebutton_child = raw_child
+
+            self.imagebutton_child.per_interact()
 
         return self.imagebutton_child
 

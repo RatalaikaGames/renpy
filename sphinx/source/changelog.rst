@@ -192,6 +192,12 @@ The steam deck also causes Ren'Py to enable the "steam_deck",
 We have a `Ren'Py on Steam Deck Guide <https://github.com/renpy/steam-deck-guide>`_
 to help you get your game certified on that platform. Thanks go to Valve for
 
+The "Windows, Mac, and Linux for Markets" distribution has been changed to
+no longer prefix the contents of the zip file created with the directory
+name and version number, meaning it's no longer required to update launch
+configurations with each release to Steam. This may require a one-time
+update to the launch configuration.
+
 by ignoring various command line arguments supplied by EGS.
 
         if renpy.variant("small"):
@@ -395,6 +401,10 @@ Ren'Py used to support a very old system (the ``ui`` system) allowing the
 creation of screens as Python functions. In the current state of Ren'Py, this
 system is obsolete and very much under-optimized. While old games using it will
 continue to be supported, the system has been removed from the documentation.
+
+Due to issues in underlying libraries, the :func:`renpy.input` function
+and ``input`` displayable are now documented as not supporting IME-based
+(non-alphabetic) input on Android.
 
 Rare issues with a displayable being replaced by a displayable of a different
 type are now guarded against. This should only occur when a game is updated

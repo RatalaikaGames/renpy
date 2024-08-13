@@ -348,6 +348,12 @@ init -1500 python in build:
                 A directory containing the mac app.
             app-dmg
                 A macintosh drive image containing a dmg. (Mac only.)
+            bare-zip
+                A zip file without :var:`build.directory_name`
+                prepended.
+            bare-tar.bz2
+                A zip file without :var:`build.directory_name`
+                prepended.
 
             The empty string will not build any package formats (this
             makes dlc possible).
@@ -375,7 +381,7 @@ init -1500 python in build:
         formats = format.split()
 
         for i in formats:
-            if i not in [ "zip", "app-zip", "tar.bz2", "directory", "dmg", "app-directory", "app-dmg" ]:
+            if i not in [ "zip", "app-zip", "tar.bz2", "directory", "dmg", "app-directory", "app-dmg", "bare-zip", "bare-tar.bz2" ]:
                 raise Exception("Format {} not known.".format(i))
 
         if description is None:
@@ -391,13 +397,16 @@ init -1500 python in build:
             "hidden" : hidden,
             }
 
+        global packages
+        packages = [ i for i in packages if i["name"] != name ]
+
         packages.append(d)
 
     package("pc", "zip", "windows linux renpy all", "PC: Windows and Linux")
     package("linux", "tar.bz2", "linux linux_arm renpy all", "Linux")
     package("mac", "app-zip app-dmg", "mac renpy all", "Macintosh")
     package("win", "zip", "windows renpy all", "Windows")
-    package("market", "zip", "windows linux mac renpy all", "Windows, Mac, Linux for Markets")
+    package("market", "bare-zip", "windows linux mac renpy all", "Windows, Mac, Linux for Markets")
     package("steam", "zip", "windows linux mac renpy all", hidden=True)
     package("android", "directory", "android all", hidden=True, update=False, dlc=True)
     package("ios", "directory", "ios all", hidden=True, update=False, dlc=True)
