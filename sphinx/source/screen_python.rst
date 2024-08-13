@@ -40,8 +40,8 @@ sensitive, and when it is selected.
        action will cause the current interaction to end.
 
        This method must be overridden, as the default method will
-       raise NotImplemented (and hence cause Ren'Py to report an
-       error).
+       raise a NotImplemented exception (and hence cause Ren'Py to
+       report an error).
 
    .. method:: get_sensitive(self)
 
@@ -232,8 +232,8 @@ becomes::
 
 Creator-defined screen language statements must be registered in a ``python early`` block.
 What's more, the filename containing the creator-defined statement must be be loaded earlier
-than any file that uses it. Since Ren'Py loads files in Unicode sort order, it
-generally makes sense to prefix the name of any file registering a user-defined
+than any file that uses it. Since Ren'Py loads files in the Unicode sort order of their paths,
+it generally makes sense to prefix the name of any file registering a user-defined
 statement with 01, or some other small number.
 
 Creator-defined screen language statements are registered with the renpy.register_sl_statement
