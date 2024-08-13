@@ -12,13 +12,33 @@ features.
 Incompatible changes to the GUI are documented at :ref:`gui-changes`, as
 such changes only take effect when the GUI is regenerated.
 
-.. _incompatible-7.4.11:
+
+.. _incompatible-8.0.2:
+.. _incompatible-7.5.2:
+
+8.0.2 / 7.5.2
+-------------
+
+A modal screen now blocks the ``pause`` statement and :func:`renpy.pause``
+function from timing out. This was the indended behavior, but didn't work
+in some cases. This change can be reverted with::
+
+    define config.modal_blocks_pause = False
+
+The default games no longer filter Ruby/Furigana text tags from the history.
+This requires the line in screens.rpy that sets :var:`gui.history_allow_tags`
+to be changed to::
+
+    define gui.history_allow_tags = { "alt", "noalt", "rt", "rb", "art" }
+
+This change is only required if your game uses Ruby/Furigana text tags.
+
 
 .. _incompatible-8.0.0:
 .. _incompatible-7.5.0:
 
-7.5.0
------
+8.0.0 / 7.5.0
+-------------
 
 The "Windows, Mac, and Linux for Markets" distribution has been changed to
 no longer prefix the contents of the zip file created with the directory
@@ -69,9 +89,15 @@ this change::
 
     define config.box_skip = False
 
-Ren'Py will now run a button's unhovered property even when focus is 
-changed by default, such as when a screen is shown or unshown. To 
-revert to the old behavior, use:
+The :propref:`focus_mask` style property now defaults to None for drag displayables.
+This improves performance, but means that the displayable can be dragged by
+transparent pixels. To revert this, the focus_mask property can be set to True
+for individual drags, or globally with::
+
+    style drag:
+        focus_mask True
+
+Both options reduce performance.
 
 The :propref:`outline_scaling` style property now defaults to "linear". This means
 the window scaling factor is applied to the outline size, and then rounded to an
@@ -104,7 +130,7 @@ Vpgrids cannot be overfull anymore, and can only be underfull if the
 ``allow_underfull`` property is passed, or if :var:`config.allow_underfull_grids` is
 set to True.
 
-The way :ref:`layered images <layered-images>` place their children, and how children
+The way :doc:`layered images <layeredimage>` place their children, and how children
 with variable size are sized, has changed. Instead of taking into account the available
 area in the context the layeredimage is displayed, it now presumes the size of the
 screen is available, unless an explicit size has been given with :tpref:`xsize`,

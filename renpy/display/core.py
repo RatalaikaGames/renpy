@@ -3566,6 +3566,9 @@ class Interface(object):
 
         renpy.plog(1, "start interact_core")
 
+        # Check to see if the language has changed.
+        renpy.translation.check_language()
+
         suppress_overlay = suppress_overlay or renpy.store.suppress_overlay
 
         # Store the various parameters.
@@ -3613,9 +3616,6 @@ class Interface(object):
                 return False, None
             if not self.old_scene:
                 return False, None
-
-        # Check to see if the language has changed.
-        renpy.translation.check_language()
 
         # We just restarted.
         self.restart_interaction = False
@@ -3699,6 +3699,11 @@ class Interface(object):
 
         renpy.plog(1, "final predict")
 
+        if pause is not None:
+            pb = renpy.display.behavior.PauseBehavior(pause)
+            root_widget.add(pb, pause_start, pause_start)
+            focus_roots.append(pb)
+
         # The root widget of all of the layers.
         layers_root = renpy.display.layout.MultiBox(layout='fixed')
         layers_root.layers = { }
@@ -3774,11 +3779,6 @@ class Interface(object):
 
         else:
             root_widget.add(layers_root)
-
-        if pause is not None:
-            pb = renpy.display.behavior.PauseBehavior(pause)
-            root_widget.add(pb, pause_start, pause_start)
-            focus_roots.append(pb)
 
         # Add top_layers to the root_widget.
         for layer in renpy.config.top_layers:

@@ -25,7 +25,8 @@ and rolled-back when rollback occurs.
 
     This is undefined by default. If defined, and if :var:`config.mouse` is
     set at game startup, this is a key that is used to look up a mouse cursor
-    in config.mouse when the current cursor does not exist, or is the default.
+    when the current cursor does not exist, or is the default. This is used by
+    :var:`config.mouse` and :func:`MouseDisplayable`.
 
 .. var:: _dismiss_pause = True
 
@@ -49,7 +50,7 @@ and rolled-back when rollback occurs.
 .. var:: _history_list = [ ]
 
     This is a list of history objects, corresponding to each line of history
-    from oldest to newest. See the :ref:`History <history>` section for more
+    from oldest to newest. See the :doc:`History <history>` section for more
     information.
 
 .. var:: _ignore_action = None
@@ -168,4 +169,3 @@ and rolled-back when rollback occurs.
     This is appended to :var:`config.window_title` to produce the caption for the game
     window. This is automatically set to :var:`config.menu_window_subtitle` while in
     the game menu.
-

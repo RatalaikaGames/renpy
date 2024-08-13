@@ -387,7 +387,8 @@ def is_selected(action):
     :name: renpy.is_selected
     :doc: run
 
-    Returns true if `action` indicates it is selected, or false otherwise.
+    Returns a true value if the provided action or list of actions
+    indicates it is selected, and false otherwise.
     """
 
     if isinstance(action, (list, tuple)):
@@ -407,7 +408,8 @@ def is_sensitive(action):
     :name: renpy.is_sensitive
     :doc: run
 
-    Returns true if `action` indicates it is sensitive, or False otherwise.
+    Returns a true value if the provided action or list of actions
+    indicates it is sensitive, and false otherwise.
     """
 
     if isinstance(action, (list, tuple)):
@@ -517,24 +519,25 @@ class PauseBehavior(renpy.display.layout.Null):
 
     def event(self, ev, x, y, st):
 
-        if ev.type == renpy.display.core.TIMEEVENT and ev.modal:
-            renpy.game.interface.timeout(max(self.delay - st, 0))
-            return
+        if ev.type == renpy.display.core.TIMEEVENT:
+            if ev.modal and renpy.config.modal_blocks_pause:
+                renpy.game.interface.timeout(max(self.delay - st, 0))
+                return
 
-        if st >= self.delay:
+            if st >= self.delay:
 
-            if self.voice and renpy.config.nw_voice:
-                if (not renpy.config.afm_callback()) or renpy.display.tts.is_active():
-                    renpy.game.interface.timeout(0.05)
-                    return
+                if self.voice and renpy.config.nw_voice:
+                    if (not renpy.config.afm_callback()) or renpy.display.tts.is_active():
+                        renpy.game.interface.timeout(0.05)
+                        return
 
-            # If we have been drawn since the timeout, simply return
-            # true. Otherwise, force a redraw, and return true when
-            # it comes back.
-            if renpy.game.interface.drawn_since(st - self.delay):
-                return self.result
-            else:
-                renpy.game.interface.force_redraw = True
+                # If we have been drawn since the timeout, simply return
+                # true. Otherwise, force a redraw, and return true when
+                # it comes back.
+                if renpy.game.interface.drawn_since(st - self.delay):
+                    return self.result
+                else:
+                    renpy.game.interface.force_redraw = True
 
         renpy.game.interface.timeout(max(self.delay - st, 0))
 
@@ -641,6 +644,9 @@ class SayBehavior(renpy.display.layout.Null):
                     max_time = max(max_time, t.get_time())
 
                 afm_delay += max_time
+
+            if ev.type == renpy.display.core.TIMEEVENT and ev.modal:
+                return None
 
             if st > afm_delay:
                 if renpy.config.afm_callback:
@@ -2443,7 +2449,7 @@ class MouseArea(renpy.display.core.Displayable):
         if renpy.display.focus.pending_focus_type == 'keyboard':
             is_hovered = False
 
-        if (ev.type == renpy.display.core.TIMEEVENT) and ev.modal:
+        elif (ev.type == renpy.display.core.TIMEEVENT) and ev.modal:
             is_hovered = False
 
         else:

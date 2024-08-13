@@ -753,6 +753,9 @@ new_compile_flags = (old_compile_flags
 py3_compile_flags = (new_compile_flags |
                       __future__.division.compiler_flag)
 
+if not PY2:
+    py3_compile_flags |= __future__.annotations.compiler_flag
+
 # The set of files that should be compiled under Python 2 with Python 3
 # semantics.
 py3_files = set()
@@ -1119,6 +1122,9 @@ class StoreProxy(object):
     def __delattr__(self, k):
         delattr(renpy.store, k) # @UndefinedVariable
 
+# This needs to exist even after PY2 support is dropped, to load older saves.
+def method_unpickle(obj, name):
+    return getattr(obj, name)
 
 if PY2:
 
@@ -1132,9 +1138,6 @@ if PY2:
             obj = method.im_class
 
         return method_unpickle, (obj, name)
-
-    def method_unpickle(obj, name):
-        return getattr(obj, name)
 
     copyreg.pickle(types.MethodType, method_pickle)
 
