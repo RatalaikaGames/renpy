@@ -678,7 +678,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 
     c = &channels[channel];
 
-    newMedia = load_stream(rw, ext, start, end, relative_volume, c->video);
+    newMedia = load_stream(rw, ext, start, end, c->video);
     
     Py_INCREF(name);
 
