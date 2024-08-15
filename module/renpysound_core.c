@@ -600,7 +600,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
 
 		if(maybeAlreadyMediaState)
 			newMedia = (struct MediaState*) maybeAlreadyMediaState;
-    else newMedia = load_sample(rw, ext, start, end, c->video);
+    else newMedia = load_stream(rw, ext, start, end, c->video);
 
         if(!newMedia)
             return;
@@ -635,7 +635,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
     /* Allocate playing sample. */
 
     c->playing = newMedia;
-    c->playing = load_sample(rw, ext, start, end, c->video);
+    c->playing = load_stream(rw, ext, start, end, c->video);
 
     if (! c->playing) {
       UNLOCK_NAME();
@@ -677,7 +677,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 
     c = &channels[channel];
 
-    newMedia = load_sample(rw, ext, start, end, relative_volume, c->video);
+    newMedia = load_stream(rw, ext, start, end, relative_volume, c->video);
     
     Py_INCREF(name);
 
@@ -704,7 +704,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     }
 
     /* Allocate queued sample. */
-    c->queued = load_sample(rw, ext, start, end, c->video);
+    c->queued = load_stream(rw, ext, start, end, c->video);
     media_start(newMedia);
 
     if (! c->queued) {
