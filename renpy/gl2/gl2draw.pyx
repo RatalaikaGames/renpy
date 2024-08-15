@@ -460,7 +460,7 @@ cdef class GL2Draw:
         if not fullscreen and not maximized:
             if not self.ever_set_position:
                 self.ever_set_position = True
-                pygame.display.get_window().set_position(default_position)
+                #pygame.display.get_window().set_position(default_position)
 
         # Get the size of the created screen.
         pwidth, pheight = renpy.display.core.get_size()
