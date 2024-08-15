@@ -392,8 +392,8 @@ def quit(): # @ReservedAssignment
 def init():
     location = FileLocation(renpy.config.savedir)
     # 3. Extra savedirs.
-    for i in renpy.config.extra_savedirs:
-        location.add(FileLocation(i))
+    #for i in renpy.config.extra_savedirs:
+        #location.add(FileLocation(i))
 
     # Scan the location once.
     location.scan()
