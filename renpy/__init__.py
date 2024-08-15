@@ -434,12 +434,12 @@ def import_all():
     import renpy.curry
     import renpy.color
     import renpy.easy
-    import renpy.encryption
+    #import renpy.encryption
     import renpy.execution
     import renpy.lexer
     import renpy.loadsave
     import renpy.savelocation
-    import renpy.savetoken
+    #import renpy.savetoken
     import renpy.persistent
     import renpy.scriptedit
     import renpy.parser
