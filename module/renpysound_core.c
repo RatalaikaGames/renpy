@@ -408,8 +408,8 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
     length /= 4;
 
-    float* mix_buffer = (float*)alloca(length * 2 * sizeof(float));
-    short* stream_buffer = (short*)alloca(length * 2 * sizeof(short));
+    float* mix_buffer = (float*)malloc(length * 2 * sizeof(float));
+    short* stream_buffer = (short*)malloc(length * 2 * sizeof(short));
 
     memset(mix_buffer, 0, length * 2 * sizeof(float));
 
