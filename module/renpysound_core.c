@@ -404,7 +404,7 @@ void (*RPS_generate_audio_c_function)(float *stream, int length) = NULL;
 static void callback(void *userdata, Uint8 *stream, int length) {
 
 	//MBG - use this instead
-	Uint8* buffer = (Uint8*)alloca(length);
+	//Uint8* buffer = (Uint8*)alloca(length);
 
     length /= 4;
 
@@ -525,7 +525,8 @@ static void callback(void *userdata, Uint8 *stream, int length) {
         ((short *) stream)[i * 2 + 1] = right;
     }
 
-
+    free(mix_buffer);
+    free(stream_buffer);
 }
 
 
