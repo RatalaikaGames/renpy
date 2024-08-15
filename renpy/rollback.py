@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -89,7 +89,7 @@ class NoRollback(SlottedNoRollback):
 
 class AlwaysRollback(renpy.revertable.RevertableObject):
     """
-    This is a revertible object that always participates in rollback.
+    This is a revertable object that always participates in rollback.
     It's used when a revertable object is created by an object that
     doesn't participate in the rollback system.
     """
@@ -133,6 +133,9 @@ def reached(obj, reachable, wait):
         nosave = getattr(obj, "nosave", None)
 
         if nosave is not None:
+
+            nosave = getattr(obj, "noreach", nosave)
+
             for k, v in vars(obj).items():
                 if k not in nosave:
                     reached(v, reachable, wait)
@@ -392,8 +395,8 @@ class Rollback(renpy.object.Object):
 
         rng.pushback(self.random)
 
-        renpy.game.contexts.pop()
-        renpy.game.contexts.append(self.context)
+        self.rollback_control()
+
 
     def rollback_control(self):
         """
@@ -401,8 +404,7 @@ class Rollback(renpy.object.Object):
         the data information intact.
         """
 
-        renpy.game.contexts.pop()
-        renpy.game.contexts.append(self.context)
+        renpy.game.contexts = renpy.game.contexts[:-1] + [ self.context ]
 
 
 class RollbackLog(renpy.object.Object):
@@ -749,6 +751,8 @@ class RollbackLog(renpy.object.Object):
         """
 
         self.checkpointing_suspended = flag
+        self.current.not_greedy = True
+        renpy.game.contexts[0].force_checkpoint = True
 
     def block(self, purge=False):
         """
@@ -757,6 +761,8 @@ class RollbackLog(renpy.object.Object):
         """
 
         self.rollback_limit = 0
+        if self.current is not None:
+            self.current.not_greedy = True
         renpy.game.context().force_checkpoint = True
 
         if purge:
@@ -847,7 +853,7 @@ class RollbackLog(renpy.object.Object):
             and so on.
 
         `current_label`
-            A lable that is called when control returns to the current statement,
+            A label that is called when control returns to the current statement,
             after rollback. (At most one of `current_label` and `label` can be
             provided.)
         """
@@ -895,7 +901,7 @@ class RollbackLog(renpy.object.Object):
         force_checkpoint = False
 
         # Try to rollback to just after the previous checkpoint.
-        while greedy and self.log and (self.rollback_limit > 0):
+        while greedy and self.log:
 
             rb = self.log[-1]
 

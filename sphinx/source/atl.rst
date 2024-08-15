@@ -26,7 +26,7 @@ The ``transform`` statement creates a transform that can be supplied as part of 
 at clause. The syntax of the transform statement is:
 
 .. productionlist:: script
-    atl_transform : "transform" `name` "(" `parameters` ")" ":"
+    atl_transform : "transform" `qualname` ( "(" `parameters` ")" )? ":"
                   :    `atl_block`
 
 The transform statement  must be run at init time. If it is found outside an
@@ -35,13 +35,17 @@ priority of 0. The transform may have a list of parameters, which must be
 supplied when it is called. Default values for the right-most parameters can
 be given by adding "=" and the value (e.g. "transform a (b, c=0):").
 
-`Name` must be a Python identifier. The transform created by the ATL block is
-bound to this name.::
+`qualname` must be a set of dot-separated Python identifiers. The transform created
+by the ATL block is bound to this name, within the given
+:ref:`store <named-stores>` if one was provided.::
 
-   transform left_to_right:
-       xalign 0.0
-       linear 2.0 xalign 1.0
-       repeat
+    transform left_to_right:
+        xalign 0.0
+        linear 2.0 xalign 1.0
+        repeat
+
+    transform ariana.left:
+        xcenter .3
 
 .. _atl-image-statement:
 
@@ -1119,9 +1123,6 @@ both horizontal and vertical positions.
     when MatrixColors are used, and the MatrixColors are structurally similar.
     See :doc:`matrixcolor` for more information.
 
-    This requires model-based rendering to be enabled by setting :var:`config.gl2` to
-    True.
-
 .. transform-property:: blur
 
     :type: None or float
@@ -1132,13 +1133,22 @@ both horizontal and vertical positions.
     between Ren'Py versions, and the blurring may exhibit artifacts,
     especially when the image being blurred is changing.
 
-    This requires model-based rendering to be enabled by setting :var:`config.gl2` to
-    True.
+
+.. transform-property:: show_cancels_hide
+
+    :type: boolean
+    :default: True
+
+    Normally, when a displayable or screen with the same tag or name as one
+    that is hiding is shown, the hiding displayable or screen is removed,
+    cancelling the hide transform. If this property is False in the hide
+    transform, this cancellation will not occur, and the hide transform
+    will proceed to completion.
 
 There are also several sets of transform properties that are documented elsewhere:
 
 3D Stage properties:
-    :tpref:`perspective`, :tpref:`matrixanchor`, :tpref:`matrixtransform`, :tpref:`zpos`, :tpref:`zzoom`
+    :tpref:`perspective`, :tpref:`point_to`, :tpref:`orientation`, :tpref:`xrotate`, :tpref:`yrotate`, :tpref:`zrotate`, :tpref:`matrixanchor`, :tpref:`matrixtransform`, :tpref:`zpos`, :tpref:`zzoom`
 
 Model-based rendering properties:
     :tpref:`blend`, :tpref:`mesh`, :tpref:`mesh_pad`, :tpref:`shader`
@@ -1157,6 +1167,9 @@ These properties are applied in the following order:
 #. crop, corner1, corner2
 #. xysize, size, maxsize
 #. zoom, xzoom, yzoom
+#. point_to
+#. orientation
+#. xrotate, yrotate, zrotate
 #. rotate
 #. zpos
 #. matrixtransform, matrixanchor
@@ -1166,6 +1179,7 @@ These properties are applied in the following order:
 #. matrixcolor
 #. GL Properties, Uniforms
 #. position properties
+#. show_cancels_hide
 
 Deprecated Transform Properties
 ===============================
@@ -1261,7 +1275,7 @@ The following events can be triggered automatically:
     another screen. This happens in rare but possible cases, such as when
     the game is loaded and when styles or translations change.
 
-``hover``, ``idle``, ``selected_hover``, ``selected_idle``
+``hover``, ``idle``, ``selected_hover``, ``selected_idle``, ``insensitive``, ``selected_insensitive``
    Triggered when button containing this transform, or a button contained
    by this transform, enters the named state.
 

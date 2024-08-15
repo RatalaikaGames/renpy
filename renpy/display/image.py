@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -115,6 +115,9 @@ def check_image_attributes(tag, attributes):
     Otherwise, returns None.
     """
 
+    negative = tuple(i for i in attributes if i[:1] == "-")
+    attributes = [i for i in attributes if i[:1] != "-"]
+
     l = [ ]
 
     for attrs, d in image_attributes[tag].items():
@@ -127,22 +130,26 @@ def check_image_attributes(tag, attributes):
 
             chosen = ca(tag, remainder, None)
             if chosen is not None:
-                l.append(list(attrs) + list(chosen))
+                l.append(attrs + tuple(chosen))
 
         else:
 
             if not remainder:
                 l.append(attrs)
 
+    if negative:
+        negated = {i[1:] for i in negative}
+        l = [ i for i in l if not (negated & set(i)) ]
+
     # Check to see if there's an image that is exactly the one we want.
     for i in l:
         if len(i) == len(attributes):
-            return tuple(i)
+            return tuple(i + negative)
 
     if len(l) != 1:
         return None
 
-    return tuple(l[0])
+    return tuple(l[0] + negative)
 
 
 def get_ordered_image_attributes(tag, attributes=(), sort=None):
@@ -477,7 +484,7 @@ class ImageReference(renpy.display.core.Displayable):
 
     def _handles_event(self, event):
         if self.target is None:
-            return False
+            self.find_target()
 
         return self.target._handles_event(event)
 
@@ -738,7 +745,7 @@ class DynamicImage(renpy.display.core.Displayable):
 
     def _handles_event(self, event):
         if self.target is None:
-            return False
+            self.find_target()
 
         return self.target._handles_event(event)
 
@@ -999,7 +1006,8 @@ class ShownImageInfo(renpy.object.Object):
 
             if ca:
                 ca_required = [ i for i in required if i not in attrs ]
-                ca_optional = [ i for i in optional if i not in attrs ]
+                ca_optional = [ i for i in optional if i not in attrs if i not in required ]
+
                 newattrs = ca(tag, ca_required, ca_optional)
 
                 if newattrs is None:
@@ -1007,18 +1015,20 @@ class ShownImageInfo(renpy.object.Object):
 
                 attrs = attrs + newattrs
 
-            num_required = 0
+            else:
 
-            for i in attrs:
-                if i in required:
-                    num_required += 1
+                num_required = 0
+
+                for i in attrs:
+                    if i in required:
+                        num_required += 1
+                        continue
+
+                # We don't have any not-found attributes. But we might not
+                # have all of the attributes.
+
+                if num_required != len(required):
                     continue
-
-            # We don't have any not-found attributes. But we might not
-            # have all of the attributes.
-
-            if num_required != len(required):
-                continue
 
             len_attrs = len(set(attrs))
 

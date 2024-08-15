@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -101,12 +101,14 @@ def compat_open(*args, **kwargs):
 
 
 ################################################################################
-# Make strict use surrogateescape error handling.
-if PY2:
-    import codecs
+# Make strict use surrogateescape error handling on PY2.
 
-    strict_error = codecs.lookup_error("strict")
-    codecs.register_error("python_strict", strict_error)
+import codecs
+
+strict_error = codecs.lookup_error("strict")
+codecs.register_error("python_strict", strict_error)
+
+if PY2:
     surrogateescape_error = codecs.lookup_error("surrogateescape")
     codecs.register_error("strict", surrogateescape_error)
 
@@ -116,10 +118,13 @@ renpy.update_path()
 ################################################################################
 # String (text and binary) types and functions.
 
-basestring = future.utils.string_types # @ReservedAssignment
+basestring = future.utils.string_types
 pystr = str
-str = future.utils.text_type # @ReservedAssignment
-unicode = future.utils.text_type # @ReservedAssignment
+unicode = future.utils.text_type
+
+# This tries to help pylance get the types right.
+str = builtins.str; globals()["str"] = future.utils.text_type
+
 
 bord = future.utils.bord
 
@@ -168,7 +173,6 @@ round = builtins.round
 
 if PY2:
 
-    import io
     import types
 
     # io.TextIOWrapper._write = io.TextIOWrapper.write
@@ -180,6 +184,19 @@ if PY2:
 
     add_attribute(io.TextIOWrapper, "_write", io.TextIOWrapper.write)
     add_attribute(io.TextIOWrapper, "write", types.MethodType(text_write, None, io.TextIOWrapper)) # type: ignore
+
+################################################################################
+# Chance the default for subprocess.Popen.
+if PY2:
+    import subprocess
+    class Popen(subprocess.Popen):
+        def __init__(self, *args, **kwargs):
+            if ("stdout" not in kwargs) and ("stderr" not in kwargs) and ("stdin" not in kwargs):
+                kwargs.setdefault("close_fds", True)
+            super(Popen, self).__init__(*args, **kwargs)
+
+    subprocess.Popen = Popen
+
 
 ################################################################################
 # Export functions.

@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,6 +23,8 @@ from __future__ import print_function
 
 from libc.string cimport memset
 from libc.math cimport sin, cos
+
+DEF pi = 3.14159265358979323846
 
 cdef float *aligned_1 = [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
 cdef float *aligned_2 = [ 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 ]
@@ -101,10 +103,12 @@ cdef class Matrix:
 
     _types = "".join(["{} : float\n".format(i) for i in fields])
 
+    def __cinit__(self):
+        self.m = &self.xdx
 
     def __init__(Matrix self, l):
 
-        memset(self.m(), 0, sizeof(float) * 16)
+        memset(self.m, 0, sizeof(float) * 16)
 
         if l is None:
             return
@@ -137,7 +141,7 @@ cdef class Matrix:
         rv = { }
 
         for i in range(16):
-            rv[fields[i]] = self.m()[i]
+            rv[fields[i]] = self.m[i]
 
         rv["origin"] = getattr(self, "origin", None)
 
@@ -145,14 +149,14 @@ cdef class Matrix:
 
     def __setstate__(self, state):
 
-        memset(self.m(), 0, sizeof(float) * 16)
+        memset(self.m, 0, sizeof(float) * 16)
 
         self.zdz = 1.0
         self.wdw = 1.0
 
         for i in range(16):
             if fields[i] in state:
-                self.m()[i] = state[fields[i]]
+                self.m[i] = state[fields[i]]
 
         self.origin = state.get("origin", None)
 
@@ -192,7 +196,7 @@ cdef class Matrix:
             if y:
                 rv += "\n        "
             for 0 <= x < 4:
-                rv += "{:10.7f}, ".format(self.m()[x + y * 4])
+                rv += "{:10.7f}, ".format(self.m[x + y * 4])
 
         return rv + "])"
 
@@ -222,7 +226,7 @@ cdef class Matrix:
         total = 0
 
         for 0 < i < 16:
-            total += abs(self.m()[i] - other.m()[i])
+            total += abs(self.m[i] - other.m[i])
 
         return total < .0001
 
@@ -245,7 +249,7 @@ cdef class Matrix:
         total_2 = 0
 
         for 0 < i < 16:
-            v = abs(self.m()[i])
+            v = abs(self.m[i])
             total_1 += abs(v - aligned_1[i])
             total_2 += abs(v - aligned_2[i])
 
@@ -301,8 +305,8 @@ cdef class Matrix:
 
         self.inverse_cache = rv
 
-        cdef float *m = self.m()
-        cdef float *im = rv.m()
+        cdef float *m = self.m
+        cdef float *im = rv.m
 
         cdef double A2323 = m[10] * m[15] - m[11] * m[14];
         cdef double A1323 = m[ 9] * m[15] - m[11] * m[13];
@@ -331,7 +335,7 @@ cdef class Matrix:
             - m[ 3] * ( m[ 4] * A1223 - m[ 5] * A0223 + m[ 6] * A0123 )
 
         if det == 0:
-            rv.m()[15] = 1.0
+            rv.m[15] = 1.0
             return rv
 
         det = 1 / det;
@@ -490,7 +494,7 @@ cdef class Matrix:
 cdef class Matrix2D(Matrix):
 
     def __init__(Matrix2D self, double xdx, double xdy, double ydx, double ydy):
-        memset(self.m(), 0, sizeof(float) * 16)
+        memset(self.m, 0, sizeof(float) * 16)
 
         self.xdx = xdx
         self.xdy = xdy

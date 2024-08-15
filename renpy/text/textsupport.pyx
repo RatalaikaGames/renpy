@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -21,6 +21,8 @@
 
 from __future__ import print_function
 from builtins import chr
+
+import renpy
 
 cdef extern void r3api_set_textmode(int flag);
 
@@ -109,13 +111,26 @@ def tokenize(unicode s):
 
     cdef list rv = [ ]
 
+    def finish_text():
+        if  (u"【" in buf) and renpy.config.lenticular_bracket_ruby:
+            rv.extend(lenticular_bracket_ruby(buf))
+        else:
+            rv.append((TEXT, buf))
+
+    if not s:
+        return [ ]
+
+    if (u"{" not in s) and (u'\n' not in s) and (u"【" not in s):
+        rv.append((TEXT, s))
+        return rv
+
     for c in s:
 
         if state == TEXT_STATE:
 
             if c == u'\n':
                 if buf:
-                    rv.append((TEXT, buf))
+                    finish_text()
 
                 rv.append((PARAGRAPH, u''))
                 buf = u''
@@ -141,7 +156,7 @@ def tokenize(unicode s):
 
             else:
                 if buf:
-                    rv.append((TEXT, buf))
+                    finish_text()
 
                 buf = c
                 state = TAG_STATE
@@ -162,7 +177,97 @@ def tokenize(unicode s):
         raise Exception("Open text tag at end of string {0!r}.".format(s))
 
     if buf:
-        rv.append((TEXT, buf))
+        finish_text()
+
+    if s == "":
+        print(rv)
+
+    return rv
+
+
+def lenticular_bracket_ruby(s):
+    """
+    This tokenizes text that may contain lenticular bracket ruby. It searches
+    for 【東京｜とうきょう】 and converts it to the equivalent of
+    {rb}東京{/rb}{rt}とうきょう{/rt}.
+    """
+
+    cdef int TEXT_STATE = 1
+    cdef int LEFT_STATE = 2
+    cdef int RIGHT_STATE = 3
+    cdef int state = TEXT_STATE
+
+    cdef Py_UCS4 c
+    cdef unicode buf = u''
+
+    cdef list rv = [ ]
+
+    for c in s:
+
+        if state == TEXT_STATE:
+
+            if c == u'【':
+                if buf:
+                    rv.append((TEXT, buf))
+
+                buf = u''
+                state = LEFT_STATE
+                continue
+
+            else:
+                buf += c
+                continue
+
+        elif state == LEFT_STATE:
+            if c == u'【' and not buf:
+                buf += c
+                state = TEXT_STATE
+                continue
+
+            elif c == u'】':
+                rv.append((TEXT, u'【' + buf + u'】'))
+                buf = u''
+                state = TEXT_STATE
+                continue
+
+            elif c == u'｜' or c == u'|':
+                rv.append((TAG, "rb"))
+                rv.append((TEXT, buf))
+                rv.append((TAG, "/rb"))
+
+                buf = u''
+                state = RIGHT_STATE
+                continue
+
+            else:
+                buf += c
+                continue
+
+        elif state == RIGHT_STATE:
+
+            if c == u'】':
+                rv.append((TAG, "rt"))
+                rv.append((TEXT, buf))
+                rv.append((TAG, "/rt"))
+                buf = u''
+                state = TEXT_STATE
+                continue
+
+            else:
+                buf += c
+
+    if buf:
+
+        if state == TEXT_STATE:
+            rv.append((TEXT, buf))
+
+        elif state == LEFT_STATE:
+            rv.append((TEXT, u'【' + buf))
+
+        elif state == RIGHT_STATE:
+            rv.append((TAG, "rt"))
+            rv.append((TEXT, buf))
+            rv.append((TAG, "/rt"))
 
     return rv
 
@@ -216,9 +321,9 @@ for i in range(0, 65536):
 def language_tailor(chars, cls):
     """
     :doc: other
-    :args: (chars, cls)
 
-    This can be used to override the line breaking class of a character. For
+    This can be used to override the line breaking class of a unicode
+    character. For
     example, the linebreaking class of a character can be set to ID to
     treat it as an ideograph, which allows breaks before and after that
     character.
@@ -544,7 +649,7 @@ def place_horizontal(list glyphs, float start_x, float first_indent, float rest_
         elif g.split == SPLIT_BEFORE:
             x = start_x + rest_indent
 
-        g.x = <short> (x + .5)
+        g.x = <int> (x + .5)
 
         if maxx < x + g.width:
             maxx = x + g.width
@@ -719,9 +824,9 @@ def max_times(list l):
 
 def hyperlink_areas(list l):
     """
-    Returns a list of (hyperlink, x, y, w, h) tuples, where each entry in
+    Returns a list of (hyperlink, x, y, w, h, valid_st) tuples, where each entry in
     the rectangle represents a contiguous portion of a hyperlink on the
-    given line.
+    given line, and valid_st is when the first part of the rectangle is shown.
     """
 
     cdef Line line
@@ -734,6 +839,7 @@ def hyperlink_areas(list l):
     cdef int max_x
     cdef int min_x
     cdef int hyperlink
+    cdef float hyperlink_time
 
     rv = [ ]
 
@@ -742,6 +848,7 @@ def hyperlink_areas(list l):
         len_gl = len(gl)
 
         hyperlink = 0
+        hyperlink_time = 86400 # Just a big number.
         max_x = 0
         min_x = 1000000
         pos = 0
@@ -751,8 +858,9 @@ def hyperlink_areas(list l):
             g = gl[pos]
 
             if (hyperlink and g.hyperlink != hyperlink):
-                rv.append((hyperlink, min_x, line.y, max_x - min_x, line.height))
+                rv.append((hyperlink, min_x, line.y, max_x - min_x, line.height, hyperlink_time))
                 hyperlink = 0
+                hyperlink_time = 86400
                 max_x = 0
                 min_x = 1000000
 
@@ -765,10 +873,12 @@ def hyperlink_areas(list l):
                 if g.x + g.width > max_x:
                     max_x = g.x + <int> g.width
 
+                hyperlink_time = min(g.time, hyperlink_time)
+
             pos += 1
 
         if hyperlink:
-            rv.append((hyperlink, min_x, line.y, max_x - min_x, line.height))
+            rv.append((hyperlink, min_x, line.y, max_x - min_x, line.height, hyperlink_time))
 
     return rv
 
@@ -1002,15 +1112,15 @@ def tweak_glyph_spacing(list glyphs, list lines, double dx, double dy, double w,
     if w <= 0 or h <= 0:
         return
 
-    cdef short old_x_offset = 0
-    cdef short x_offset
+    cdef int old_x_offset = 0
+    cdef int x_offset
 
     for g in glyphs:
 
-        x_offset = <short> (dx * g.x / w)
+        x_offset = int(dx * g.x / w)
 
         g.x += x_offset
-        g.y += <short> (dy * g.y / h)
+        g.y += int(dy * g.y / h)
 
         if x_offset > old_x_offset:
             g.delta_x_offset = x_offset - old_x_offset
@@ -1020,12 +1130,15 @@ def tweak_glyph_spacing(list glyphs, list lines, double dx, double dy, double w,
     for l in lines:
         end = l.y + l.height
 
+        if end > 32767:
+            break
+
         l.y += int(dy * l.y / h)
         end += int(dy * end / h)
 
         l.height = end - l.y
 
-def offset_glyphs(list glyphs, short x, short y):
+def offset_glyphs(list glyphs, int x, int y):
     cdef Glyph g
 
     if x == 0 and y == 0:
@@ -1034,5 +1147,3 @@ def offset_glyphs(list glyphs, short x, short y):
     for g in glyphs:
         g.x += x
         g.y += y
-
-"This exists to force a recompile for Ren'Py 8.0.2 and 7.5.2."

@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -414,8 +414,9 @@ init -1500 python:
             when entering the replay.
 
         `locked`
-            If true, this replay is locked. If false, it is unlocked. If None, the
-            replay is locked if the label has not been seen in any playthrough.
+            If true, this action is insensitive and will not do anything when triggered.
+            If false, it will behave normally. If None, it will be locked if the label
+            has not been seen in any playthrough.
         """
 
         def __init__(self, label, scope={}, locked=None):
@@ -425,7 +426,7 @@ init -1500 python:
 
         def __call__(self):
 
-            if self.locked:
+            if not self.get_sensitive():
                 return
 
             if config.enter_replay_transition:
@@ -510,20 +511,23 @@ init -1500 python:
     class Function(Action):
         """
         :doc: other_action
+        :args: (callable, *args, _update_screens=True, **kwargs)
 
-        This Action calls `callable` with `args` and `kwargs`.
+        This Action calls ``callable(*args, **kwargs)``.
 
         `callable`
             Callable object. This assumes that if two callables compare
             equal, calling either one will be equivalent.
+
         `args`
-            position arguments to be passed to `callable`.
+            positional arguments to be passed to `callable`.
+
         `kwargs`
             keyword arguments to be passed to `callable`.
 
-        This Action takes an optional _update_screens keyword argument, which
-        defaults to true. When it is true, the interaction restarts and
-        the screens are updated after the function returns.
+        `_update_screens`
+            When true, the interaction restarts and the screens are updated
+            after the function returns.
 
         If the function returns a non-None value, the interaction stops and
         returns that value. (When called using the call screen statement, the
@@ -628,7 +632,6 @@ init -1500 python:
         def get_tooltip(self):
             return renpy.display.behavior.get_tooltip(self.yes)
 
-
     @renpy.pure
     class Scroll(Action, DictEquality):
         """
@@ -647,12 +650,18 @@ init -1500 python:
         `amount`
             The amount to scroll by. This can be a number of pixels, or
             else "step" or "page".
+
+        `delay`
+            If non-zero, the scroll will be animated for this many seconds.
         """
 
-        def __init__(self, id, direction, amount="step"):
+        delay = 0.0
+
+        def __init__(self, id, direction, amount="step", delay=0.0):
             self.id = id
             self.direction = direction
             self.amount = amount
+            self.delay = delay
 
         def __call__(self):
 
@@ -683,11 +692,18 @@ init -1500 python:
                 raise Exception("Unknown scroll direction: {}".format(self.direction))
 
             if self.amount == "step":
-                adjustment.change(adjustment.value + delta * adjustment.step)
+                amount = delta * adjustment.step
             elif self.amount == "page":
-                adjustment.change(adjustment.value + delta * adjustment.page)
+                amount = delta * adjustment.page
+            elif isinstance(self.amount, float) and not isinstance(self.amount, absolute):
+                amount = delta * self.amount * adjustment.range
             else:
-                adjustment.change(adjustment.value + delta * self.amount)
+                amount = delta * self.amount
+
+            if self.delay == 0.0:
+                adjustment.change(adjustment.value + amount)
+            else:
+                adjustment.animate(amount, self.delay, _warper.ease)
 
 
     @renpy.pure
@@ -697,7 +713,7 @@ init -1500 python:
         :args: (directory)
 
         Opens `directory` in a file browser. `directory` is relative to
-        the config.basedir.
+        :var:`config.basedir`.
         """
 
         alt = _("Open [text] directory.")
@@ -791,6 +807,7 @@ init -1500 python:
         :doc: focus_action
 
         Clears a stored focus rectangle captured with :func:`CaptureFocus`.
+        If `name` is None, all focus rectangles are cleared.
         """
 
         def __init__(self, name="default"):
@@ -816,6 +833,45 @@ init -1500 python:
 
         return renpy.get_focus_rect(name)
 
+    @renpy.pure
+    class ExecJS(Action, DictEquality):
+        """
+        :doc: other_action
+
+        Executes the given JavaScript source code. This is only supported on
+        the web, and will raise an exception on other platforms. The script
+        is executed asynchronously in the window context, and the return value
+        is not available.
+
+        `code`
+            The JavaScript code to execute.
+        """
+
+        def __init__(self, code):
+            self.code = code
+
+        def __call__(self):
+            if not renpy.emscripten:
+                raise Exception("ExecJS is only supported on the web.")
+
+            import emscripten
+            emscripten.run_script(self.code)
+
+    def CurrentScreenName():
+        """
+        :doc: other_screen_function
+
+        Returns the name of the current screen, or None if there is no
+        current screen. In the case of a screen including by the use
+        screen, this returns the name of the screen that is doing the
+        including, not the name of the screen being included.
+        """
+
+        current = renpy.current_screen()
+        if current is None:
+            return None
+
+        return current.screen_name[0]
 
 init -1500:
 

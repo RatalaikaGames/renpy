@@ -13,6 +13,162 @@ Incompatible changes to the GUI are documented at :ref:`gui-changes`, as
 such changes only take effect when the GUI is regenerated.
 
 
+.. _incompatible-8.1.0:
+.. _incompatible-7.6.0:
+
+8.1.0 / 7.6.0
+-------------
+
+**Texture Memory** Ren'Py now accounts for texture memory more precisely.
+In general, games can raise :var:`config.image_cache_size_mb` by 33%, and
+use the same amount of memory.
+
+
+**Audio Fadeout** When audio is stopped or changed using ``play``, there is now
+a default fadeout of 0.016 seconds, to prevent pops. This is controlled by
+the :var:`config.fadeout_audio` variable. To disable the fadeout::
+
+    define config.fadeout_audio = 0.0
+
+
+**Translate None** Ren'Py will now produce an error when encountering an explicit
+``translate None`` statement that does not translate strings, styles, or python.
+These should be rare, in practice. The recommended change is to replace::
+
+    translate None start_abcd1234:
+        e "This is a test"
+
+with::
+
+    e "This is a test" id start_abcd1234
+
+This change can also be reverted with::
+
+    define config.check_translate_none = False
+
+
+**Keymap** The :doc:`keymap <keymap>` has changed substantially, which means that
+if your game changes the default keymap - usually a bad idea - it
+will need to be updated to reflect the new keysyms.
+
+
+**File Search** Ren'Py will now only look for image files in game/images,
+rather than all files. To look for all files in game/images, use::
+
+    define config.search_prefixes += [ "images/" ]
+
+
+**Android** Android has been changed so that the ``android.keystore`` file and
+``bundle.keystore`` file are expected to be found in the project's base
+directory, and not in the rapt directory. This allows projects to be
+built with different keys, and helps ensure the same keys are used
+with multiple Android versions.
+
+The android configuration file has been renamed from ``.android.json`` to
+``android.json``. Ren'Py will automatically create the new file if the old
+exists.
+
+
+**Dialogue history** Dialogue is now present in the history list
+(and hence the history screen) during the statement in which the
+dialogue is shown. Previously, it was only present at the end of the
+statement. During the statement, the dialogue is shown with a kind of
+"current".
+
+In rare cases, your game might have relied on the old behavior. If so,
+it can be disabled with::
+
+    define config.history_current_dialogue = False
+
+
+**Steam appid** When :var:`config.steam_appid` is not set, Ren'Py will delete
+any existing ``steam_appid.txt`` file in the game directory. This is to prevent
+the wrong app id from being used.
+
+
+**Sticky layers** This release introduces the concept of sticky layers
+which help automatically manage tags being placed on layers other than
+their default. In the rare case that a game requires multiple of the
+same tag, to be displayed at the same time, on different layers then
+this may not be desirable.
+
+To disable sticky layers entirely, add to your game::
+
+    define config.sticky_layers = [ ]
+
+Alternatively, to prevent only specific layers from being sticky, update
+their definitions to include ``sticky=False``::
+
+    init python:
+        renpy.add_layer("ptfe", sticky=False)
+
+
+**Lenticular bracket ruby text** This release of Ren'Py introduces
+lenticular bracket ruby text, an easier way of writing ruby text. If
+a game included a literal 【, it needs to be doubled, to "【【", to
+quote it properly. (This is only strictly necessary when the text
+is succeded by a full-width vertical bar, but works always.)
+
+To disable lenticular bracket ruby text, add to your game::
+
+    define config.lenticular_bracket_ruby = False
+
+**Constant stores.** This release of Ren'Py introduces :ref:`constant stores <constant-stores>`, and
+makes some of the built-in stores constant. Constant stores should not change
+outside of the init phase. The following stores are constant:
+
+    _errorhandling
+    _gamepad
+    _renpysteam
+    _warper
+    audio
+    achievement
+    build
+    director
+    iap
+    layeredimage
+    updater
+
+If your game changes a variable in one of these stores, outside of the init,
+the store can be set to non-constant with (for example)::
+
+    define audio._constant = False
+
+**Mixer volumes** now must be specified using a new format, where 0.0 is -60 dB (power)
+and 1.0 is 0 dB (power). To use the old format, where the samples were multiplied
+by volume ** 2, use::
+
+    define config.quadratic_volume = True
+
+Alternatively, you can determine new default volumes for :var:`config.default_music_volume`,
+:var:`config.default_sfx_volume`, and :var:`config.default_voice_volume` variables. If any
+of these is 0.0 or 1.0, it can be left unchanged.
+
+**At Transform and Global Variables** An at transform block that uses a global variable
+is not re-evaluated when the variable changes. This matches the behavior
+for ATL that is not in screens.
+
+The recommended fix is to capture the global variable into a local, by changing::
+
+    screen test():
+        test "Test":
+            at transform:
+                xpos global_xpos
+
+to::
+
+    screen test():
+        $ local_xpos = global_xpos
+
+        test "Test":
+            at transform:
+                xpos local_xpos
+
+This change can be reverted with::
+
+    define config.at_transform_compare_full_context = True
+
+
 .. _incompatible-8.0.2:
 .. _incompatible-7.5.2:
 

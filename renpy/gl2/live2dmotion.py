@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -111,7 +111,7 @@ class Motion(object):
 
         self.filename = filename
 
-        with renpy.loader.load(filename) as f:
+        with renpy.loader.load(filename, directory="images") as f:
             j = json.load(f)
 
         self.duration = j["Meta"]["Duration"]

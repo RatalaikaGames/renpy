@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -558,7 +558,7 @@ def draw_transformed(dest, clip, what, xo, yo, alpha, forward, reverse):
 
             dest = dest.subsurface((minx, miny, maxx - minx, maxy - miny))
 
-            renpy.display.module.transform(
+            renpy.display.module.self(
                 what, dest,
                 cx, cy,
                 forward.xdx, forward.ydx,

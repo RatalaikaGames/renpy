@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -37,13 +37,13 @@ import renpy
 def load_mappings():
 
     try:
-        with renpy.loader.load("renpycontrollerdb.txt", False) as f:
+        with renpy.loader.load("renpycontrollerdb.txt", tl=False) as f:
             pygame_sdl2.controller.add_mappings(f)
     except Exception:
         pass
 
     try:
-        with renpy.loader.load("gamecontrollerdb.txt", False) as f:
+        with renpy.loader.load("gamecontrollerdb.txt", tl=False) as f:
             pygame_sdl2.controller.add_mappings(f)
     except Exception:
         pass
@@ -84,7 +84,8 @@ controllers = { }
 axis_positions = {}
 
 # The axis threshold.
-THRESHOLD = (32768 // 2)
+THRESHOLD = 8192 + 4096
+ZERO_THRESHOLD = 8192
 
 # Should we ignore events?
 ignore = False
@@ -245,26 +246,37 @@ def event(ev):
         return None
 
     elif ev.type == CONTROLLERDEVICEREMOVED:
-        quit(ev.which)
+        for k, v in controllers.items():
+            if v.instance_id == ev.which:
+                quit(k)
+                break
+
         return None
 
     elif ev.type == CONTROLLERAXISMOTION:
 
-        if ev.value > THRESHOLD:
-            pos = "pos"
-        elif ev.value < -THRESHOLD:
-            pos = "neg"
-        else:
-            pos = "zero"
+        pygame_sdl2.event.pump()
+        events = [ ev ] + pygame.event.get(CONTROLLERAXISMOTION)
 
-        old_pos = axis_positions.get((ev.which, ev.axis), None)
+        for ev in events:
 
-        if pos == old_pos:
-            return None
+            old_pos = axis_positions.get((ev.which, ev.axis), None)
 
-        axis_positions[(ev.which, ev.axis)] = pos
+            if ev.value > THRESHOLD:
+                pos = "pos"
+            elif ev.value < -THRESHOLD:
+                pos = "neg"
+            elif abs(ev.value) < ZERO_THRESHOLD:
+                pos = "zero"
+            else:
+                pos = old_pos
 
-        controller_event(get_string_for_axis(ev.axis), pos)
+            if pos == old_pos:
+                continue
+
+            axis_positions[(ev.which, ev.axis)] = pos
+
+            controller_event(get_string_for_axis(ev.axis), pos)
 
         return None
 

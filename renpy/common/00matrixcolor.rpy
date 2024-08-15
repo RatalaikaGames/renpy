@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -93,7 +93,7 @@ init -1500 python:
                             0.0, 0.0, 0.0, 1.0, ])
 
 
-    class SaturationMatrix(ColorMatrix):
+    class SaturationMatrix(ColorMatrix, DictEquality):
         """
         :doc: colormatrix
 
@@ -167,17 +167,16 @@ init -1500 python:
                 b = oldb + (b - oldb) * done
                 a = olda + (a - olda) * done
 
-            # To properly handle premultiplied alpha, the color channels
-            # have to be multiplied by the alpha channel.
-            r *= a
-            g *= a
-            b *= a
+            # Update the tint with opacity from the alpha channel.
+            r = 1 - (1 - r) * a
+            g = 1 - (1 - g) * a
+            b = 1 - (1 - b) * a
 
             # Return a Matrix.
             return Matrix([ r, 0, 0, 0,
                             0, g, 0, 0,
                             0, 0, b, 0,
-                            0, 0, 0, a ])
+                            0, 0, 0, 1 ])
 
     class BrightnessMatrix(ColorMatrix, DictEquality):
         """

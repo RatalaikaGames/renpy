@@ -47,6 +47,7 @@ respectively.
 In-game, the usual way to play music and sound in Ren'Py is using
 the three music/sound statements.
 
+.. _play-statement:
 
 Play Statement
 --------------
@@ -63,7 +64,7 @@ When the list is given, the item of it is played in order.
 
 The ``fadein`` and ``fadeout`` clauses are optional. Fadeout gives the fadeout
 time for currently playing music, in seconds, while fadein gives the time
-it takes to fade in the new music. If fadeout is not given, :var:`config.fade_music`
+it takes to fade in the new music. If fadeout is not given, :var:`config.fadeout_audio`
 is used.
 
 The ``loop`` and ``noloop`` clauses are also optional. The loop clause causes
@@ -116,8 +117,8 @@ Stop Statement
 --------------
 
 The ``stop`` statement begins with the keyword ``stop``, followed by the the name of a
-channel to stop sound on. It may optionally have a ``fadeout``
-clause. ::
+channel to stop sound on. It may optionally have a ``fadeout`` clause. If the
+fadeout clause is not given, :var:`config.fadeout_audio` is used. ::
 
         stop sound
         stop music fadeout 1.0
@@ -274,8 +275,8 @@ Will play silence for half a second, and then an explosion sound.
 
 .. _audio-namespace:
 
-Audio Namespace
----------------
+Audio Namespace and Directory
+-----------------------------
 
 The ``play`` and ``queue`` statements evaluate their arguments in the
 audio namespace. This means it is possible to use the define statement
@@ -305,6 +306,13 @@ Some filenames can't be accessed this way, as their names are not expressable
 as Python variables. For example, "my song.mp3", "8track.opus", and
 "this-is-a-song.ogg" won't work.
 
+When searching for an audio file, if the file is not found, Ren'Py will look
+in the audio directory. For example::
+
+    play music "opening.ogg"
+
+Will first look for ``game/opening.ogg``. If not found, Ren'Py will look for
+``game/audio/opening.ogg``.
 
 Actions
 -------

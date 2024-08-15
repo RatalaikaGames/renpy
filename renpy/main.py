@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -34,8 +34,6 @@ import linecache
 
 import renpy
 import renpy.game as game
-
-import __main__
 
 last_clock = time.time()
 
@@ -155,9 +153,10 @@ def load_rpe(fn):
     with zipfile.ZipFile(fn) as zfn:
         autorun = zfn.read("autorun.py")
 
+    if fn in sys.path:
+        sys.path.remove(fn)
     sys.path.insert(0, fn)
-    exec(autorun, dict())
-
+    exec(autorun, {'__file__': os.path.join(fn, "autorun.py")})
 
 def choose_variants():
 
@@ -345,7 +344,7 @@ def main():
 
     gc.set_threshold(*renpy.config.gc_thresholds)
 
-    log_clock("Bootstrap to the start of init.init")
+    log_clock("Bootstrap to the start of init.init.")
 
     renpy.game.exception_info = 'Before loading the script.'
 
@@ -372,14 +371,17 @@ def main():
     choose_variants()
     renpy.display.touch = "touch" in renpy.config.variants
 
-    log_clock("Early init")
+    if (renpy.android or renpy.ios) and not renpy.config.log_to_stdout:
+        print("Version:", renpy.version)
+
+    log_clock("Early init.")
 
     # Note the game directory.
     game.basepath = renpy.config.gamedir
     renpy.config.searchpath = [ renpy.config.gamedir ]
 
     # Find the common directory.
-    commondir = __main__.path_to_common(renpy.config.renpy_base) # E1101 @UndefinedVariable
+    commondir = renpy.__main__.path_to_common(renpy.config.renpy_base) # E1101 @UndefinedVariable
 
     if os.path.isdir(commondir):
         renpy.config.searchpath.append(commondir)
@@ -398,7 +400,7 @@ def main():
 
     # Load Ren'Py extensions.
     for dir in renpy.config.searchpath: # @ReservedAssignment
-        for fn in os.listdir(dir):
+        for fn in sorted(os.listdir(dir)):
             if fn.lower().endswith(".rpe"):
                 load_rpe(dir + "/" + fn)
 
@@ -432,7 +434,7 @@ def main():
     # Start auto-loading.
     renpy.loader.auto_init()
 
-    log_clock("Loader init")
+    log_clock("Loader init.")
 
     # Initialize the log.
     game.log = renpy.python.RollbackLog()
@@ -466,7 +468,7 @@ def main():
     renpy.config.init_system_styles()
     renpy.style.build_styles() # @UndefinedVariable
 
-    log_clock("Loading error handling")
+    log_clock("Loading error handling.")
 
     # If recompiling everything, remove orphan .rpyc files.
     # Otherwise, will fail in case orphan .rpyc have same
@@ -493,7 +495,7 @@ def main():
 
     # Load all .rpy files.
     renpy.game.script.load_script() # sets renpy.game.script.
-    log_clock("Loading script")
+    log_clock("Loading script.")
 
     if renpy.game.args.command == 'load-test': # type: ignore
         start = time.time()
@@ -510,10 +512,13 @@ def main():
 
     # Find the save directory.
     if renpy.config.savedir is None:
-        renpy.config.savedir = __main__.path_to_saves(renpy.config.gamedir) # E1101 @UndefinedVariable
+        renpy.config.savedir = renpy.__main__.path_to_saves(renpy.config.gamedir) # E1101 @UndefinedVariable
 
     if renpy.game.args.savedir: # type: ignore
         renpy.config.savedir = renpy.game.args.savedir # type: ignore
+
+    # Init the save token system.
+    renpy.savetoken.init()
 
     # Init preferences.
     game.persistent = renpy.persistent.init()
@@ -529,18 +534,17 @@ def main():
     # Init save locations and loadsave.
     renpy.savelocation.init()
 
-    # We need to be 100% sure we kill the savelocation thread.
     try:
 
-        # Init save slots.
+        # Init save slots and save tokens.
         renpy.loadsave.init()
-
+        renpy.savetoken.upgrade_all_savefiles()
         log_clock("Loading save slot metadata.")
 
         # Load persistent data from all save locations.
         renpy.persistent.update()
         game.preferences = game.persistent._preferences
-        log_clock("Loading persistent")
+        log_clock("Loading persistent.")
 
         # Clear the list of seen statements in this game.
         game.seen_session = { }
@@ -555,7 +559,9 @@ def main():
 
         renpy.game.exception_info = 'While executing init code:'
 
-        for _prio, node in game.script.initcode:
+        for id_, (_prio, node) in enumerate(game.script.initcode):
+
+            renpy.game.initcode_ast_id = id_
 
             if isinstance(node, renpy.ast.Node):
                 node_start = time.time()
@@ -590,15 +596,19 @@ def main():
 
         game.persistent._virtual_size = renpy.config.screen_width, renpy.config.screen_height # type: ignore
 
-        log_clock("Running init code")
+        log_clock("Running init code.")
 
         renpy.pyanalysis.load_cache()
-        log_clock("Loading analysis data")
+        log_clock("Loading analysis data.")
 
         # Analyze the script and compile ATL.
         renpy.game.script.analyze()
         renpy.atl.compile_all()
-        log_clock("Analyze and compile ATL")
+        log_clock("Analyze and compile ATL.")
+
+        renpy.savelocation.init()
+        renpy.loadsave.init()
+        log_clock("Reloading save slot metadata.")
 
         # Index the archive files. We should not have loaded an image
         # before this point. (As pygame will not have been initialized.)
@@ -619,11 +629,11 @@ def main():
         # Initialize image cache.
         renpy.display.im.cache = renpy.display.im.Cache()
         renpy.display.im.cache.init()
-        log_clock("Cleaning cache")
+        log_clock("Cleaning cache.")
 
         # Make a clean copy of the store.
         renpy.python.make_clean_stores()
-        log_clock("Making clean stores")
+        log_clock("Making clean stores.")
 
         gc.collect(2)
 
@@ -651,7 +661,7 @@ def main():
         # (Perhaps) Initialize graphics.
         if not game.interface:
             renpy.display.core.Interface()
-            log_clock("Creating interface object")
+            log_clock("Creating interface object.")
 
         # Start things running.
         restart = None
@@ -667,7 +677,7 @@ def main():
                 finally:
                     restart = (renpy.config.end_game_transition, "_invoke_main_menu", "_main_menu")
                     renpy.persistent.update(True)
-                    renpy.persistent.save_MP()
+                    renpy.persistent.save_on_quit_MP()
 
             except game.FullRestartException as e:
                 restart = e.reason

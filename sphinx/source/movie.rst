@@ -6,6 +6,7 @@ Movie
 Ren'Py is capable of using FFmpeg (included) to play movies using the
 video codecs:
 
+* AV1
 * VP9
 * VP8
 * Theora
@@ -19,6 +20,7 @@ and the following audio codecs:
 * Vorbis
 * MP3
 * MP2
+* FLAC
 * PCM
 
 inside the following container formats:
@@ -38,13 +40,17 @@ are more efficient.
 
 Ren'Py's movie decoder does not support movies with alpha channels, but the
 `side_mask` parameter of the :func:`Movie` displayable can be used for that
-purpose. Here is an example of hhow to use ffmpeg to create a webm file with
+purpose. Here is an example of how to use ffmpeg to create a webm file with
 a side-by-side mask from a mov file with an alpha channel. ::
 
         ffmpeg -i original.mov -filter:v alphaextract mask.mov
         ffmpeg -i original.mov -i mask.mov -filter_complex "hstack" -codec:v vp8 -crf 10 output.webm
 
-Movies are not supported on the Web platform.
+Movies are supported on the Web platform, but the list of supported codecs differs
+from browser to browser. For cross-browser compatibility (especially to support Safari),
+the most efficient combination is H.264 with MP3 (or AAC) in a MP4 file. However, Ren'Py
+does not support H.264 decoding (or AAC), so this combination can only work on the
+Web platform.
 
 
 Fullscreen Movies

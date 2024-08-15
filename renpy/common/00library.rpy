@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -202,6 +202,11 @@ init -1700 python:
 
     extend.record_say = False
 
+    def _extend_get_extend_text(what):
+        return config.extend_interjection + what
+
+    extend.get_extend_text = _extend_get_extend_text
+
 
     ##########################################################################
     # Skip indicator
@@ -302,6 +307,25 @@ init -1700 python:
         who = Character(who, kind=name_only)
         who(what, interact=interact, *args, **kwargs)
 
+
+    ##########################################################################
+    # Constant stores.
+    #
+    # Set _constant on many default stores.
+
+    _errorhandling._constant = True
+    _gamepad._constant = True
+    _renpysteam._constant = True
+    _warper._constant = True
+    audio._constant = True
+    achievement._constant = True
+    build._constant = True
+    director._constant = True
+    iap._constant = True
+    layeredimage._constant = True
+    updater._constant = True
+
+
     ##########################################################################
     # Misc.
 
@@ -314,6 +338,7 @@ init -1700 python:
 
     # License text.
     renpy.license = _("This program contains free software under a number of licenses, including the MIT License and GNU Lesser General Public License. A complete list of software, including links to full source code, can be found {a=https://www.renpy.org/l/license}here{/a}.")
+
 
 init -1000 python:
     # Set developer to the auto default.
@@ -453,7 +478,6 @@ label _developer:
 # its own layer.
 screen _ctc:
     add ctc
-
 
 # Creates the data structure that history is stored in.
 default _history = True

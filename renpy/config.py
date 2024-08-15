@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -35,9 +35,6 @@ import renpy
 
 # Can we add more config variables?
 locked = False
-
-# Contains help for config variables.
-help = [ ] # @ReservedAssignment
 
 # The title of the game window.
 window_title = None
@@ -100,7 +97,7 @@ savedir = None
 image_cache_size = None
 
 # The size of the image cache, in megabytes.
-image_cache_size_mb = 300
+image_cache_size_mb = 400
 
 # The number of statements we will analyze when doing predictive
 # loading. Please note that this is a total number of statements in a
@@ -141,8 +138,12 @@ mouse = None
 # The default sound playback sample rate.
 sound_sample_rate = 48000
 
-# The amount of time music is faded out between tracks.
-fade_music = 0.0
+# The default fadeout used when playing or stopping audio.
+fadeout_audio = 0.016
+
+# The old name of config.fadeout_audio. Kept for compatibility, and yused
+# in 00compat.rpy.
+fade_music = None
 
 # Should the at list be sticky?
 sticky_positions = False
@@ -160,11 +161,21 @@ overlay_layers = [ 'overlay' ]
 
 # A list of layers that should be cleared when we enter a
 # new context.
-context_clear_layers = [ 'screens' ]
+context_clear_layers = [ 'screens', 'top', 'bottom' ]
 
 # A list of layers that are displayed atop all other layers, and do
 # not participate in transitions.
-top_layers = [ ]
+top_layers = [ 'top' ]
+
+# Layers below all other layers, that do not participate in transitions.
+bottom_layers = [ 'bottom' ]
+
+# Layers which will override the default layer for a tag while shown.
+sticky_layers = [ 'master' ]
+
+# Layers not automatically added to a scene and inherently sticky,
+# primarily for use with the Layer displayable.
+detached_layers = [ ]
 
 # True if we want to show overlays during wait statements, or
 # false otherwise.
@@ -351,15 +362,17 @@ auto_save_extra_info = None
 
 # The directory (underneath ~/RenPy, ~/Library/RenPy, or ~/.renpy) where the
 # game-specific data is saved.
-save_directory = None # type: str
+save_directory = None # type: str|None
 
 # These are used to deal with the case where a picture is missing.
 missing_scene = None
 missing_show = None
 missing_hide = None
 
-# This is called when control is transferred to a label.
+# This is called when control is transferred to a label. (label_callbacks is
+# kept as an old name for label_callbacks.)
 label_callback = None
+label_callbacks = [ ]
 
 # A function that is called when the window needs to be shown.
 empty_window = None
@@ -468,7 +481,7 @@ log_enable = True
 debug_text_overflow = False
 
 # Should underfull grids raise an exception?
-allow_underfull_grids = False
+allow_underfull_grids = True
 
 # Should we save the window size in the preferences?
 save_physical_size = True
@@ -565,7 +578,7 @@ autosave_on_input = True
 emphasize_audio_channels = [ 'voice' ]
 
 # What we should lower the volume of non-emphasized channels to.
-emphasize_audio_volume = 0.5
+emphasize_audio_volume = 0.8
 
 # How long we should take to raise and lower the volume when emphasizing
 # audio.
@@ -647,7 +660,7 @@ after_replay_callback = None
 wrap_shown_transforms = True
 
 # A list of prefixes Ren'Py will search for assets.
-search_prefixes = [ "", "images/" ]
+search_prefixes = [ "" ]
 
 # Should Ren'Py clear the database of code lines?
 clear_lines = True
@@ -731,6 +744,9 @@ history_length = None
 # History callbacks that annotate additional information onto the History
 # object.
 history_callbacks = [ ]
+
+# Should we add the current dialogue to the history?
+history_current_dialogue = True
 
 # Should we use the new order for translate blocks?
 new_translate_order = True
@@ -982,24 +998,12 @@ ftfont_vertical_extent_scale = { }
 # The default shader.
 default_shader = "renpy.geometry"
 
-# If True, the volume of a channel is shown when it is mute.
-preserve_volume_when_muted = False
+# If True, the volume of a channel is kept while the channel is muted.
+preserve_volume_when_muted = True
 
-
+# Documented in Sphinx.
 def say_attribute_transition_callback(*args):
-    """
-    :args: (tag, attrs, mode)
-
-    Returns the say attribute transition to use, and the layer the transition
-    should be applied to (with None being a valid layer.
-
-    Attrs is the list of tags/attributes of the incoming image.
-
-    Mode is one of "permanent", "temporary", or "restore".
-    """
-
     return renpy.config.say_attribute_transition, renpy.config.say_attribute_transition_layer
-
 
 # Should say_attribute_transition_callback take attrs?
 say_attribute_transition_callback_attrs = True
@@ -1181,7 +1185,7 @@ compat_viewport_minimum = False
 webaudio = True
 
 # A list of audio types that are required to fully enable webaudio.
-webaudio_required_types = [ "audio/ogg", "audio/mp3" ]
+webaudio_required_types = [ "audio/ogg", "audio/mpeg" ]
 
 # If not None, a callback that can be used to alter audio filenames.
 audio_filename_callback = None
@@ -1269,14 +1273,124 @@ modal_blocks_pause = True
 # Should modal block timers?
 modal_blocks_timer = False
 
+# The range, in decibels, of the volume mixers.
+volume_db_range = 60
+
+# An alias -> font map.
+font_name_map = {}
+
+# Do we treat float values for spacing as relative values ?
+relative_spacing = True
+
+# Autosave callback.
+autosave_callback = None
+
+# The radius the mouse has to move before triggering a viewport drag.
+viewport_drag_radius = 10
+
+# A list of callbacks that are called when the scene statement or renpy.scene
+# function is run.
+scene_callbacks = [ ]
+
+# The physical width and heigh of the game window. If None, the window defaults
+# to config.screen_width and config.screen_height.
+physical_width = None
+physical_height = None
+
+# If true, lenticular brackets can be used to encode ruby text.
+lenticular_bracket_ruby = True
+
+# If true, the web implentation of renpy.input will be used.
+web_input = True
+
+# Aliases for the keys on the numeric keypad, to make them easier to write as keysyms.
+key_aliases = {
+    "KP_HOME" : "nonum_K_KP7",
+    "KP_UP" : "nonum_K_KP8",
+    "KP_PAGEUP" : "nonum_K_KP9",
+    "KP_LEFT" : "nonum_K_KP4",
+    "KP_RIGHT" : "nonum_K_KP6",
+    "KP_END" : "nonum_K_KP1",
+    "KP_DOWN" : "nonum_K_KP2",
+    "KP_PAGEDOWN" : "nonum_K_KP3",
+    "KP_INSERT" : "nonum_K_KP0",
+    "KP_DELETE" : "nonum_K_KP_PERIOD",
+    "KP_0" : "num_K_KP0",
+    "KP_1" : "num_K_KP1",
+    "KP_2" : "num_K_KP2",
+    "KP_3" : "num_K_KP3",
+    "KP_4" : "num_K_KP4",
+    "KP_5" : "num_K_KP5",
+    "KP_6" : "num_K_KP6",
+    "KP_7" : "num_K_KP7",
+    "KP_8" : "num_K_KP8",
+    "KP_9" : "num_K_KP9",
+    "KP_PERIOD" : "num_K_KP_PERIOD",
+    "KP_DIVIDE" : "K_KP_DIVIDE",
+    "KP_MULTIPLY" : "K_KP_MULTIPLY",
+    "KP_MINUS" : "K_KP_MINUS",
+    "KP_PLUS" : "K_KP_PLUS",
+    "KP_ENTER" : "K_KP_ENTER",
+    "KP_EQUALS" : "K_KP_EQUALS",
+}
+
+# Additional save token keys that are added to the list of save verification
+# tokens. This lets the game's creator distribute blessed save files.
+save_token_keys = [ ]
+
+# The amplitude of the viewport inertia. Tis is
+viewport_inertia_amplitude = 20.0
+
+# The time constant of the viewport flick gesture. This controls how quickly the
+# flick gesture decays.
+viewport_inertia_time_constant = 0.325
+
+# A list of callbacks that are executed after the default statements have
+# run.
+after_default_callbacks = [ ]
+
+# Are parsing errors raised when conflicting transform or style properties are
+# set simultaneously?
+# Set to True in the default GUI.
+check_conflicting_properties = False
+
+# A list of extra save directories. Strings giving the full paths.
+extra_savedirs = [ ]
+
+# The text-to-speech dictionary. A list of [ (RegeEx|String, String) ] pairs.
+tts_substitutions = [ ]
+
+# The base URL where unpacked web videos can be found.
+web_video_base = "./game"
+
+# Used to disable scrying extend, if someone runs into a problem with it.
+scry_extend = True
+
+# Should Ren'Py check for duplicate translate None statements?
+check_translate_none = True
+
+# Like developer, but available at the end of python early blocks.
+early_developer = False
+
+# A function that returns the autosave prefix.
+autosave_prefix_callback = None
+
+# Compatibility for c492f2f8e6de57b2740fa5d00566f445124caaba.
+at_transform_compare_full_context = False
+
+# A list of callbacks when the display starts.
+display_start_callbacks = [ ]
+
+# If not None, the size of the sound buffer, in bytes.
+sound_buffer_size = None
+
+
 del os
 del collections
 
 
 def init():
 
-
-    import renpy
 
     global scene
     scene = renpy.exports.scene
@@ -1295,7 +1409,7 @@ def init():
 
     global autoreload_functions
     autoreload_functions = [
-        (r'\.(png|jpg|jpeg|webp|gif|tif|tiff|bmp)$', renpy.exports.flush_cache_file),
+        (r'\.(png|jpg|jpeg|webp|gif|tif|tiff|bmp|avif|svg)$', renpy.exports.flush_cache_file),
         (r'\.(mp2|mp3|ogg|opus|wav)$', renpy.audio.audio.autoreload),
         ]
 

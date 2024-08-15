@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -143,7 +143,6 @@ init -1500 python in build:
     ]))
 
 
-
     def classify_renpy(pattern, groups):
         """
         Classifies files in the Ren'Py base directory according to pattern.
@@ -159,6 +158,7 @@ init -1500 python in build:
         ("*.app/", None),
         ("*.dll", None),
         ("*.manifest", None),
+        ("*.keystore", None),
 
         ("lib/", None),
         ("renpy/", None),
@@ -194,6 +194,7 @@ init -1500 python in build:
 
         ("game/presplash*.*", "all"),
 
+        ("android.json", "android"),
         (".android.json", "android"),
         ("android-*.png", "android"),
         ("android-*.jpg", "android"),
@@ -210,7 +211,11 @@ init -1500 python in build:
 
         ("steam_appid.txt", None),
 
-        ])
+        ("game/" + renpy.script.BYTECODE_FILE, "all"),
+        ("game/cache/bytecode-311.rpyb", "web"),
+        ("game/cache/bytecode-*.rpyb", None),
+    ])
+
 
     base_patterns = [ ]
 
@@ -407,7 +412,7 @@ init -1500 python in build:
     package("steam", "zip", "windows linux mac renpy all", hidden=True)
     package("android", "directory", "android all", hidden=True, update=False, dlc=True)
     package("ios", "directory", "ios all", hidden=True, update=False, dlc=True)
-    package("web", "zip", "web all", hidden=True, update=False, dlc=True)
+    package("web", "zip", "web renpy all", hidden=True, update=False, dlc=True)
 
     # Data that we expect the user to set.
 
@@ -450,6 +455,17 @@ init -1500 python in build:
 
     # The itch.io project name.
     itch_project = None
+
+    # Maps from files to itch.io channels.
+    itch_channels = [
+        ( "*-all.zip", "win-osx-linux" ),
+        ( "*-market.zip", "win-osx-linux" ),
+        ( "*-pc.zip", "win-linux" ),
+        ( "*-win.zip", "win" ),
+        ( "*-mac.zip", "osx" ),
+        ( "*-linux.tar.bz2", "linux" ),
+        ( "*-release.apk", "android" ),
+    ]
 
     # Should we include the old Ren'Py themes?
     include_old_themes = True
@@ -546,6 +562,8 @@ init -1500 python in build:
 
         if itch_project:
             rv["itch_project"] = itch_project
+
+        rv["itch_channels"] = itch_channels
 
         if mac_identity:
             rv["mac_identity"] = mac_identity

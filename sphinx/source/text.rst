@@ -68,6 +68,10 @@ ensure that their writing is not accidentally misinterpreted by the engine.
     The left brace is used to introduce a text tag. To include a left
     brace in your text, double it – write ``{{``.
 
+【 (left lenticular bracket)
+    The left lenticular bracket is used to to introduce ruby/furigana
+    text. To include a left lenticular bracket in your text, double it
+    – write ``【【``.
 
 .. _text-interpolation:
 
@@ -134,7 +138,7 @@ It should be noted that:
 - the order in which the flags are given does not change the result : ``!cl``
   will do just the same as ``!lc``.
 - Supplementarly exclamation marks will be ignored, and will not circumvent
-  the previuous rule : ``!l!c`` will do the same as ``!c!l`` or ``!cl``.
+  the previous rule : ``!l!c`` will do the same as ``!c!l`` or ``!cl``.
 
 The transformations are done in the following order:
 
@@ -161,16 +165,22 @@ blocks in the program. If you find yourself applying the same text
 tags to every line of text, consider using a style instead.
 
 There are two types of text tags. Some text tags are self-closing, while others
-require a closing tag. When multiple closing tags are used, they
-should be closed last open, first closed order – Ren'Py will reject
-incorrect nesting. For example::
+allow a closing tag. The close tag starts with a slash (/), and tags are
+closed in last-in, first-out order. Each closing tag should match the
+corresponding opening tag. If not, Ren'Py will produce a lint warning.
+
+For example::
 
     # This line is correct.
     "Plain {b}Bold {i}Bold-Italic{/i} Bold{/b} Plain"
 
-    # This line is incorrect, and will cause an error or incorrect
-    # behavior.
+    # This line is incorrect, and will cause incorrect behavior.
     "Plain {b}Bold {i}Bold-Italic{/b} Italic{/i} Plain"
+
+It is not necessary to close all text tags. Ren'Py will close all
+tags that are open at the end of the text block. For example::
+
+    "{size=+20}This is big!"
 
 Some text tags take an argument. In that case, the tag name is
 followed by an equals sign (=), and the argument. The argument may
@@ -369,6 +379,12 @@ Tags that apply to all text are:
 
        "{size=+10}Bigger{/size} {size=-10}Smaller{/size} {size=24}24 px{/size}."
 
+   You can also provide a floating point number preceded by a \*, in
+   which case the size will be multiplied by that number and then
+   rounded down. ::
+
+       "{size=*2}Twice as big{/size} {size=*0.5}half as big.{/size}"
+
 .. text-tag:: space
 
    The space tag is a self-closing tag that inserts horizontal space
@@ -428,6 +444,9 @@ Text tags that only apply to dialogue are:
         show trebuchet
         g "Looks like they're{fast} playing with their trebuchet again."
 
+    If present, the {fast} tag will cause voice to be sustained from
+    the previous line.
+
 .. text-tag:: nw
 
     The no-wait tag is a self-closing tag that causes the current line
@@ -438,7 +457,7 @@ Text tags that only apply to dialogue are:
         show trebuchet
         g "Looks like they're{fast} playing with their trebuchet again."
 
-    The no-wait tag will wait for voice and self-voicing to complete before
+    The no-wait tag will wait for self-voicing to complete before
     advancing.
 
 .. text-tag:: p
@@ -607,8 +626,22 @@ For example::
 
 (Use ``style.style_name`` to refer to a style for this purpose.)
 
-Once Ren'Py has been configured, ruby text can be included using the
-{rt} and {rb} text tags. The {rt} tag is used to mark one or more characters
+Once Ren'Py has been configured, ruby text can be included in two way.
+
+**Lenticular brackets.** Ruby text can be written by enclosing it
+full-width lenticular brackets (【】), with the full-width or half-width
+vertical line character (｜ or \|) separating the bottom text from the top text.
+For example::
+
+    e "Ruby can be used for furigana (【東｜とう】 【京｜きょう】)."
+
+    e "It's also used for translations (【東京｜Tokyo】)."
+
+Ruby text will only trigger if a vertical line is present. The left lenticular
+bracket can be quoted by doubling it. Lenticular ruby text may not contain
+other text tags.
+
+**The {rt} and {rb} text tags.** The {rt} tag is used to mark one or more characters
 to be displayed as ruby text. If the ruby text is preceded by text
 enclosed in the {rb} tag, the ruby text is centered over that
 text. Otherwise, it is centered over the preceding character.
@@ -643,6 +676,9 @@ font. When accessing a collection, use the 0-based font index,
 followed by an at-sign and the file name. For example, "0\@font.ttc" is
 the first font in a collection, "1\@font.ttc" the second, and so on.
 
+When looking for a font files, if the file is not found, Ren'Py will search
+in the ``game/fonts`` directory. For example, when looking for test.ttf, Ren'Py
+will first search for ``game/test.ttf``, and then for ``game/fonts/test.ttf``.
 
 Font Replacement
 ----------------
@@ -660,6 +696,21 @@ download the oblique font from the web)::
         config.font_replacement_map["DejaVuSans.ttf", False, True] = ("DejaVuSans-Oblique.ttf", False, False)
 
 This mapping can improve the look of italic text.
+
+Font names and aliases
+----------------------
+
+The :var:`config.font_name_map` variable is used to give names
+or aliases to fonts. This allows two things : first, to make dialogues
+using the ``{font}`` tag shorter and easier to use, and second, to
+enable :ref:`fontgroup` to be used by these tags. ::
+
+    define config.font_name_map["jap"] = "electroharmonix.ttf"
+    define config.font_name_map["tjap"] = FontGroup().add("OrthodoxHerbertarian.ttf", "A", "Z").add("electroharmonix.ttf", None, None)
+
+    label yamato:
+        e "Sorry, what does {font=jap}Black holes and revelations{/font} mean ?"
+        y "You pronounce it {font=tjap}Black Holes And Revelations{/font}." # the capital letters appear in OrthodoxHerbertarian
 
 Image-Based Fonts
 -----------------
@@ -686,6 +737,8 @@ BMFont use is::
         ebf "Finally, Ren'Py supports BMFonts."
 
 
+.. _fontgroup:
+
 Font Groups
 -----------
 
@@ -706,6 +759,10 @@ For example::
          font FontGroup().add("english.ttf", 0x0020, 0x007f).add("japanese.ttf", 0x0000, 0xffff)
 
 .. include:: inc/font_group
+
+Note that while FontGroups can be given a name using :var:`config.font_name_map`,
+a FontGroup only takes filepaths as fonts, and does not recognize names or aliases
+defined using that variable.
 
 
 .. _text-displayables:

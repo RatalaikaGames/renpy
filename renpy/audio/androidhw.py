@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -116,9 +116,7 @@ class AndroidVideoChannel(object):
 
         filename = self.queue.pop(0)
 
-        print("Playing", filename)
-
-        with renpy.loader.load(filename) as f:
+        with renpy.loader.load(filename, directory="audio") as f:
             real_fn = f.name
             base = getattr(f, "base", -1)
             length = getattr(f, "length", -1)

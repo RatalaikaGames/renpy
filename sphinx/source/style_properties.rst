@@ -307,6 +307,11 @@ or on the screen when not inside a layout.
     Equivalent to setting ypos to the value of this property, and
     yanchor to 0.5.
 
+.. style-property:: xycenter tuple of (position, position)
+
+    Equivalent to setting xcenter to the first component of the tuple,
+    and ycenter to the second.
+
 .. style-property:: xoffset int
 
     Gives a number of pixels that are added to the horizontal position
@@ -350,21 +355,22 @@ or on the screen when not inside a layout.
     Equivalent to setting xminimum to the first component of the
     tuple, and yminimum to the second.
 
-.. style-property:: xsize int
+.. style-property:: xsize int or float
 
     Equivalent to setting xminimum and xmaximum to the same value. This
-    has the effect of setting the width of the displayable.
+    has the effect of setting the width of the displayable.  f the size
+    is a float, it's relative to the width of the containing area.
 
-.. style-property:: ysize int
+.. style-property:: ysize int or float
 
     Equivalent to setting yminimum and ymaximum to the same value. This
-    has the effect of setting the height of the displayable.
+    has the effect of setting the height of the displayable. If the size
+    is a float, it's relative to the height of the containing area.
 
-.. style-property:: xysize tuple of (int, int)
+.. style-property:: xysize tuple of (int or float, int or float)
 
-    Equivalent to setting xminimum and xmaximum to the first component of
-    the tuple, and yminimum and ymaximum to the second component. This
-    has the effect of setting the size of the displayable.
+    Equivalent to setting xsize to the first component of
+    the tuple, and ysize to the second component.
 
 .. style-property:: xfill boolean
 
@@ -504,8 +510,8 @@ Text Style Properties
 
 .. style-property:: language string
 
-    Controls the language family used to break text into lines. Legal
-    values are:
+    Controls the language family used to break text into lines, and
+    for certain other text transformations. Legal values are:
 
     ``"unicode"`` (default)
         Uses the Unicode linebreaking algorithm, which is suitable for
@@ -529,6 +535,12 @@ Text Style Properties
     ``"korean-with-spaces"``
         Used for Korean text delimited by whitespace. This prevents linebreaking
         between adjacent Korean characters.
+
+    ``"thaic90"``
+        Used for Thai text displayed in fonts that support the
+        `C90 encoding for Thai <http://www.bakoma-tex.com/doc/fonts/enc/c90/c90.pdf>`_.
+        This combines groups of characters into single glyphs, allowing for better
+        display of vowel and tone marks. Line breaking uses the unicode algorithm.
 
     ``"western"``
         Allows breaking only at whitespace. Suitable for most
@@ -574,7 +586,7 @@ Text Style Properties
 .. style-property:: min_width int
 
     Sets the minimum width of each line of that. If a line is shorter
-    than this, it is padded to this length, with ``text_align`` used to
+    than this, it is padded to this length, with ``textalign`` used to
     specify where such padding is placed.
 
 .. style-property:: newline_indent boolean
@@ -664,7 +676,7 @@ Text Style Properties
 
     If True, a line is drawn through the text.
 
-.. style-property:: text_align float
+.. style-property:: textalign float
 
     This is used when a line is shorter than the width of the text
     displayable. It determines how much of the extra space is placed

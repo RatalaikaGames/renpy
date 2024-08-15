@@ -113,6 +113,9 @@ with the menu statement. It is given the following parameter:
         This is a dictionary that contains any keyword arguments passed
         to the menu choice.
 
+    These items, and the actions within, become invalid when the menu
+    statement ends.
+
 In addition, any arguments passed to a menu statement are passed in during
 the call to the screen.
 
@@ -364,10 +367,14 @@ Here's a very simple ctc screen::
 
         zorder 100
 
-        text _("Click to Continue"):
-            size 12
+        hbox:
             xalign 0.98
             yalign 0.98
+
+            add arg
+
+            text _("Click to Continue"):
+                size 12
 
 
 
@@ -752,7 +759,7 @@ If no ``confirm`` screen is present, ``yesno_prompt`` is used instead.
                 spacing 25
 
                 text _(message):
-                    text_align 0.5
+                    textalign 0.5
                     xalign 0.5
 
                 hbox:

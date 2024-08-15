@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -28,8 +28,6 @@ import os
 import sys
 import subprocess
 import io
-
-import __main__
 
 # Encoding and sys.stderr/stdout handling ######################################
 
@@ -333,7 +331,6 @@ You may be using a system install of python. Please run {0}.sh,
 
             except Exception as e:
                 renpy.error.report_exception(e)
-                pass
 
         sys.exit(exit_status)
 
@@ -342,7 +339,7 @@ You may be using a system install of python. Please run {0}.sh,
         if "RENPY_SHUTDOWN_TRACE" in os.environ:
             enable_trace(int(os.environ["RENPY_SHUTDOWN_TRACE"]))
 
-        renpy.display.tts.tts(None)
+        renpy.display.tts.tts(None) # type: ignore
 
         # MBG - interferes with my debugging
         #renpy.display.im.cache.quit()

@@ -1,4 +1,4 @@
-python early:
+﻿python early:
 
     # This maps from example name to the text of a fragment.
     examples = { }
@@ -230,7 +230,6 @@ python early:
         global example_location
         global example_size
 
-
         if bottom:
             example_location = "bottom"
         elif top:
@@ -257,7 +256,20 @@ python early:
     def execute_init_example(data):
         read_example(data["name"], data["filename"], data["number"], data.get("outdent", "auto"))
 
-    renpy.register_statement("example", parse=parse_example, execute=execute_example, execute_init=execute_init_example, next=next_example, block="script")
+    def reachable_example(data, is_reachable, this, next, block):
+        if is_reachable:
+            return { this, next, block }
+        else:
+            return { True, block }
+
+    renpy.register_statement(
+        "example",
+        parse=parse_example,
+        execute=execute_example,
+        execute_init=execute_init_example,
+        next=next_example,
+        reachable=reachable_example,
+        block="script")
 
 
     # The show example statement.
@@ -546,7 +558,7 @@ screen example(blocks, small=False, bottom=False, showtrans=False):
             textbutton _("copy"):
                 style "empty"
                 text_style "quick_button_text"
-                text_text_align 0.5
+                text_textalign 0.5
                 text_minwidth 180
 
                 text_size 16
@@ -573,7 +585,7 @@ init python hide:
         try:
             with open(os.path.join(renpy.config.gamedir, fn), "r") as f:
                 lines = f.readlines()
-        except:
+        except Exception:
             lines = [ ]
 
         open_examples = set()
@@ -581,6 +593,7 @@ init python hide:
         for l in lines:
 
             l = l.rstrip()
+            l = l.lstrip("\ufeff")
 
             m = re.match("\s*#begin (\w+)", l)
             if m:

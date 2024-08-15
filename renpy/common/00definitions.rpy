@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -27,7 +27,7 @@
 init -1400:
 
     transform reset:
-        alpha 1 rotate None zoom 1 xzoom 1 yzoom 1 align (0, 0) alignaround (0, 0) subpixel False
+        alpha 1.0 rotate None zoom 1.0 xzoom 1.0 yzoom 1.0 align (0, 0) alignaround (0, 0) subpixel False
         xsize None ysize None fit None crop None
 
     # These are positions that can be used inside at clauses. We set
@@ -63,7 +63,7 @@ init -1400:
         xpos 1.0 xanchor 0.0 ypos 1.0 yanchor 1.0
 
     transform default:
-        alpha 1 rotate None zoom 1 xzoom 1 yzoom 1 align (0, 0) alignaround (0, 0) subpixel False
+        alpha 1.0 rotate None zoom 1.0 xzoom 1.0 yzoom 1.0 align (0, 0) alignaround (0, 0) subpixel False
         xsize None ysize None fit None crop None
         xpos 0.5 xanchor 0.5 ypos 1.0 yanchor 1.0
 

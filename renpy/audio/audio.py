@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -61,19 +61,27 @@ def get_serial():
     return (unique, serial)
 
 
+AudioNotReady = renpy.object.Sentinel("AudioNotReady")
+
 def load(fn):
     """
     Returns a file-like object for the given filename.
     """
 
     try:
-        rv = renpy.loader.load(fn)
+        rv = renpy.loader.load(fn, directory="audio")
     except renpy.webloader.DownloadNeeded as exception:
         if exception.rtype == 'music':
             renpy.webloader.enqueue(exception.relpath, 'music', None)
+            return AudioNotReady  # Try again later
         elif exception.rtype == 'voice':
-            # prediction failed, too late
-            pass
+            renpy.webloader.enqueue(exception.relpath, 'voice', None)
+            return AudioNotReady  # Try again later
+        elif exception.rtype == 'video':
+            # Video files are downloaded by the browser, so return
+            # the file name instead of a file-like object
+            return 'url:' + renpy.config.web_video_base + "/" + fn
+
         # temporary 1s placeholder, will retry loading when looping:
         rv = open(os.path.join(renpy.config.commondir, '_dl_silence.ogg'), 'rb') # type: ignore
     return rv
@@ -105,14 +113,14 @@ class AudioData(str):
 
     def __new__(cls, data, filename):
         rv = str.__new__(cls, filename)
-        rv.data = data
+        rv.data = data # type: ignore
         return rv
 
     def __init__(self, data, filename):
         pass
 
     def __reduce__(self):
-        return(AudioData, (self.data, str(self)))
+        return(AudioData, (self.data, str(self))) # type: ignore
 
 
 class QueueEntry(object):
@@ -288,6 +296,9 @@ class Channel(object):
                 self.movie = renpy.audio.renpysound.DROP_VIDEO
             else:
                 self.movie = renpy.audio.renpysound.NODROP_VIDEO
+
+            if renpysound.is_webaudio:
+                renpysound.set_movie_channel(self.number, True) # type: ignore
         else:
             self.movie = renpy.audio.renpysound.NO_VIDEO
 
@@ -520,16 +531,24 @@ class Channel(object):
                     continue
 
                 if isinstance(topq.filename, AudioData):
-                    topf = io.BytesIO(topq.filename.data)
+                    topf = io.BytesIO(topq.filename.data) # type: ignore
                 else:
                     topf = load(filename)
+                    if topf is AudioNotReady:
+                        # File is not ready, try again on the next periodic pass.
+                        self.queue.insert(0, topq)
+                        break
 
-                renpysound.set_video(self.number, self.movie)
+                if self.movie != renpy.audio.renpysound.NO_VIDEO:
+                    # Let the browser handle the video loop if any
+                    renpysound.set_video(self.number, self.movie, loop=(len(self.loop) == 1))
+                else:
+                    renpysound.set_video(self.number, self.movie, loop=False)
 
                 if depth == 0:
-                    renpysound.play(self.number, topf, topq.filename, paused=self.synchro_start, fadein=topq.fadein, tight=topq.tight, start=start, end=end, relative_volume=topq.relative_volume)
+                    renpysound.play(self.number, topf, topq.filename, paused=self.synchro_start, fadein=topq.fadein, tight=topq.tight, start=start, end=end, relative_volume=topq.relative_volume) # type:ignore
                 else:
-                    renpysound.queue(self.number, topf, topq.filename, fadein=topq.fadein, tight=topq.tight, start=start, end=end, relative_volume=topq.relative_volume)
+                    renpysound.queue(self.number, topf, topq.filename, fadein=topq.fadein, tight=topq.tight, start=start, end=end, relative_volume=topq.relative_volume) # type:ignore
 
                 self.playing = True
 
@@ -681,6 +700,9 @@ class Channel(object):
             else:
                 self.loop = [ ]
 
+        with periodic_condition:
+            periodic_condition.notify()
+
     def get_playing(self):
 
         if not pcm_ok:
@@ -771,6 +793,7 @@ class Channel(object):
 
         return renpysound.video_ready(self.number)
 
+
 # Use unconditional imports so these files get compiled during the build
 # process.
 
@@ -812,7 +835,10 @@ def register_channel(name,
     queue statements.
 
     `name`
-        The name of the channel.
+        The name of the channel. It should not contain spaces, as this is reserved
+        for Ren'Py's internal use, and should be a
+        `valid identifier <https://docs.python.org/reference/lexical_analysis.html#identifiers>`__
+        for the syntax of the :ref:`play-statement` to be usable.
 
     `mixer`
         The name of the mixer the channel uses. By default, Ren'Py knows about
@@ -949,10 +975,20 @@ def init():
         return
 
     if renpy.emscripten and renpy.config.webaudio:
+        # Importing webaudio hooks all public functions of renpysound
         import renpy.audio.webaudio as webaudio
 
+        renpysound.is_webaudio = True
+
         if webaudio.can_play_types(renpy.config.webaudio_required_types):
-            renpysound.__dict__.update(webaudio.__dict__)
+            webaudio.video_only = False
+        else:
+            # Audio files are decoded by Ren'Py (wasm), video files by browser
+            webaudio.video_only = True
+
+        # Some channels are created before init() is called, so flag them now
+        for c in all_channels:
+            webaudio.set_movie_channel(c.number, c.movie != renpy.audio.renpysound.NO_VIDEO)
 
     if pcm_ok is None and renpysound:
         bufsize = 2048
@@ -960,6 +996,9 @@ def init():
             # Large buffer (and latency) as compromise to avoid sound jittering
             bufsize = 8192 # works for me
             # bufsize = 16384  # jitter/silence right after starting a sound
+
+        if renpy.config.sound_buffer_size is not None:
+            bufsize = renpy.config.sound_buffer_size
 
         if 'RENPY_SOUND_BUFSIZE' in os.environ:
             bufsize = int(os.environ['RENPY_SOUND_BUFSIZE'])
@@ -997,14 +1036,16 @@ def init():
 
         periodic_thread_quit = False
 
-        periodic_thread = threading.Thread(target=periodic_thread_main,name="renpy_audio")
-        periodic_thread.daemon = True
-        periodic_thread.start()
+        if not renpy.emscripten:
+            periodic_thread = threading.Thread(target=periodic_thread_main)
+            periodic_thread.daemon = True
+            periodic_thread.start()
+        else:
+            periodic_thread = None
 
 
 def quit(): # @ReservedAssignment
 
-    global periodic_thread
     global periodic_thread_quit
 
     global pcm_ok
@@ -1207,7 +1248,7 @@ def interact():
 
                 if c.loop:
                     if not filenames or c.get_playing() not in filenames:
-                        c.fadeout(renpy.config.context_fadeout_music or renpy.config.fade_music)
+                        c.fadeout(max(renpy.config.context_fadeout_music, renpy.config.fadeout_audio))
 
                 if filenames:
                     c.enqueue(filenames, loop=True, synchro_start=False, tight=tight, fadein=renpy.config.context_fadein_music, relative_volume=ctx.last_relative_volume)
@@ -1219,6 +1260,16 @@ def interact():
                 raise
 
     periodic()
+
+def pump():
+    """
+    Used to implement renpy.music.pump.
+    """
+
+    interact()
+
+    with lock:
+        periodic_pass()
 
 
 def rollback():
@@ -1245,7 +1296,7 @@ def autoreload(_fn):
     renpy.exports.restart_interaction()
 
 
-global_pause = False
+global_pause = 0
 
 
 def pause_all():
@@ -1254,10 +1305,11 @@ def pause_all():
     """
 
     global global_pause
-    global_pause = True
+    global_pause += 1
 
-    periodic()
-
+    for c in all_channels:
+        c.pause()
+        c.paused = True
 
 def unpause_all():
     """
@@ -1265,7 +1317,8 @@ def unpause_all():
     """
 
     global global_pause
-    global_pause = False
+    if global_pause > 0:
+        global_pause -= 1
 
     periodic()
 
