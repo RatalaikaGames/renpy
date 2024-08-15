@@ -323,7 +323,7 @@ init -1700 python:
     director._constant = True
     iap._constant = True
     layeredimage._constant = True
-    updater._constant = True
+    #updater._constant = True
 
 
     ##########################################################################
