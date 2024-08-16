@@ -75,12 +75,13 @@ class CacheEntry(object):
             #MBG - not sure what this is without a get_size_texels but this is better than nothing
             if hasattr(self.texture,"get_size_texels"):
                 rv += self.texture.get_size_texels()
+            else:
+                rv += self.bounds[2] * self.bounds[3]
+                
             if has_mipmaps and has_mipmaps():
                 mipmap_multiplier = 1.34
             else:
                 mipmap_multiplier = 1.0
-
-            rv += self.bounds[2] * self.bounds[3]
 
         return rv
 
