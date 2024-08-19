@@ -658,7 +658,7 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
         return;
     }
 
-    c->playing_name = strdup(name);
+    c->playing_name = name;
     c->playing_fadein = fadein;
     c->playing_tight = tight;
     c->playing_start_ms = (int)(start * 1000);
@@ -722,7 +722,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
         return;
     }
 
-    c->queued_name = strdup(name);
+    c->queued_name = name;
     c->queued_fadein = fadein;
     c->queued_tight = tight;
 
