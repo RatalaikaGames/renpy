@@ -1049,6 +1049,17 @@ def init():
         else:
             periodic_thread = None
 
+def fadeout_all():
+    """
+    Called to fade out all playing audio as the game quits or restarts.
+    """
+
+    for c in all_channels:
+        c.dequeue()
+        c.fadeout(renpy.config.fadeout_audio)
+
+    periodic()
+
 
 def quit(): # @ReservedAssignment
 
