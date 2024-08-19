@@ -90,8 +90,8 @@ def sl2_keywords():
 
     rv = set()
 
-    for i in renpy.sl2.slparser.all_statements:
-        rv.add(i.name)
+    for i in renpy.sl2.slparser.statement_names:
+        rv.add(i)
 
     rv.remove("icon")
     rv.remove("iconbutton")
@@ -127,7 +127,7 @@ def sl2_regexps():
         names, style = k
 
         if len(prefixes) > 1:
-            part1 = "(?:" + "|".join(prefixes) + ")"
+            part1 = "(?:" + "|".join(sorted(prefixes)) + ")"
         else:
             part1 = tuple(prefixes)[0]
 
@@ -208,10 +208,38 @@ documented = collections.defaultdict(list)
 # This keeps all objectsd we see alive, to prevent duplicates in documented.
 documented_list = [ ]
 
+def getdoc(o):
+    """
+    Returns the docstring for `o`, but unlike inspect.getdoc, does not get
+    values from base classes if absent (and it's faster too).
+    Will still get the inherited docstring for a non-overridden method in a
+    subclass (because the method object is the same as the base classe's).
+    """
 
-def scan(name, o, prefix=""):
+    doc = getattr(o, "__doc__", None)
 
-    doc_type = "function"
+    if not doc:
+        return None
+
+    return inspect.cleandoc(doc)
+
+# The docstring for object.__init__ - which we don't want to pass for one of our classes's
+objinidoc = getdoc(object.__init__)
+
+
+def scan(name, o, prefix="", inclass=False):
+
+    if inspect.isclass(o):
+        if issubclass(o, (renpy.store.Action,
+                          renpy.store.BarValue,
+                          renpy.store.InputValue)):
+            doc_type = "function"
+        else:
+            doc_type = "class"
+    elif inclass:
+        doc_type = "method"
+    else:
+        doc_type = "function"
 
     # The section it's going into.
     section = None
@@ -219,8 +247,8 @@ def scan(name, o, prefix=""):
     # The formatted arguments.
     args = None
 
-    # Get the function's docstring.
-    doc = inspect.getdoc(o)
+    # Get the callable's docstring.
+    doc = getdoc(o)
 
     if not doc:
         return
@@ -270,22 +298,20 @@ def scan(name, o, prefix=""):
             if not init:
                 return
 
-            init_doc = inspect.getdoc(init)
+            init_doc = getdoc(init)
 
-            if init_doc and not init_doc.startswith("x.__init__("):
+            if init_doc and (init_doc != objinidoc):
                 lines.append("")
                 lines.extend(init_doc.split("\n"))
 
-            try:
-                args = inspect.getargspec(init)
-            except Exception:
-                args = None
+            if init != object.__init__: # we don't want that signature either
+                try:
+                    args = inspect.signature(init)
+                except Exception:
+                    args = None
 
-        elif inspect.isfunction(o):
-            args = inspect.getargspec(o)
-
-        elif inspect.ismethod(o):
-            args = inspect.getargspec(o)
+        elif inspect.isfunction(o) or inspect.ismethod(o):
+            args = inspect.signature(o)
 
         else:
             print("Warning: %s has section but not args." % name)
@@ -294,9 +320,12 @@ def scan(name, o, prefix=""):
 
         # Format the arguments.
         if args is not None:
+            if args.parameters and next(iter(args.parameters)) == "self":
+                pars = iter(args.parameters.values())
+                next(pars)
+                args = args.replace(parameters=pars)
 
-            args = inspect.formatargspec(*args)
-            args = args.replace("(self, ", "(")
+            args = str(args)
         else:
             args = "()"
 
@@ -313,7 +342,7 @@ def scan(name, o, prefix=""):
     if inspect.isclass(o):
         if (name not in [ "Matrix", "OffsetMatrix", "RotateMatrix", "ScaleMatrix" ]):
             for i in dir(o):
-                scan(i, getattr(o, i), prefix + "    ")
+                scan(i, getattr(o, i), prefix + "    ", inclass=True)
 
     if name == "identity":
         raise Exception("identity")

@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -170,7 +170,7 @@ screen common:
             has vbox
 
             text message:
-                text_align 0.5
+                textalign 0.5
                 xalign 0.5
                 layout "subtitle"
 
@@ -200,7 +200,15 @@ screen common:
                 add SPACER
 
                 for v, l in choices:
-                    textbutton l action SetScreenVariable("selected", v)
+                    textbutton l:
+                        action SetScreenVariable("selected", v)
+                        selected_background REVERSE_IDLE
+                        selected_hover_background REVERSE_HOVER
+                        xpadding 20
+                        size_group "choice"
+                        text_selected_idle_color REVERSE_TEXT
+                        text_selected_hover_color REVERSE_TEXT
+                        text_xalign 0.5
 
                 if selected is not None:
                     $ continue_ = Return(selected)
@@ -211,7 +219,7 @@ screen common:
                 add SPACER
 
                 text submessage:
-                    text_align 0.5
+                    textalign 0.5
                     xalign 0.5
                     layout "subtitle"
 
@@ -250,7 +258,7 @@ screen launcher_input:
             has vbox
 
             text message:
-                text_align 0.5
+                textalign 0.5
                 xalign 0.5
                 layout "subtitle"
 

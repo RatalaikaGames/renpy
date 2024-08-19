@@ -41,7 +41,7 @@
 
     # android.rpy:32
     old "RAPT has been installed, but you'll need to install the Android SDK before you can build Android packages. Choose Install SDK to do this."
-    new "RAPT a été installé, mais vous devez installer le kit de développement Android pour pouvoir compiler les paquets Android. Choisissez « installer le kit de développement et créer les clés » pour cela."
+    new "RAPT a été installé, mais vous devez installer le kit de développement Android pour pouvoir compiler les paquets Android, avec « Installer le SDK »."
 
     # android.rpy:33
     old "RAPT has been installed, but a key hasn't been configured. Please create a new key, or restore android.keystore."
@@ -65,11 +65,11 @@
 
     # android.rpy:39
     old "Attempts to emulate a televison-based Android console, like the OUYA or Fire TV.\n\nController input is mapped to the arrow keys, Enter is mapped to the select button, Escape is mapped to the menu button, and PageUp is mapped to the back button."
-    new "Tentative d’émulation d'une console télé basée sur Android, comme OUYA ou Fire TV.\n\n Le contrôleur est émulé par les touches fléchées, le bouton select par la touche Entrée, le bouton menu par la touche Echap, et le bouton retour par la touche PageUp."
+    new "Tentative d’émulation d'une console télé basée sur Android, comme OUYA ou Fire TV.\n\nLa manette est émulée par les touches fléchées, le bouton select par la touche Entrée, le bouton menu par la touche Echap, et le bouton retour par la touche PageUp."
 
     # android.rpy:41
     old "Downloads and installs the Android SDK and supporting packages. Optionally, generates the keys required to sign the package."
-    new "Télécharge et installe le kit de développement Android et les paquets supportés. Optionnellement, génère les clés requises pour signer le paquet."
+    new "Télécharge et installe le kit de développement Android et les paquets requis. Optionnellement, génère les clés requises pour signer le paquet."
 
     # android.rpy:42
     old "Configures the package name, version, and other information about this project."
@@ -209,7 +209,8 @@
 
     # choose_theme.rpy:370
     old "Planetarium"
-    new "Planetarium"
+    # Automatic translation.
+    new "Planétarium"
 
     # choose_theme.rpy:425
     old "Choose Theme"
@@ -925,7 +926,7 @@
 
     # preferences.rpy:174
     old "Show edit file section"
-    new "Afficher la section d’édition de fichier"
+    new "Afficher la section d’édition de fichiers"
 
     # preferences.rpy:175
     old "Large fonts"
@@ -933,11 +934,11 @@
 
     # preferences.rpy:178
     old "Console output"
-    new "Sortie console"
+    new "Console de sortie"
 
     # preferences.rpy:199
     old "Open launcher project"
-    new "Ouvrir le projet lanceur"
+    new "Ouvrir le projet du lanceur"
 
     # preferences.rpy:213
     old "Language:"
@@ -997,7 +998,7 @@
 
     # translations.rpy:104
     old "The language to work with. This should only contain lower-case ASCII characters and underscores."
-    new "Le langage avec lequel travailler. Cette valeur ne doit contenir que des caractères ASCII en minuscules et des underscores (tiret bas)."
+    new "Le langage avec lequel travailler. Cette valeur ne doit contenir que des caractères ASCII en minuscules et des underscores."
 
     # translations.rpy:130
     old "Generate empty strings for translations"
@@ -1025,7 +1026,7 @@
 
     # translations.rpy:180
     old "Update Default Interface Translations"
-    new "Met à jour la traduction de l'interface par défaut"
+    new "Mise à jour de la traduction par défaut de l'interface"
 
     # translations.rpy:200
     old "The extract command allows you to extract string translations from an existing project into a temporary file.\n\nThe merge command merges extracted translations into another project."
@@ -1057,7 +1058,7 @@
 
     # translations.rpy:282
     old "Updating default interface translations..."
-    new "Mise à jour en cours de la traduction de l’interface par défaut..."
+    new "Mise à jour de la traduction par défaut de l’interface en cours..."
 
     # translations.rpy:306
     old "Extract Dialogue: [project.current.name!q]"
@@ -1069,7 +1070,7 @@
 
     # translations.rpy:330
     old "Tab-delimited Spreadsheet (dialogue.tab)"
-    new "Feuille de calcul avec pour séparateur des tabulations (dialogue.tab)"
+    new "Feuille de calcul avec des tabulations comme séparateur (dialogue.tab)"
 
     # translations.rpy:331
     old "Dialogue Text Only (dialogue.txt)"
@@ -1107,6 +1108,14 @@
     old "Release"
     new "Stable"
 
+    # game/updater.rpy:64
+    old "Release (Ren'Py 8, Python 3)"
+    new "Stable (Ren'Py 8, Python 3)"
+
+    # game/updater.rpy:65
+    old "Release (Ren'Py 7, Python 2)"
+    new "Stable (Ren'Py 7, Python 2)"
+
     # updater.rpy:97
     old "{b}Recommended.{/b} The version of Ren'Py that should be used in all newly-released games."
     new "{b}Recommandé.{/b} La version de Ren’Py qui devrait être utilisée pour tous les jeux récemment sortis."
@@ -1114,6 +1123,14 @@
     # updater.rpy:102
     old "Prerelease"
     new "Pré-stable"
+
+    # game/updater.rpy:69
+    old "Prerelease (Ren'Py 8, Python 3)"
+    new "Pré-stable (Ren'Py 8, Python 3)"
+
+    # game/updater.rpy:70
+    old "Prerelease (Ren'Py 7, Python 2)"
+    new "Pré-stable (Ren'Py 7, Python 2)"
 
     # updater.rpy:108
     old "A preview of the next version of Ren'Py that can be used for testing and taking advantage of new features, but not for final releases of games."
@@ -1129,11 +1146,35 @@
 
     # updater.rpy:126
     old "Nightly"
-    new "Nightly"
+    new "Journalière"
+
+    # game/updater.rpy:77
+    old "Nightly (Ren'Py 8, Python 3)"
+    new "Journalière (Ren'Py 8, Python 3)"
+
+    # game/updater.rpy:78
+    old "Nightly (Ren'Py 7, Python 2)"
+    new "Journalière (Ren'Py 7, Python 2)"
 
     # updater.rpy:132
     old "The bleeding edge of Ren'Py development. This may have the latest features, or might not run at all."
-    new "Les toutes dernières version de Ren’Py encore en développement. Vous pouvez alors utiliser les toutes dernières fonctionnalités, mais le logiciel peut également ne pas s’exécuter du tout."
+    new "La toute dernière version de Ren’Py, encore en développement. Elle peut contenir les toutes dernières fonctionnalités, ou alors ne pas marcher du tout."
+
+    # game/updater.rpy:76
+    old "Nightly Fix"
+    new "Journalière Corrective"
+
+    # game/updater.rpy:77
+    old "Nightly Fix (Ren'Py 8, Python 3)"
+    new "Journalière Corrective (Ren'Py 8, Python 3)"
+
+    # game/updater.rpy:78
+    old "Nightly Fix (Ren'Py 7, Python 2)"
+    new "Journalière Corrective (Ren'Py 7, Python 2)"
+
+    # game/updater.rpy:79
+    old "A nightly build of fixes to the release version of Ren'Py."
+    new "Une version journalière qui corrige les bugs de la dernière version stable."
 
     # updater.rpy:152
     old "An error has occured:"
@@ -1192,8 +1233,8 @@
     new "Le nom de fichier ne peut pas être vide."
 
     # game/android.rpy:31
-    old "A 64-bit/x64 Java 8 Development Kit is required to build Android packages on Windows. The JDK is different from the JRE, so it's possible you have Java without having the JDK.\n\nPlease {a=https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot}download and install the JDK{/a}, then restart the Ren'Py launcher."
-    new "Un kit de développement Java 8 64-bit/x64 est requis pour construire des paquets Android depuis Windows. Le JDK est différent du JRE, donc il est possible d'avoir Java sans avoir le JDK.\n\n{a=https://adoptopenjdk.net/?variant=openjdk8&jvmVariant=hotspot}Téléchargez et installez le JDK{/a}, puis redémarrez Ren'Py."
+    old "A 64-bit/x64 Java [JDK_REQUIREMENT] Development Kit is required to build Android packages on Windows. The JDK is different from the JRE, so it's possible you have Java without having the JDK.\n\nPlease {a=https://www.renpy.org/jdk/[JDK_REQUIREMENT]}download and install the JDK{/a}, then restart the Ren'Py launcher."
+    new "Un kit de développement Java [JDK_REQUIREMENT] 64-bit/x64 est requis pour construire des paquets Android depuis Windows. Le JDK est différent du JRE, donc il est possible d'avoir Java sans avoir le JDK.\n\n{a=https://www.renpy.org/jdk/[JDK_REQUIREMENT]}Téléchargez et installez le JDK{/a}, puis redémarrez Ren'Py."
 
     # game/android.rpy:50
     old "Selects the Debug build, which can be accessed through Android Studio. Changing between debug and release builds requires an uninstall from your device."
@@ -2043,30 +2084,6 @@
     old "Install Libraries:"
     new "Installer des bibliothèques :"
 
-    # game/updater.rpy:64
-    old "Release (Ren'Py 8, Python 3)"
-    new "Stable (Ren'Py 8, Python 3)"
-
-    # game/updater.rpy:65
-    old "Release (Ren'Py 7, Python 2)"
-    new "Stable (Ren'Py 7, Python 2)"
-
-    # game/updater.rpy:69
-    old "Prerelease (Ren'Py 8, Python 3)"
-    new "Pré-stable (Ren'Py 8, Python 3)"
-
-    # game/updater.rpy:70
-    old "Prerelease (Ren'Py 7, Python 2)"
-    new "Pré-stable (Ren'Py 7, Python 2)"
-
-    # game/updater.rpy:77
-    old "Nightly (Ren'Py 8, Python 3)"
-    new "Nightly (Ren'Py 8, Python 3)"
-
-    # game/updater.rpy:78
-    old "Nightly (Ren'Py 7, Python 2)"
-    new "Nightly (Ren'Py 7, Python 2)"
-
     # game/preferences.rpy:327
     old "{#in language font}Welcome! Please choose a language"
     new "{font=fonts/Roboto-Light.ttf}Bienvenue ! Choisissez une langue{/font}"
@@ -2074,3 +2091,59 @@
     # game/preferences.rpy:327
     old "{#in language font}Start using Ren'Py in [lang_name]"
     new "{font=fonts/Roboto-Light.ttf}Commencez à utiliser Ren'Py en [lang_name]{/font}"
+
+    # game/distribute_gui.rpy:231
+    old "(DLC)"
+    new "(DLC)"
+
+    # game/project.rpy:46
+    old "Lint checks your game for potential mistakes, and gives you statistics."
+    new "Lint vérifie votre jeu pour des erreurs communes, et génère des statistiques."
+
+    # game/web.rpy:484
+    old "Creating package..."
+    new "Création du package..."
+
+    # game/android.rpy:37
+    old "RAPT has been installed, but a key hasn't been configured. Please generate new keys, or copy android.keystore and bundle.keystore to the base directory."
+    new "RAPT a été installé, mais aucune clé n’a été configurée. Veuillez générer de nouvelles clés, ou copier android.keystore and bundle.keystore dans le dossier racine du projet."
+
+    # game/android.rpy:44
+    old "Attempts to emulate a televison-based Android console.\n\nController input is mapped to the arrow keys, Enter is mapped to the select button, Escape is mapped to the menu button, and PageUp is mapped to the back button."
+    new "Tentative d’émulation d'une console télé basée sur Android.\n\nLa manette est émulée par les touches fléchées, le bouton select par la touche Entrée, le bouton menu par la touche Echap, et le bouton retour par la touche PageUp."
+
+    # game/android.rpy:46
+    old "Downloads and installs the Android SDK and supporting packages."
+    new "Télécharge et installe le kit de développement Android et les paquets requis."
+
+    # game/android.rpy:47
+    old "Generates the keys required to sign the package."
+    new "Génère les clés requises pour signer le package."
+
+    # game/android.rpy:381
+    old "Install SDK"
+    new "Installer le SDK"
+
+    # game/android.rpy:385
+    old "Generate Keys"
+    new "Générer les clés"
+
+    # game/androidstrings.rpy:32
+    old "How much RAM (in GB) do you want to allocate to Gradle?\nThis must be a positive integer number."
+    new "Combien de RAM (in GB) voulez-vous allouer à Gradle ?\nEntrez un nombre entier positif."
+
+    # game/androidstrings.rpy:33
+    old "The RAM size must contain only numbers and be positive."
+    new "La taille de RAM ne doit contenir que des chiffres et être positive."
+
+    # game/androidstrings.rpy:63
+    old "I found an android.keystore file in the rapt directory. Do you want to use this file?"
+    new "J'ai trouvé un fichier android.keystore dans le dossier \"rapt\". Voulez-vous l'utiliser ?"
+
+    # game/androidstrings.rpy:66
+    old "\n\nSaying 'No' will prevent key creation."
+    new "\n\nRépondre \"Non\" empêchera la création de clés."
+
+    # game/androidstrings.rpy:69
+    old "I found a bundle.keystore file in the rapt directory. Do you want to use this file?"
+    new "J'ai trouvé un fichier bundle.keystore dans le dossier \"rapt\". Voulez-vous l'utiliser ?"

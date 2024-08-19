@@ -20,6 +20,10 @@ cdef class Matrix:
     cdef public float zdw
     cdef public float wdw
 
+    # This can be replaced with a cdef inline property when Cython 3 comes
+    # out.
+    cdef float *m
+
     # When this matrix is generated, where it was generated from.
     cdef public object origin
 

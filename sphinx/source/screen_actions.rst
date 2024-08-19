@@ -19,7 +19,10 @@ invoked. If the action returns a value, then the value is returned
 from an interaction.
 
 A list of actions can usually be provided in lieu of a single action,
-in which case the actions in the list are run in order.
+in which case the actions in the list are run in order. A list of
+actions is sensitive if all of the actions are sensitive, and selected
+if any of them are ; that unless :func:`SensitiveIf` or :func:`SelectedIf`,
+respectively, is part of the list.
 
 Control Actions
 ---------------
@@ -43,6 +46,8 @@ or game menus.
 
 .. include:: inc/menu_action
 
+.. _file-actions:
+
 File Actions
 ------------
 
@@ -58,7 +63,15 @@ take the `name` and `page` arguments.
     "quick", or a positive integer. If None, the page is determined
     automatically, based on a persistent page number.
 
+These are converted to a slot name using :var:`config.file_slotname_callback`,
+if it's set.
+
 .. include:: inc/file_action
+
+Sync Actions
+------------
+
+.. include:: inc/sync
 
 
 .. _audio-actions:
@@ -163,15 +176,23 @@ This function returns the side image to use.
 
 .. include:: inc/side_image_function
 
+Other Functions
+---------------
+
+.. include:: inc/other_screen_function
+
 .. _tooltips:
 
 Tooltips
 --------
 
-Tooltips can now be accessed by the tooltip property available on all
+Tooltips can now be accessed by the ``tooltip`` property available on all
 displayables, and the GetTooltip function. The GetTooltip function
 returns the value of the tooltip property when the displayable
 gains focus.
+
+As a reminder, values passed to the ``tooltip`` property must support
+equality.
 
 Here's an example::
 

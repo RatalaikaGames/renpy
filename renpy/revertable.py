@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -88,7 +88,7 @@ def mutator(method):
 
         global mutate_flag
 
-        mutated = renpy.game.log.mutated # @UndefinedVariable
+        mutated = renpy.game.log.mutated
 
         if id(self) not in mutated:
             mutated[id(self)] = (weakref.ref(self), self._clean())
@@ -333,6 +333,25 @@ class RevertableDict(dict):
         def has_key(self, key):
             return (key in self)
 
+        # https://peps.python.org/pep-0584 methods
+        def __or__(self, other):
+            if not isinstance(other, dict):
+                return NotImplemented
+            rv = RevertableDict(self)
+            rv.update(other)
+            return rv
+
+        def __ror__(self, other):
+            if not isinstance(other, dict):
+                return NotImplemented
+            rv = RevertableDict(other)
+            rv.update(self)
+            return rv
+
+        def __ior__(self, other):
+            self.update(other)
+            return self
+
     def copy(self):
         rv = RevertableDict()
         rv.update(self)
@@ -448,11 +467,11 @@ class RevertableObject(object):
 
     def __init_subclass__(cls):
         if renpy.config.developer and "__slots__" in cls.__dict__:
-            raise TypeError("Classes with __slots__ do not support rollback."
+            raise TypeError("Classes with __slots__ do not support rollback. "
                             "To create a class with slots, inherit from python_object instead.")
 
-    __setattr__ = mutator(object.__setattr__) # type: ignore
-    __delattr__ = mutator(object.__delattr__) # type: ignore
+    __setattr__ = mutator(object.__setattr__)
+    __delattr__ = mutator(object.__delattr__)
 
     def _clean(self):
         return self.__dict__.copy()
@@ -475,6 +494,16 @@ def checkpointing(method):
         return method(self, *args, **kwargs)
 
     return do_checkpoint
+
+
+def list_wrapper(method):
+
+    @_method_wrapper(method)
+    def newmethod(*args, **kwargs):
+        l = method(*args, **kwargs)
+        return RevertableList(l)
+
+    return newmethod
 
 
 class RollbackRandom(random.Random):
@@ -503,9 +532,12 @@ class RollbackRandom(random.Random):
 
     if PY2:
         jumpahead = checkpointing(mutator(random.Random.jumpahead)) # type: ignore
+    else:
+        choices = list_wrapper(random.Random.choices)
+    sample = list_wrapper(random.Random.sample)
 
     getrandbits = checkpointing(mutator(random.Random.getrandbits))
-    seed = checkpointing(mutator(random.Random.seed)) # type: ignore
+    seed = checkpointing(mutator(random.Random.seed))
     random = checkpointing(mutator(random.Random.random))
 
     def Random(self, seed=None):
@@ -528,6 +560,10 @@ class DetRandom(random.Random):
     def __init__(self):
         super(DetRandom, self).__init__()
         self.stack = [ ]
+
+    if not PY2:
+        choices = list_wrapper(random.Random.choices)
+    sample = list_wrapper(random.Random.sample)
 
     def random(self):
 

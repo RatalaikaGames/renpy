@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -86,10 +86,6 @@ class _Config(object):
     def __setstate__(self, data):
         return
 
-    def register(self, name, default, cat=None, help=None): # @ReservedAssignment
-        setattr(self, name, default)
-        _config.help.append((cat, name, help))
-
     def __getattr__(self, name):
         cvars = vars(_config)
 
@@ -99,7 +95,7 @@ class _Config(object):
         return cvars[name]
 
     def __setattr__(self, name, value):
-        cvars = vars(_config)
+        cvars = _config.__dict__
 
         if name not in cvars and renpy.config.locked:
             raise Exception('config.%s is not a known configuration variable.' % (name))
@@ -165,8 +161,10 @@ DynamicDisplayable = renpy.display.layout.DynamicDisplayable
 ConditionSwitch = renpy.display.layout.ConditionSwitch
 ShowingSwitch = renpy.display.layout.ShowingSwitch
 AlphaMask = renpy.display.layout.AlphaMask
+Layer = renpy.display.layout.Layer
 
-Transform = renpy.display.motion.Transform
+Transform = renpy.display.transform.Transform
+Camera = renpy.display.transform.Camera
 
 Animation = anim.Animation
 Movie = renpy.display.video.Movie
@@ -393,6 +391,7 @@ adv = ADVCharacter(None,
                 callback=None,
                 type='say',
                 advance=True,
+                retain=False,
 
                 who_style='say_label',
                 what_style='say_dialogue',
@@ -403,9 +402,8 @@ adv = ADVCharacter(None,
 
                 kind=False)
 
-# predict_say and who are defined in 00library.rpy, but we add default
-# versions here in case there is a problem with initialization. (And
-# for pickling purposes.)
+# This character is copied when a name-only say statement is called.
+name_only = adv
 
 
 def predict_say(who, what):
@@ -418,8 +416,7 @@ def predict_say(who, what):
 
 def say(who, what, interact=True, *args, **kwargs):
     who = Character(who, kind=adv)
-    who(what, interact=interact, *args, **kwargs)
-
+    who(what, *args, interact=interact, **kwargs)
 
 # Used by renpy.reshow_say and extend.
 _last_say_who = None

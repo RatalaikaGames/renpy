@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -40,12 +40,12 @@ init -1510 python:
 
             elif self.action == "disable":
 
-                if current is self.input_value:
+                if current == self.input_value:
                     renpy.set_editable_input_value(self.input_value, False)
 
             elif self.action == "toggle":
 
-                if current is self.input_value and editable:
+                if current == self.input_value and editable:
                     renpy.set_editable_input_value(self.input_value, False)
                 else:
                     renpy.set_editable_input_value(self.input_value, True)
@@ -56,7 +56,7 @@ init -1510 python:
 
             current, editable = renpy.get_editable_input_value()
 
-            rv = (current is self.input_value) and editable
+            rv = (current == self.input_value) and editable
 
             if self.action == "disable":
                 rv = not rv
@@ -124,6 +124,10 @@ init -1510 python:
         `variable`
             A string giving the name of the variable to update.
 
+            The `variable` parameter must be a string, and can be a simple name like "strength", or
+            one with dots separating the variable from fields, like "hero.strength"
+            or "persistent.show_cutscenes".
+
         `default`
             If true, this input can be editable by default.
 
@@ -142,10 +146,10 @@ init -1510 python:
             self.returnable = returnable
 
         def get_text(self):
-            return globals()[self.variable]
+            return _get_field(store, self.variable, "variable")
 
         def set_text(self, s):
-            globals()[self.variable] = s
+            _set_field(store, self.variable, s, "variable")
             renpy.restart_interaction()
 
     class ScreenVariableInputValue(InputValue, FieldEquality):
@@ -214,10 +218,10 @@ init -1510 python:
             self.returnable = returnable
 
         def get_text(self):
-            return getattr(self.object, self.field)
+            return _get_field(self.object, self.field, "field")
 
         def set_text(self, s):
-            setattr(self.object, self.field, s)
+            _set_field(self.object, self.field, s, "field")
             renpy.restart_interaction()
 
     @renpy.pure

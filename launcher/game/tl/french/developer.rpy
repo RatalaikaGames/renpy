@@ -14,7 +14,11 @@
 
     # _developer/developer.rpym:47
     old "Variable Viewer"
-    new "Visualisateur de variable"
+    new "Inspecteur de variables"
+
+    # renpy/common/_developer/developer.rpym:51
+    old "Persistent Viewer"
+    new "Inspecteur de données persistentes"
 
     # _developer/developer.rpym:49
     old "Theme Test"
@@ -74,7 +78,7 @@
 
     # _developer/developer.rpym:532
     old "\n{color=#cfc}✔ predicted image (good){/color}\n{color=#fcc}✘ unpredicted image (bad){/color}\n{color=#fff}Drag to move.{/color}"
-    new "\n{color=#cfc}✔ image prédite (bon){/color}\n{color=#fcc}✘ image prédite (mauvais){/color}\n{color=#fff}Glissez pour bouger.{/color}"
+    new "\n{color=#cfc}✔ image prédite (bien){/color}\n{color=#fcc}✘ image non prédite (pas bien){/color}\n{color=#fff}Glissez pour déplacer.{/color}"
 
     # _developer/inspector.rpym:38
     old "Displayable Inspector"
@@ -124,9 +128,13 @@
     old "Ren'Py script disabled."
     new "Script Ren'Py désactivé."
 
-    # 00console.rpy:398
-    old "help: show this help"
-    new "aide : afficher cette aide"
+    # renpy/common/00console.rpy:781
+    old "help: show this help\n help <expr>: show signature and documentation of <expr>"
+    new "help : afficher cette aide\n help <expr>: afficher la signature et la documentation de <expr>"
+
+    # renpy/common/00console.rpy:805
+    old "Help may display undocumented functions. Please check that the function or\nclass you want to use is documented.\n\n"
+    new "Help peut afficher des fonctions non documentées. Veuillez vérifier que la\nfonction ou classe que vous voulez utiliser est bien documentée.\n\n"
 
     # 00console.rpy:403
     old "commands:\n"
@@ -199,3 +207,7 @@
     # renpy/common/00console.rpy:784
     old "stack: print the return stack"
     new "stack : affiche la pile de retour"
+
+    # renpy/common/_developer/developer.rpym:70
+    old "Speech Bubble Editor (Shift+B)"
+    new "Éditeur de bulles de dialogue (Shift+B)"

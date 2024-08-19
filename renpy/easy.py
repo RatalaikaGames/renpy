@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -19,7 +19,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Functions that make the user's life easier.
+"""Functions that make the user's life easier."""
 
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
@@ -33,6 +33,11 @@ import renpy
 
 Color = renpy.color.Color
 color = renpy.color.Color
+
+if PY2:
+    from collections import Iterable # type: ignore
+else:
+    from collections.abc import Iterable
 
 
 def lookup_displayable_prefix(d):
@@ -53,9 +58,9 @@ def lookup_displayable_prefix(d):
     return displayable(fn(arg))
 
 
-def displayable_or_none(d, scope=None, dynamic=True): # type: (Any, dict|None, bool) -> renpy.display.core.Displayable|None
+def displayable_or_none(d, scope=None, dynamic=True): # type: (Any, dict|None, bool) -> renpy.display.displayable.Displayable|None
 
-    if isinstance(d, renpy.display.core.Displayable):
+    if isinstance(d, renpy.display.displayable.Displayable):
         return d
 
     if d is None:
@@ -94,7 +99,7 @@ def displayable_or_none(d, scope=None, dynamic=True): # type: (Any, dict|None, b
     raise Exception("Not a displayable: %r" % (d,))
 
 
-def displayable(d, scope=None): # type(d, dict|None=None) -> renpy.display.core.Displayable|None
+def displayable(d, scope=None): # type(d, dict|None=None) -> renpy.display.displayable.Displayable|None
     """
     :doc: udd_utility
     :name: renpy.displayable
@@ -104,7 +109,7 @@ def displayable(d, scope=None): # type(d, dict|None=None) -> renpy.display.core.
     rules.
     """
 
-    if isinstance(d, renpy.display.core.Displayable):
+    if isinstance(d, renpy.display.displayable.Displayable):
         return d
 
     if isinstance(d, basestring):
@@ -140,7 +145,7 @@ def displayable(d, scope=None): # type(d, dict|None=None) -> renpy.display.core.
     raise Exception("Not a displayable: %r" % (d,))
 
 
-def dynamic_image(d, scope=None, prefix=None, search=None): # type: (Any, dict|None, str|None, list|None) -> renpy.display.core.Displayable|None
+def dynamic_image(d, scope=None, prefix=None, search=None): # type: (Any, dict|None, str|None, list|None) -> renpy.display.displayable.Displayable|None
     """
     Substitutes a scope into `d`, then returns a displayable.
 
@@ -156,7 +161,7 @@ def dynamic_image(d, scope=None, prefix=None, search=None): # type: (Any, dict|N
         if renpy.exports.image_exists(name):
             return True
 
-        if renpy.loader.loadable(name):
+        if renpy.loader.loadable(name, directory="images"):
             return True
 
         if lookup_displayable_prefix(name):
@@ -258,3 +263,49 @@ def split_properties(properties, *prefixes):
             raise Exception("Property {} begins with an unknown prefix.".format(k))
 
     return rv
+
+def to_list(value, copy=False):
+    """
+    If the value is an iterable, turns it into a list, otherwise wraps it into one.
+    If a list is provided and `copy` is True, a new list will be returned.
+    """
+    if isinstance(value, list):
+        return list(value) if copy else value
+
+    if not isinstance(value, str) and isinstance(value, Iterable):
+        return list(value)
+
+    return [value]
+
+def to_tuple(value):
+    """
+    Same as to_list, but with tuples.
+    """
+    if isinstance(value, tuple):
+        return value
+
+    if not isinstance(value, str) and isinstance(value, Iterable):
+        return tuple(value)
+
+    return (value,)
+
+def run_callbacks(cb, *args, **kwargs):
+    """
+    Runs a callback or list of callbacks that do not expect results
+    """
+
+    if cb is None:
+        return None
+
+    if isinstance(cb, (list, tuple)):
+        rv = None
+
+        for i in cb:
+            new_rv = run_callbacks(i, *args, **kwargs)
+
+            if new_rv is not None:
+                rv = new_rv
+
+        return rv
+
+    return cb(*args, **kwargs)

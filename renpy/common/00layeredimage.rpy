@@ -3,7 +3,7 @@
 python early in layeredimage:
 
     from store import Transform, ConditionSwitch, Fixed, Null, config, Text, eval, At
-    from collections import OrderedDict
+    from collections import OrderedDict, defaultdict
 
     ATL_PROPERTIES = [ i for i in renpy.atl.PROPERTIES ]
     ATL_PROPERTIES_SET = set(ATL_PROPERTIES)
@@ -11,8 +11,11 @@ python early in layeredimage:
     # The properties for attribute layers.
     LAYER_PROPERTIES = [ "if_all", "if_any", "if_not", "at" ] + ATL_PROPERTIES
 
+    # The properties passed to the Fixed wrapping the layeredimage.
+    FIXED_PROPERTIES = renpy.sl2.slproperties.position_property_names + renpy.sl2.slproperties.box_property_names
+
     # This is the default value for predict_all given to conditions.
-    predict_all = False
+    predict_all = None
 
     def format_function(what, name, group, variant, attribute, image, image_format, **kwargs):
         """
@@ -95,25 +98,10 @@ python early in layeredimage:
 
         def __init__(self, if_all=[ ], if_any=[ ], if_not=[ ], at=[ ], group_args={}, **kwargs):
 
-            if not isinstance(at, list):
-                at = [ at ]
-
-            self.at = at
-
-            if not isinstance(if_all, list):
-                if_all = [ if_all ]
-
-            self.if_all = if_all
-
-            if not isinstance(if_any, list):
-                if_any = [ if_any ]
-
-            self.if_any = if_any
-
-            if not isinstance(if_not, list):
-                if_not = [ if_not ]
-
-            self.if_not = if_not
+            self.at = renpy.easy.to_list(at)
+            self.if_all = renpy.easy.to_list(if_all)
+            self.if_any = renpy.easy.to_list(if_any)
+            self.if_not = renpy.easy.to_list(if_not)
 
             self.group_args = group_args
             self.transform_args = kwargs
@@ -326,9 +314,13 @@ python early in layeredimage:
         :doc: li
         :name: Condition
 
-        This is used to represent a layer of an LayeredImage that
-        is controlled by a condition. When the condition is true,
-        the layer is displayed. Otherwise, nothing is displayed.
+        When the condition is true, the layer is displayed. Otherwise, nothing
+        is displayed.
+
+        This is used to implement a single ``if``, ``elif`` **or** ``else``
+        layeredimage statement (for ``else``, `condition` should be "True").
+        Several Conditions can then be passed to a :class:`ConditionGroup` to
+        emulate a full if/elif/else statement.
 
         `condition`
             This should be a string giving a Python condition that determines
@@ -343,20 +335,19 @@ python early in layeredimage:
             if all of these are showing.
 
         `if_any`
-            An attribute or list of attributes. If not empty, the condition is only evaluated
-            if any of these are showing.
+            An attribute or list of attributes. If not empty, the condition is
+            only evaluated if any of these are showing.
 
         `if_not`
             An attribute or list of attributes. The condition is only evaluated
             if none of these are showing.
 
         `at`
-            A transform or list of transforms that are applied to the
-            image.
+            A transform or list of transforms that are applied to the image.
 
-        Other keyword arguments are interpreted as transform properties. If
-        any are present, a transform is created that wraps the image. (For
-        example, pos=(100, 200) can be used to offset the image by 100 pixels
+        Other keyword arguments are interpreted as transform properties. If any
+        is present, a transform is created that wraps the image. (For example,
+        pos=(100, 200) can be used to offset the image by 100 pixels
         horizontally and 200 vertically.)
         """
 
@@ -403,7 +394,13 @@ python early in layeredimage:
 
     class ConditionGroup(Layer):
         """
-        Combines a list of conditions into a single ConditionSwitch.
+        :doc: li
+        :name: ConditionGroup
+
+        Takes a list of :class:`Condition` to combine them into a single
+        :func:`ConditionSwitch`.
+
+        Implements the if/elif/else statement.
         """
 
         def __init__(self, conditions):
@@ -426,7 +423,7 @@ python early in layeredimage:
             args.append(None)
             args.append(Null())
 
-            return ConditionSwitch(predict_all=predict_all, *args)
+            return ConditionSwitch(*args, predict_all=predict_all)
 
     class RawConditionGroup(object):
 
@@ -444,7 +441,7 @@ python early in layeredimage:
 
     class Always(Layer):
         """
-        :doc: li
+        :undocumented:
         :name: Always
 
         This is used for a displayable that is always shown.
@@ -472,7 +469,6 @@ python early in layeredimage:
             An attribute or list of attributes. The displayable is only shown
             if none of these are showing.
         """
-
 
         def __init__(self, image, **kwargs):
 
@@ -522,11 +518,14 @@ python early in layeredimage:
         displayables associated with those attribute.
 
         `attributes`
-            This must be a list of Attribute objects. Each Attribute object
+            This must be a list of Attribute, Condition, ConditionGroup or
+            :doc:`displayable <displayables>` objects. Each one
             reflects a displayable that may or may not be displayed as part
             of the image. The items in this list are in back-to-front order,
             with the first item further from the viewer and the last
             closest.
+            Passing a displayable directly is the equivalent of the `always`
+            layeredimage statement.
 
         `at`
             A transform or list of transforms that are applied to the displayable
@@ -589,22 +588,18 @@ python early in layeredimage:
             self.attributes = [ ]
             self.layers = [ ]
 
-            import collections
-            self.attribute_to_groups = collections.defaultdict(set)
-            self.group_to_attributes = collections.defaultdict(set)
+            self.attribute_to_groups = defaultdict(set)
+            self.group_to_attributes = defaultdict(set)
 
             for i in attributes:
                 self.add(i)
 
-            if not isinstance(at, list):
-                at = [ at ]
-
-            self.at = at
+            self.at = renpy.easy.to_list(at)
 
             kwargs.setdefault("xfit", True)
             kwargs.setdefault("yfit", True)
 
-            self.transform_args = {k : kwargs.pop(k) for k, v in list(kwargs.items()) if k not in (renpy.sl2.slproperties.position_property_names + renpy.sl2.slproperties.box_property_names)}
+            self.transform_args = {k : kwargs.pop(k) for k, v in list(kwargs.items()) if k not in FIXED_PROPERTIES}
             self.fixed_args = kwargs
 
         def format(self, what, attribute=None, group=None, variant=None, image=None):
@@ -624,6 +619,16 @@ python early in layeredimage:
                 image_format=self.image_format)
 
         def add(self, a):
+            """
+            :doc: li
+
+            `a`
+                An Attribute, Condition, ConditionGroup or :doc:`displayable <displayables>`
+                object.
+
+            This method adds the provided layer to the list of layers of the layeredimage,
+            as if it had been passed in the `attributes` argument to the constructor.
+            """
 
             if not isinstance(a, Layer):
                 a = Always(a)
@@ -712,7 +717,7 @@ python early in layeredimage:
                     size=16,
                     xalign=0.5,
                     yalign=0.5,
-                    text_align=0.5,
+                    textalign=0.5,
                     color="#fff",
                     outlines=[ (1, "#0008", 0, 0) ],
                 )
@@ -1100,7 +1105,7 @@ python early in layeredimage:
         another layered image.
 
         `name`
-            A string giving the name of the layered image to proxy to.
+            A string giving the name of the layeredimage to proxy to.
 
         `transform`
             If given, a transform or list of transforms that are applied to the
@@ -1118,11 +1123,8 @@ python early in layeredimage:
             if transform is None:
                 self.transform = [ ]
 
-            elif isinstance(transform, list):
-                self.transform = transform
-
             else:
-                self.transform = [ transform ]
+                self.transform = renpy.easy.to_list(transform)
 
         @property
         def image(self):

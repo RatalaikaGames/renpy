@@ -60,6 +60,8 @@ can then change it again.)
     the current language. The :func:`Language` action can be used to change
     the language.
 
+    See :doc:`translation` for more information.
+
 .. var:: preferences.emphasize_audio = False
 
     If True, Ren'Py will emphasize the audio channels found in :var:`config.emphasize_audio_channels`
@@ -95,7 +97,7 @@ can then change it again.)
 .. var:: preferences.mouse_move = True
 
     If True, the mouse will automatically move to a selected button. If False,
-    it will not. The equivalent of the "automatic mouse move" preference.
+    it will not. The equivalent of the "automatic move" preference.
 
 .. var:: preferences.show_empty_window = True
 
@@ -147,9 +149,9 @@ can then change it again.)
 
 .. var:: preferences.system_cursor = False
 
-    If True, the system cursor is forced to be used, ignoring the
-    :var:`config.mouse` value. If False, it will not. The equivalent of the
-    "system cursor" preference.
+    If True, the system cursor is forced to be used, ignoring the value of
+    :var:`config.mouse` and :var:`config.mouse_displayable`. If False, it
+    will not. The equivalent of the "system cursor" preference.
 
 .. var:: preferences.audio_when_minimized = True
 
@@ -158,12 +160,33 @@ can then change it again.)
     have no effect on audio.
     The equivalent of the "audio when minimized" preference.
 
+.. var:: preferences.audio_when_unfocused = True
+
+    If False, audio channels are stopped when the window loses keyboard focus,
+    and resumed when the window regains keyboard focus. If True, keyboard focus
+    will have no effect on audio.
+    The equivalent of the "audio when unfocused" preference.
+
+.. var:: preferences.web_cache_preload = False
+
+    If True the game files will be loaded into the web browser's cache,
+    allowing the game to be played offline. If False, the game files will
+    not be loaded into the web browser's cache, and the game will require
+    internet access to play.
+    The equivalent of the "web cache preload" preference.
+
+.. var:: preferences.voice_after_game_menu = False
+
+    If True, voice will continue playing after the game menu is shown. If False,
+    voice will be stopped when the game menu is shown. The equivalent of the
+    "voice after menu" preference.
+
 Mixer Functions
 ---------------
 
 See :ref:`volume` for more details about mixers.
 
-.. function:: preferences.set_volume(mixer, volume)
+.. function:: preferences.set_mixer(mixer, volume)
 
     Sets `mixer` to `volume`.
 
@@ -172,12 +195,14 @@ See :ref:`volume` for more details about mixers.
         are "main", "music", "sfx", and "voice" ("main" being a special mixer).
 
     `volume`
-        A number between 0.0 and 1.0.
+        A number between 0.0 and 1.0, where 0.0 is -40 dB (power), and 1.0 is 0 dB
+        (power).
 
-.. function:: preferences.get_volume(mixer)
+.. function:: preferences.get_mixer(mixer)
 
     Gets the volume for `mixer`. If the mixer is muted, this returns
-    0.0.
+    0.0. The is returns a number between 0.0 and 1.0, where 0.0 is -40 dB
+    (power) and 1.0 is 0 dB (power).
 
 .. function:: preferences.set_mute(mixer, mute)
 

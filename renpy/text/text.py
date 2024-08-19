@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -36,6 +36,7 @@ import renpy.text.textsupport as textsupport
 import renpy.text.texwrap as texwrap
 import renpy.text.font as font
 import renpy.text.extras as extras
+from renpy.text.emoji_trie import emoji, UNQUALIFIED
 
 #from _renpybidi import log2vis, WRTL, RTL, ON # @UnresolvedImport
 
@@ -164,7 +165,7 @@ class DrawInfo(object):
     surface = None # type: Optional[pygame_sdl2.surface.Surface]
     override_color = None # type: Optional[tuple[int, int, int, int]]
     outline = 0 # type: float
-    displayable_blits = None # type: Optional[list[tuple[renpy.display.core.Displayable, int, int]]]
+    displayable_blits = None # type: Optional[list[tuple[renpy.display.displayable.Displayable, int, int]]]
 
 class TextSegment(object):
     """
@@ -182,7 +183,8 @@ class TextSegment(object):
         if source is not None:
             self.antialias = source.antialias
             self.vertical = source.vertical
-            self.font = source.font
+            font = source.font
+            self.font = renpy.config.font_name_map.get(font, font)
             self.size = source.size
             self.bold = source.bold
             self.italic = source.italic
@@ -198,6 +200,8 @@ class TextSegment(object):
             self.hinting = source.hinting
             self.outline_color = source.outline_color
             self.ignore = source.ignore
+            self.default_font = source.default_font
+            self.shaper = source.shaper
 
         else:
             self.hyperlink = 0
@@ -205,6 +209,7 @@ class TextSegment(object):
             self.ruby_top = False
             self.ruby_bottom = False
             self.ignore = False
+            self.default_font = True
 
     def __repr__(self):
         return "<TextSegment font={font}, size={size}, bold={bold}, italic={italic}, underline={underline}, color={color}, black_color={black_color}, hyperlink={hyperlink}, vertical={vertical}>".format(**self.__dict__)
@@ -216,7 +221,8 @@ class TextSegment(object):
 
         self.antialias = style.antialias
         self.vertical = style.vertical
-        self.font = style.font
+        font = style.font
+        self.font = renpy.config.font_name_map.get(font, font)
         self.size = style.size
         self.bold = style.bold
         self.italic = style.italic
@@ -243,6 +249,8 @@ class TextSegment(object):
 
         self.cps = self.cps * style.slow_cps_multiplier
 
+        self.shaper = style.shaper
+
     # From here down is the public glyph API.
 
     def glyphs(self, s, layout):
@@ -253,7 +261,7 @@ class TextSegment(object):
         if self.ignore:
             return [ ]
 
-        fo = font.get_font(self.font, self.size, self.bold, self.italic, 0, self.antialias, self.vertical, self.hinting, layout.oversample)
+        fo = font.get_font(self.font, self.size, self.bold, self.italic, 0, self.antialias, self.vertical, self.hinting, layout.oversample, self.shaper)
         rv = fo.glyphs(s)
 
         # Apply kerning to the glyphs.
@@ -285,7 +293,7 @@ class TextSegment(object):
             color = self.color
             black_color = self.black_color
 
-        fo = font.get_font(self.font, self.size, self.bold, self.italic, di.outline, self.antialias, self.vertical, self.hinting, layout.oversample)
+        fo = font.get_font(self.font, self.size, self.bold, self.italic, di.outline, self.antialias, self.vertical, self.hinting, layout.oversample, self.shaper)
         fo.draw(di.surface, xo, yo, color, glyphs, self.underline, self.strikethrough, black_color)
 
     def assign_times(self, gt, glyphs):
@@ -350,7 +358,7 @@ class TextSegment(object):
         origin point.
         """
 
-        fo = font.get_font(self.font, self.size, self.bold, self.italic, 0, self.antialias, self.vertical, self.hinting, layout.oversample)
+        fo = font.get_font(self.font, self.size, self.bold, self.italic, 0, self.antialias, self.vertical, self.hinting, layout.oversample, self.shaper)
         return fo.bounds(glyphs, bounds)
 
 
@@ -640,7 +648,14 @@ class Layout(object):
         started = self.start_segment is None
         ended = False
 
+        language = style.language
+
         for p_num, p in enumerate(self.paragraphs):
+
+            if language == "thaic90":
+                # Thai C90 - apply the Thai C90 algorithm to the text of each
+                # segment.
+                p = self.thaic90_paragraph(p)
 
             # RTL - apply RTL to the text of each segment, then
             # reverse the order of the segments in each paragraph.
@@ -683,9 +698,8 @@ class Layout(object):
 
                 # Tag the glyphs that are eligible for line breaking, and if
                 # they should be included or excluded from the end of a line.
-                language = style.language
 
-                if language == "unicode" or language == "eastasian":
+                if language == "unicode" or language == "eastasian" or language == "thaic90":
                     textsupport.annotate_unicode(par_glyphs, False, 0)
                 elif language == "korean-with-spaces":
                     textsupport.annotate_unicode(par_glyphs, True, 0)
@@ -889,7 +903,10 @@ class Layout(object):
                 self.make_alignment_grid(surf)
 
             renpy.display.draw.mutated_surface(surf)
-            tex = renpy.display.draw.load_texture(surf, properties={ "mipmap" : renpy.config.mipmap_text if (style.mipmap is None) else style.mipmap })
+            tex = renpy.display.draw.load_texture(surf, properties={
+                "mipmap" : renpy.config.mipmap_text if (style.mipmap is None) else style.mipmap,
+                "premultiplied" : True,
+                })
 
             self.textures[key] = tex
 
@@ -981,6 +998,73 @@ class Layout(object):
     def unscale_pair(self, x, y):
         return x / self.oversample, y / self.oversample
 
+    def create_text_segments(self, text, ts, style):
+        """
+        Creates one or more text segements, splitting out emoji. This
+        will also use subsegment to handle font groups.
+        """
+
+        if not ts.default_font or (style.emoji_font is None):
+            return ts.subsegment(text)
+
+        rv = [ ]
+
+        required_level = UNQUALIFIED if style.prefer_emoji else UNQUALIFIED + 1
+
+        # The start of the current run.
+        run_start = 0
+
+        # Does the current run contain emoji?
+        run_is_emoji = False
+
+        len_text = len(text)
+
+        i = 0
+
+        while i < len_text:
+
+            start = i
+
+            if text[i] in emoji:
+                d = emoji
+
+                while i < len_text and text[i] in d:
+                    d = d[text[i]]
+                    i += 1
+
+                is_emoji = d[''] >= required_level
+
+            else:
+                is_emoji = False
+                i += 1
+
+            end = i
+
+            if run_is_emoji != is_emoji:
+
+                if run_start != start:
+                    if run_is_emoji:
+                        nts = TextSegment(ts)
+                        nts.font = style.emoji_font
+                    else:
+                        nts = ts
+
+                    rv.extend(nts.subsegment(text[run_start:start]))
+
+                run_start = start
+
+            run_is_emoji = is_emoji
+
+        if run_is_emoji:
+            nts = TextSegment(ts)
+            nts.font = style.emoji_font
+        else:
+            nts = ts
+
+        rv.extend(nts.subsegment(text[run_start:]))
+
+        return rv
+
     def segment(self, tokens, style, renders, text_displayable):
         """
         Breaks the text up into segments. This creates a list of paragraphs,
@@ -1045,7 +1129,8 @@ class Layout(object):
                         if text != u"\u200b":
                             text = text_displayable.mask * len(text)
 
-                    line.extend(tss[-1].subsegment(text))
+                    line.extend(self.create_text_segments(text, tss[-1], style))
+
                     continue
 
                 elif type == DISPLAYABLE:
@@ -1186,7 +1271,11 @@ class Layout(object):
                     push().take_style(style, self)
 
                 elif tag == "font":
-                    push().font = value
+                    value = renpy.config.font_name_map.get(value, value)
+
+                    ts = push()
+                    ts.font = value
+                    ts.default_font = False
 
                 elif tag == "size":
 
@@ -1195,6 +1284,8 @@ class Layout(object):
 
                     if value[0] in "+-":
                         push().size += int(value)
+                    elif value[0] == "*":
+                        push().size = int(float(value[1:]) * push().size)
                     else:
                         push().size = int(value)
 
@@ -1298,6 +1389,23 @@ class Layout(object):
         paragraphs.append(line)
 
         return paragraphs
+
+    def thaic90_paragraph(self, p):
+        """
+        Given a paragraph (a list of (segment, text) tuples), converts the
+        text into c90-encoded thai text. This is an encoding that combines
+        multiple characters (base character, upper vowel, lower vowel, and
+        tone mark) into a single character in a unicode reserved space.
+        """
+
+        rv = [ ]
+
+        for ts, s in p:
+            s = renpy.text.extras.thaic90(s)
+            rv.append((ts, s))
+
+        return rv
+
 
     def rtl_paragraph(self, p):
         """
@@ -1511,12 +1619,12 @@ VERT_REVERSE = renpy.display.matrix.Matrix2D(0, -1, 1, 0)
 VERT_FORWARD = renpy.display.matrix.Matrix2D(0, 1, -1, 0)
 
 
-class Text(renpy.display.core.Displayable):
+class Text(renpy.display.displayable.Displayable):
 
     """
     :name: Text
     :doc: text
-    :args: (text, slow=None, scope=None, substitute=None, slow_done=None, **properties)
+    :args: (text, slow=None, scope=None, substitute=None, slow_done=None, *, tokenized=False, **properties)
 
     A displayable that displays text on the screen.
 
@@ -1541,6 +1649,10 @@ class Text(renpy.display.core.Displayable):
         If not None, and if slow text mode is enabled (see the `slow` parameter), this is a
         function or callable which is called with no arguments when the text finishes displaying.
 
+    `tokenized`
+        If true, `text` is expected to be a list of tokens, rather than a string. The tokens are
+        introduced in the :doc:`custom_text_tags` page.
+
     `**properties`
         Like other Displayables, Text takes style properties, including (among many others) the
         :propref:`mipmap` property.
@@ -1555,6 +1667,7 @@ class Text(renpy.display.core.Displayable):
     language = None
     mask = None
     last_ctc = None
+    tokenized = False
 
     def after_upgrade(self, version):
 
@@ -1572,25 +1685,28 @@ class Text(renpy.display.core.Displayable):
             self.end = None
             self.dirty = True
 
-    def __init__(self, text, slow=None, scope=None, substitute=None, slow_done=None, replaces=None, mask=None, **properties):
+    def __init__(self, text, slow=None, scope=None, substitute=None, slow_done=None, replaces=None, mask=None, tokenized=False, **properties):
 
         super(Text, self).__init__(**properties)
 
-        # We need text to be a list, so if it's not, wrap it.
-        if not isinstance(text, list):
-            text = [ text ]
 
-        # Check that the text is all text-able things.
-        for i in text:
-            if not isinstance(i, (basestring, renpy.display.core.Displayable)):
-                if renpy.config.developer:
-                    raise Exception("Cannot display {0!r} as text.".format(i))
-                else:
-                    text = [ "" ]
-                    break
+        if not tokenized:
+
+            # We need text to be a list, so if it's not, wrap it.
+            if not isinstance(text, list):
+                text = [ text ]
+
+            # Check that the text is all text-able things.
+            for i in text:
+                if not isinstance(i, (basestring, renpy.display.displayable.Displayable)):
+                    if renpy.config.developer:
+                        raise Exception("Cannot display {0!r} as text.".format(i))
+                    else:
+                        text = [ "" ]
+                        break
 
         # True if we are substituting things in.
-        self.substitute = substitute
+        self.substitute = substitute # type: bool | None
 
         # Do we need to update ourselves?
         self.dirty = True
@@ -1601,10 +1717,13 @@ class Text(renpy.display.core.Displayable):
         # A mask, for passwords and such.
         self.mask = mask
 
-        # Sets the text we're showing, and performs substitutions.
-        self.set_text(text, scope, substitute)
+        # True if the text is tokenized, False otherwise.
+        self.tokenized = tokenized
 
-        if renpy.game.less_updates or renpy.game.preferences.self_voicing:
+        # Sets the text we're showing, and performs substitutions.
+        self.set_text(text, scope, substitute) # type: ignore
+
+        if renpy.game.less_updates:
             slow = False
 
         # True if we're using slow text mode.
@@ -1698,12 +1817,24 @@ class Text(renpy.display.core.Displayable):
 
         return self.set_text(self.text_parameter, scope, self.substitute, update)
 
-    def set_text(self, text, scope=None, substitute=False, update=True):
+    def set_text(self, text, scope=None, substitute=False, update=True): # type: (Any, Any, bool|None, bool) -> bool
 
         if self.locked:
-            return
+            return False
 
         self.language = renpy.game.preferences.language
+
+        if self.tokenized:
+
+            if update and self.text != text:
+                self.dirty = True
+                renpy.display.render.redraw(self, 0)
+
+            self.text = text
+            self.text_parameter = text
+            self._uses_scope = False
+
+            return True
 
         old_text = self.text
 
@@ -1720,7 +1851,7 @@ class Text(renpy.display.core.Displayable):
         for i in text:
             if isinstance(i, basestring):
                 if substitute is not False:
-                    i, did_sub = renpy.substitutions.substitute(i, scope, substitute)
+                    i, did_sub = renpy.substitutions.substitute(i, scope, substitute) # type: ignore
                     uses_scope = uses_scope or did_sub
 
                 if isinstance(i, bytes):
@@ -1770,60 +1901,65 @@ class Text(renpy.display.core.Displayable):
 
         self.kill_layout()
 
-        text = self.text
+        if not self.tokenized:
 
-        # Decide the portion of the text to show quickly, the part to
-        # show slowly, and the part not to show (but to lay out).
-        if self.start is not None:
-            start_string = text[0][:self.start]
-            mid_string = text[0][self.start:self.end]
-            end_string = text[0][self.end:]
+            text = self.text
 
-            if start_string:
-                start_string = start_string + "{_start}"
+            # Decide the portion of the text to show quickly, the part to
+            # show slowly, and the part not to show (but to lay out).
+            if self.start is not None:
+                start_string = text[0][:self.start]
+                mid_string = text[0][self.start:self.end]
+                end_string = text[0][self.end:]
 
-            if end_string:
-                end_string = "{_end}" + end_string
+                if start_string:
+                    start_string = start_string + "{_start}"
 
-            text_split = [ ]
+                if end_string:
+                    end_string = "{_end}" + end_string
 
-            if start_string:
-                text_split.append(start_string)
+                text_split = [ ]
 
-            text_split.append(mid_string)
+                if start_string:
+                    text_split.append(start_string)
 
-            if self.ctc is not None:
-                if isinstance(self.ctc, list):
-                    text_split.extend(self.ctc)
+                text_split.append(mid_string)
+
+                if self.ctc is not None:
+                    if isinstance(self.ctc, list):
+                        text_split.extend(self.ctc)
+                    else:
+                        text_split.append(self.ctc)
+
+                if end_string:
+                    text_split.append(end_string)
+
+                text_split.extend(text[1:])
+
+                text = text_split
+
+            else:
+                # Add the CTC.
+                if self.ctc is not None:
+                    if isinstance(self.ctc, list):
+                        text.extend(self.ctc)
+                    else:
+                        text.append(self.ctc)
+
+            if self.last_ctc is not None:
+                if isinstance(self.last_ctc, list):
+                    text.extend(self.last_ctc)
                 else:
-                    text_split.append(self.ctc)
+                    text.append(self.last_ctc)
 
-            if end_string:
-                text_split.append(end_string)
+            # Tokenize the text.
+            tokens = self.tokenize(text)
 
-            text_split.extend(text[1:])
-
-            text = text_split
+            if renpy.config.custom_text_tags or renpy.config.self_closing_custom_text_tags or (renpy.config.replace_text is not None):
+                tokens = self.apply_custom_tags(tokens)
 
         else:
-            # Add the CTC.
-            if self.ctc is not None:
-                if isinstance(self.ctc, list):
-                    text.extend(self.ctc)
-                else:
-                    text.append(self.ctc)
-
-        if self.last_ctc is not None:
-            if isinstance(self.last_ctc, list):
-                text.extend(self.last_ctc)
-            else:
-                text.append(self.last_ctc)
-
-        # Tokenize the text.
-        tokens = self.tokenize(text)
-
-        if renpy.config.custom_text_tags or renpy.config.self_closing_custom_text_tags or (renpy.config.replace_text is not None):
-            tokens = self.apply_custom_tags(tokens)
+            tokens = self.text
 
         # self.tokens is a list of pairs, where the first component of
         # each pair is TEXT, NEWLINE, TAG, or DISPLAYABLE, and the second
@@ -1947,7 +2083,7 @@ class Text(renpy.display.core.Displayable):
 
             layout = Layout(self, width, height, renders, size_only=True, drawable_res=True)
 
-        xpos, ypos, xanchor, yanchor, xoffset, yoffset, subpixel = rv
+        xpos, ypos, xanchor, _yanchor, xoffset, yoffset, subpixel = rv
         rv = (xpos, ypos, xanchor, layout.baseline, xoffset, yoffset, subpixel)
         return rv
 
@@ -1986,17 +2122,6 @@ class Text(renpy.display.core.Displayable):
         if hyperlink_focus and not default:
             return hyperlink_focus(None)
 
-    def call_slow_done(self, st):
-        """
-        Called when slow is finished.
-        """
-
-        self.slow = False
-
-        if self.slow_done:
-            self.slow_done()
-            self.slow_done = None
-
     def hyperlink_sensitive(self, target):
         """
         Returns true of the hyperlink is sensitive, False otherwise.
@@ -2014,11 +2139,28 @@ class Text(renpy.display.core.Displayable):
         Space, Enter, or Click ends slow, if it's enabled.
         """
 
+        if (self.slow_done is not None) and not self.slow:
+
+            if ev.type == renpy.display.core.TIMEEVENT and ev.modal:
+                renpy.game.interface.timeout(0.05)
+                return
+
+            try:
+                self.slow_done()
+            finally:
+                self.slow_done = None
+
         if self.slow and renpy.display.behavior.map_event(ev, "dismiss") and self.style.slow_abortable:
 
             for i in slow_text:
                 if i.slow:
-                    i.call_slow_done(st)
+                    i.slow = False
+
+                if i.slow_done is not None:
+                    try:
+                        i.slow_done()
+                    finally:
+                        i.slow_done = None
 
             raise renpy.display.core.IgnoreEvent()
 
@@ -2233,7 +2375,7 @@ class Text(renpy.display.core.Displayable):
                 if self.slow and t > st:
                     continue
 
-                xo, yo = renpy.display.core.place(
+                xo, yo = renpy.display.displayable.place(
                     width,
                     ascent,
                     width,
@@ -2249,19 +2391,22 @@ class Text(renpy.display.core.Displayable):
             rv.blit(drend, (0, 0))
 
         # Add in the focus areas.
-        for hyperlink, hx, hy, hw, hh in layout.hyperlinks:
+        for hyperlink, hx, hy, hw, hh, valid_st in layout.hyperlinks:
 
-            h_x, h_y = layout.unscale_pair(hx + layout.xoffset, hy + layout.yoffset)
-            h_w, h_h = layout.unscale_pair(hw, hh)
+            if st >= valid_st or not self.slow:
 
-            rv.add_focus(self, hyperlink, h_x, h_y, h_w, h_h)
+                h_x, h_y = layout.unscale_pair(hx + layout.xoffset, hy + layout.yoffset)
+                h_w, h_h = layout.unscale_pair(hw, hh)
+
+                rv.add_focus(self, hyperlink, h_x, h_y, h_w, h_h)
 
         # Figure out if we need to redraw or call slow_done.
         if self.slow:
             if redraw is not None:
                 renpy.display.render.redraw(self, max(redraw, 0))
             else:
-                self.call_slow_done(st)
+                self.slow = False
+                renpy.game.interface.timeout(0)
 
         rv.forward = layout.forward
         rv.reverse = layout.reverse
@@ -2293,7 +2438,7 @@ class Text(renpy.display.core.Displayable):
             elif isinstance(i, basestring):
                 tokens.extend(textsupport.tokenize(str(i)))
 
-            elif isinstance(i, renpy.display.core.Displayable):
+            elif isinstance(i, renpy.display.displayable.Displayable):
                 tokens.append((DISPLAYABLE, i))
 
             else:
@@ -2365,9 +2510,6 @@ class Text(renpy.display.core.Displayable):
                                     break
 
                         contents.append(t2)
-
-                    if count:
-                        raise Exception("Text ended while the '{}' text tag was still open.".format(tag))
 
                     new_contents = func(tag, value, contents)
 

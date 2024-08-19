@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -28,6 +28,7 @@ from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, r
 import renpy
 import renpy.gl2.live2dmotion
 from renpy.gl2.gl2shadercache import register_shader
+from renpy.display.core import absolute
 
 try:
     import renpy.gl2.live2dmodel as live2dmodel
@@ -62,7 +63,7 @@ def onetime_init():
     if not PY2:
         dll = dll.encode("utf-8")
 
-    if not renpy.gl2.live2dmodel.load(dll):
+    if not renpy.gl2.live2dmodel.load(dll): # type: ignore
         raise Exception("Could not load Live2D. {} was not found.".format(dll))
 
     did_onetime_init = True
@@ -86,6 +87,9 @@ def init():
 
     if not renpy.config.gl2:
         raise Exception("Live2D requires that config.gl2 be True.")
+
+    if renpy.emscripten:
+        raise Exception("Live2D is not supported the web platform.")
 
     onetime_init()
 
@@ -119,6 +123,14 @@ def init():
         vec4 color = texture2D(tex0, v_tex_coord);
         vec4 mask = texture2D(tex1, v_mask_coord);
         gl_FragColor = color * (1.0 - mask.a);
+    """)
+
+    register_shader("live2d.colors", variables="""
+        uniform vec4 u_multiply;
+        uniform vec4 u_screen;
+    """, fragment_250="""
+        gl_FragColor.rgb = gl_FragColor.rgb * u_multiply.rgb;
+        gl_FragColor.rgb = (gl_FragColor.rgb + u_screen.rgb * gl_FragColor.a) - (gl_FragColor.rgb * u_screen.rgb);
     """)
 
     register_shader("live2d.flip_texture", variables="""
@@ -182,7 +194,7 @@ class Live2DCommon(object):
         if renpy.config.log_live2d_loading:
             renpy.display.log.write("Loading Live2D from %r.", filename)
 
-        if not renpy.loader.loadable(filename):
+        if not renpy.loader.loadable(filename, directory="images"):
             raise Exception("Live2D model {} does not exist.".format(filename))
 
         # A short name for the model.
@@ -195,11 +207,11 @@ class Live2DCommon(object):
             self.base += "/"
 
         # The contents of the .model3.json file.
-        with renpy.loader.load(filename) as f:
+        with renpy.loader.load(filename, directory="images") as f:
             self.model_json = json.load(f)
 
         # The model created from the moc3 file.
-        self.model = renpy.gl2.live2dmodel.Live2DModel(self.base + self.model_json["FileReferences"]["Moc"])
+        self.model = renpy.gl2.live2dmodel.Live2DModel(self.base + self.model_json["FileReferences"]["Moc"]) # type: ignore
 
         # The texture images.
         self.textures = [ ]
@@ -255,7 +267,7 @@ class Live2DCommon(object):
             if prefix == model_name:
                 name = suffix
 
-            if renpy.loader.loadable(self.base + i["File"]):
+            if renpy.loader.loadable(self.base + i["File"], directory="images"):
                 if renpy.config.log_live2d_loading:
                     renpy.display.log.write(" - motion %s -> %s", name, i["File"])
 
@@ -277,14 +289,14 @@ class Live2DCommon(object):
             if prefix == model_name:
                 name = suffix
 
-            if renpy.loader.loadable(self.base + i["File"]):
+            if renpy.loader.loadable(self.base + i["File"], directory="images"):
                 if renpy.config.log_live2d_loading:
                     renpy.display.log.write(" - expression %s -> %s", name, i["File"])
 
                 if name in self.attributes:
                     raise Exception("Name {!r} is already specified as a motion.".format(name))
 
-                with renpy.loader.load(self.base + i["File"]) as f:
+                with renpy.loader.load(self.base + i["File"], directory="images") as f:
                     expression_json = json.load(f)
 
                 self.expressions[name] = Live2DExpression(
@@ -483,7 +495,7 @@ def update_states():
         s.mark = False
 
 
-class Live2D(renpy.display.core.Displayable):
+class Live2D(renpy.display.displayable.Displayable):
 
     nosave = [ "common_cache" ]
 
@@ -654,13 +666,6 @@ class Live2D(renpy.display.core.Displayable):
         # Chose all motions.
         rv = [ i for i in attributes if i in common.motions ]
 
-        # If there are no motions, choose the last one from the optional attributes.
-        if not rv:
-            sustain = True
-            rv = [ i for i in optional if i in common.motions ]
-        else:
-            sustain = False
-
         # Choose the first expression.
         for i in list(attributes) + list(optional):
             if i in common.expressions:
@@ -668,9 +673,16 @@ class Live2D(renpy.display.core.Displayable):
                 break
 
         # Choose all possible nonexclusive attributes.
-        for i in list(attributes) + list(optional):
+        for i in sorted(list(attributes)):
             if i in common.nonexclusive:
                 rv.append(i)
+
+        for i in sorted(list(optional)):
+            if i in common.nonexclusive:
+                rv.append(i)
+
+        if set(attributes) - set(rv):
+            return None
 
         rv = tuple(rv)
 
@@ -679,8 +691,9 @@ class Live2D(renpy.display.core.Displayable):
             if not isinstance(rv, tuple):
                 rv = tuple(rv)
 
-        if sustain:
-            rv = ("_sustain",) + rv
+        # If there are no motions, take the optional motions and sustain those.
+        if not any(i in common.motions for i in rv):
+            rv = ( "_sustain", ) + tuple(i for i in optional if i in common.motions) + rv
 
         return rv
 
@@ -935,15 +948,9 @@ class Live2D(renpy.display.core.Displayable):
 
         zoom = self.zoom
 
-        def s(n):
-            if isinstance(n, float):
-                return n * sh
-            else:
-                return n
-
         if zoom is None:
-            top = s(self.top)
-            base = s(self.base)
+            top = absolute.compute_raw(self.top, sh)
+            base = absolute.compute_raw(self.base, sh)
 
             size = max(base - top, 1.0)
 

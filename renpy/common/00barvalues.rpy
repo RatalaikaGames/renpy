@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -24,16 +24,16 @@ init -1500 python:
     @renpy.pure
     class StaticValue(BarValue, DictEquality):
         """
-         :doc: value
+        :doc: value
 
-         This allows a value to be specified statically.
+        This allows a value to be specified statically.
 
-         `value`
-              The value itself, a number.
+        `value`
+            The value itself, a number.
 
-         `range`
-              The range of the value.
-         """
+        `range`
+            The range of the value.
+        """
 
         def __init__(self, value=0.0, range=1.0):
             self.value = value
@@ -45,26 +45,26 @@ init -1500 python:
     @renpy.pure
     class AnimatedValue(BarValue, DictEquality):
         """
-         :doc: value
+        :doc: value
 
-         This animates a value, taking `delay` seconds to vary the value from
-         `old_value` to `value`.
+        This animates a value, taking `delay` seconds to vary the value from
+        `old_value` to `value`.
 
-         `value`
-             The value itself, a number.
+        `value`
+            The value itself, a number.
 
-         `range`
-             The range of the value, a number.
+        `range`
+            The range of the value, a number.
 
-         `delay`
-             The time it takes to animate the value, in seconds. Defaults
-             to 1.0.
+        `delay`
+            The time it takes to animate the value, in seconds. Defaults
+            to 1.0.
 
-         `old_value`
-             The old value. If this is None, then the value is taken from the
-             AnimatedValue we replaced, if any. Otherwise, it is initialized
-             to `value`.
-         """
+        `old_value`
+            The old value. If this is None, then the value is taken from the
+            AnimatedValue we replaced, if any. Otherwise, it is initialized
+            to `value`.
+        """
 
         def __init__(self, value=0.0, range=1.0, delay=1.0, old_value=None):
             if old_value == None:
@@ -115,33 +115,33 @@ init -1500 python:
     @renpy.pure
     class DictValue(BarValue, FieldEquality):
         """
-         :doc: value
+        :doc: value
 
-         A value that allows the user to adjust the value of a key
-         in a dict.
+        A value that allows the user to adjust the value of a key
+        in a dict.
 
-         `dict`
-             The dict.
-         `key`
-             The key.
-         `range`
-             The range to adjust over.
-         `max_is_zero`
-             If True, then when the value of a key is zero, the value of the
-             bar will be range, and all other values will be shifted down by 1.
-             This works both ways - when the bar is set to the maximum, the
-             value of a key is set to 0.
+        `dict`
+            The dict.
+        `key`
+            The key.
+        `range`
+            The range to adjust over.
+        `max_is_zero`
+            If True, then when the value of a key is zero, the value of the
+            bar will be range, and all other values will be shifted down by 1.
+            This works both ways - when the bar is set to the maximum, the
+            value of a key is set to 0.
 
-         `style`
-             The styles of the bar created.
-         `offset`
-             An offset to add to the value.
-         `step`
-             The amount to change the bar by. If None, defaults to 1/10th of
-             the bar.
-         `action`
-             If not None, an action to call when the field has changed.
-         """
+        `style`
+            The styles of the bar created.
+        `offset`
+            An offset to add to the value.
+        `step`
+            The amount to change the bar by. If None, defaults to 1/10th of
+            the bar.
+        `action`
+            If not None, an action to call when the field has changed.
+        """
 
         offset = 0
         action = None
@@ -209,43 +209,45 @@ init -1500 python:
     @renpy.pure
     class FieldValue(BarValue, FieldEquality):
         """
-         :doc: value
+        :doc: value
+        :args: (self, object, field, range, max_is_zero=False, style="bar", offset=0, step=None, action=None, force_step=False)
 
-         A bar value that allows the user to adjust the value of a field
-         on an object.
+        A bar value that allows the user to adjust the value of a field
+        on an object.
 
-         `object`
-             The object.
-         `field`
-             The field, a string.
-         `range`
-             The range to adjust over.
-         `max_is_zero`
-             If True, then when the field is zero, the value of the
-             bar will be range, and all other values will be shifted
-             down by 1. This works both ways - when the bar is set to
-             the maximum, the field is set to 0.
+        `object`
+            The object.
+        `field`
+            The field, a string.
+        `range`
+            The range to adjust over.
+        `max_is_zero`
+            If True, then when the field is zero, the value of the
+            bar will be range, and all other values will be shifted
+            down by 1. This works both ways - when the bar is set to
+            the maximum, the field is set to 0.
 
-             This is used internally, for some preferences.
-         `style`
-             The styles of the bar created.
-         `offset`
-             An offset to add to the value.
-         `step`
-             The amount to change the bar by. If None, defaults to 1/10th of
-             the bar.
-         `action`
-             If not None, an action to call when the field has changed.
-         """
+            This is used internally, for some preferences.
+        `style`
+            The styles of the bar created.
+        `offset`
+            An offset to add to the value.
+        `step`
+            The amount to change the bar by. If None, defaults to 1/10th of
+            the bar.
+        `action`
+            If not None, an action to call when the field has changed.
+        """
 
         offset = 0
         action = None
         force_step = False
+        kind = "field"
 
         identity_fields = [ 'object', ]
         equality_fields = [ 'range', 'max_is_zero', 'style', 'offset', 'step', 'action', 'force_step', 'field' ]
 
-        def __init__(self, object, field, range, max_is_zero=False, style="bar", offset=0, step=None, action=None, force_step=False):
+        def __init__(self, object, field, range, max_is_zero=False, style="bar", offset=0, step=None, action=None, force_step=False, kind="field"):
             self.object = object
             self.field = field
             self.range = range
@@ -253,6 +255,7 @@ init -1500 python:
             self.style = style
             self.offset = offset
             self.force_step = force_step
+            self.kind = kind
 
             if step is None:
                 if isinstance(range, float):
@@ -273,14 +276,14 @@ init -1500 python:
 
             value += self.offset
 
-            setattr(self.object, self.field, value)
+            _set_field(self.object, self.field, value, "field")
             renpy.restart_interaction()
 
             return renpy.run(self.action)
 
         def get_adjustment(self):
 
-            value = getattr(self.object, self.field)
+            value = _get_field(self.object, self.field, "field")
 
             value -= self.offset
 
@@ -304,34 +307,36 @@ init -1500 python:
     @renpy.pure
     def VariableValue(variable, range, max_is_zero=False, style="bar", offset=0, step=None, action=None, force_step=False):
         """
-         :doc: value
+        :doc: value
 
-         A bar value that allows the user to adjust the value of a variable
-         in the default store.
+        A bar value that allows the user to adjust the value of a variable
+        in the default store.
 
-         `variable`
-             A string giving the name of the variable to adjust.
-         `range`
-             The range to adjust over.
-         `max_is_zero`
-             If True, then when the field is zero, the value of the
-             bar will be range, and all other values will be shifted
-             down by 1. This works both ways - when the bar is set to
-             the maximum, the field is set to 0.
+        `variable`
+            The `variable` parameter must be a string, and can be a simple name like "strength", or
+            one with dots separating the variable from fields, like "hero.strength"
+            or "persistent.show_cutscenes".
+        `range`
+            The range to adjust over.
+        `max_is_zero`
+            If True, then when the field is zero, the value of the
+            bar will be range, and all other values will be shifted
+            down by 1. This works both ways - when the bar is set to
+            the maximum, the field is set to 0.
 
-             This is used internally, for some preferences.
-         `style`
-             The styles of the bar created.
-         `offset`
-             An offset to add to the value.
-         `step`
-             The amount to change the bar by. If None, defaults to 1/10th of
-             the bar.
-         `action`
-             If not None, an action to call when the field has changed.
+            This is used internally, for some preferences.
+        `style`
+            The styles of the bar created.
+        `offset`
+            An offset to add to the value.
+        `step`
+            The amount to change the bar by. If None, defaults to 1/10th of
+            the bar.
+        `action`
+            If not None, an action to call when the field has changed.
         """
 
-        return FieldValue(store, variable, range, max_is_zero=max_is_zero, style=style, offset=offset, step=step, action=action, force_step=force_step)
+        return FieldValue(store, variable, range, max_is_zero=max_is_zero, style=style, offset=offset, step=step, action=action, force_step=force_step, kind="variable")
 
     @renpy.pure
     class ScreenVariableValue(BarValue, FieldEquality):
@@ -431,45 +436,97 @@ init -1500 python:
         def get_style(self):
             return self.style, "v" + self.style
 
-
-
     @renpy.pure
     class MixerValue(BarValue, DictEquality):
         """
-         :doc: value
+        :doc: value
 
-         The value of an audio mixer.
+        The value of an audio mixer.
 
-         `mixer`
-             The name of the mixer to adjust. This is usually one of
-             "main", "music", "sfx", or "voice". See :ref:`volume`
-             for more information.
-         """
+        `mixer`
+            The name of the mixer to adjust. This is usually one of
+            "main", "music", "sfx", or "voice". See :ref:`volume`
+            for more information.
+        """
 
         def __init__(self, mixer):
             self.mixer = mixer
 
+        def get_volume(self):
+            return _preferences.get_volume(self.mixer)
+
+        def set_volume(self, volume):
+            _preferences.set_volume(self.mixer, volume)
+
         def set_mixer(self, value):
-            _preferences.set_volume(self.mixer, value)
+
+            if value == 0:
+                value = 0
+            else:
+                if config.quadratic_volumes:
+                    value = value ** 2
+                else:
+                    value = 1.0 * value - config.volume_db_range
+                    value = pow(10, value / 20)
+
+            self.set_volume(value)
+
             renpy.restart_interaction()
 
+        def get_mixer(self):
+            import math
+
+            value = self.get_volume()
+
+            if value > 0:
+                if config.quadratic_volumes:
+                    value = math.sqrt(value)
+                else:
+                    value = math.log10(value) * 20 + config.volume_db_range
+            else:
+                value = 0
+
+            return value
+
         def get_adjustment(self):
+            import math
+
+            value = self.get_mixer()
+
+            if config.quadratic_volumes:
+                range = 1.0
+            else:
+                range = config.volume_db_range * 1.0
+
             return ui.adjustment(
-                range=1.0,
-                value=_preferences.get_volume(self.mixer),
+                range=range,
+                value=value,
                 changed=self.set_mixer)
 
         def get_style(self):
             return "slider", "vslider"
 
+    @renpy.pure
+    class _CharacterVolumeValue(MixerValue):
+
+        def __init__(self, voice_tag):
+            self.voice_tag = voice_tag
+
+        def get_volume(self):
+            return persistent._character_volume[self.voice_tag]
+
+        def set_volume(self, volume):
+            persistent._character_volume[self.voice_tag] = volume
+
+
     class XScrollValue(BarValue, FieldEquality):
         """
-         :doc: value
+        :doc: value
 
-         The value of an adjustment that horizontally scrolls the viewport with the
-         given id, on the current screen. The viewport must be defined before a bar
-         with this value is.
-         """
+        The value of an adjustment that horizontally scrolls the viewport with the
+        given id, on the current screen. The viewport must be defined before a bar
+        with this value is.
+        """
 
         equality_fields = [ 'viewport' ]
 
@@ -488,12 +545,12 @@ init -1500 python:
 
     class YScrollValue(BarValue, FieldEquality):
         """
-         :doc: value
+        :doc: value
 
-         The value of an adjustment that vertically scrolls the viewport with the
-         given id, on the current screen. The viewport must be defined before a bar
-         with this value is.
-         """
+        The value of an adjustment that vertically scrolls the viewport with the
+        given id, on the current screen. The viewport must be defined before a bar
+        with this value is.
+        """
 
         equality_fields = [ 'viewport' ]
 

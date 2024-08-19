@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -39,19 +39,19 @@ init -1500 python:
     config.default_language = None
 
     # If not None, the default value of wait_voice
-    config.default_wait_for_voice = True
+    config.default_wait_for_voice = None
 
     # If not None, the default value of voice_sustain
-    config.default_voice_sustain = False
+    config.default_voice_sustain = None
 
     # If not None, the default value of mouse_move.
-    config.default_mouse_move = True
+    config.default_mouse_move = None
 
     # If not None, the default value of show_empty_window.
-    config.default_show_empty_window = True
+    config.default_show_empty_window = None
 
     # If not None, the default value of emphasize_audio.
-    config.default_emphasize_audio = False
+    config.default_emphasize_audio = None
 
     # If not None, the default value of set_volume (music)
     config.default_music_volume = 1.0
@@ -63,6 +63,27 @@ init -1500 python:
     config.default_voice_volume = 1.0
 
 init 1500 python hide:
+
+    def vol(n):
+        if n == 0.0:
+            return 0.0
+
+        if config.quadratic_volumes:
+            return n ** 2
+        else:
+            n = n * config.volume_db_range - config.volume_db_range
+            return 10 ** (n / 20)
+
+    config.emphasize_audio_volume = vol(config.emphasize_audio_volume)
+
+    if not persistent._linearized_volumes:
+        for k, v in _preferences.volumes.items():
+            _preferences.volumes[k] = v ** 2
+
+        for k, v in persistent._character_volume.items():
+            persistent._character_volume[k] = v ** 2
+
+        persistent._linearized_volumes = True
 
     if not persistent._set_preferences:
         persistent._set_preferences = True
@@ -96,7 +117,7 @@ init 1500 python hide:
             _preferences.mouse_move = config.default_mouse_move
 
         if config.default_afm_enable is not None:
-            _preferences.afm_enable = config.default_afm_enable
+            _preferences.afm_enable = config.default_afm_enable or _preferences.afm_enable
 
         if config.default_show_empty_window is not None:
             _preferences.show_empty_window = config.default_show_empty_window
@@ -104,9 +125,9 @@ init 1500 python hide:
         if config.default_emphasize_audio is not None:
             _preferences.emphasize_audio = config.default_emphasize_audio
 
-        _preferences.set_volume('music', config.default_music_volume)
-        _preferences.set_volume('sfx', config.default_sfx_volume)
-        _preferences.set_volume('voice', config.default_voice_volume)
+        _preferences.set_volume('music', vol(config.default_music_volume))
+        _preferences.set_volume('sfx', vol(config.default_sfx_volume))
+        _preferences.set_volume('voice', vol(config.default_voice_volume))
 
     # Use default_afm_enable to decide if we use the afm_enable
     # preference.
@@ -140,7 +161,7 @@ init -1500 python:
 
         if renpy.image_exists(rv):
             return rv
-        elif renpy.loadable(rv):
+        elif renpy.loadable(rv, directory="images"):
             return rv
         elif renpy.easy.lookup_displayable_prefix(rv):
             return rv

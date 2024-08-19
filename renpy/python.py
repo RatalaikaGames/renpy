@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -137,6 +137,9 @@ class StoreDict(dict):
         Called to mark the start of a rollback period.
         """
 
+        if self.get("_constant", False):
+            return
+
         self.old = DictItems(self)
 
     def get_changes(self, cycle):
@@ -152,6 +155,9 @@ class StoreDict(dict):
             If true, this cycles the old changes to the new changes. If
             False, does not.
         """
+
+        if self.get("_constant", False):
+            return
 
         new = DictItems(self)
         rv = find_changes(self.old, new, deleted)
@@ -219,8 +225,7 @@ def create_store(name):
     pyname = pystr(name)
 
     # Set the name.
-    d["__name__"] = pyname
-    d["__package__"] = pyname
+    d.update(__name__=pyname, __package__=pyname)
 
     # Set up the default contents of the store.
     eval("1", d)
@@ -256,8 +261,9 @@ class StoreBackup():
         # The contents of ever_been_changed for each store.
         self.ever_been_changed = { }
 
-        for k in store_dicts:
-            self.backup_one(k)
+        for k, v in store_dicts.items():
+            if not v.get("_constant", False):
+                self.backup_one(k)
 
     def backup_one(self, name):
 
@@ -280,7 +286,7 @@ class StoreBackup():
 
     def restore(self):
 
-        for k in store_dicts:
+        for k in self.store:
             self.restore_one(k)
 
 
@@ -398,6 +404,33 @@ class StarredVariables(ast.NodeVisitor):
 # starred assignment.
 find_starred_variables = StarredVariables().find
 
+class WrapFormattedValue(ast.NodeTransformer):
+    """
+    This walks through the children of a FormattedValue, to look for
+    nodes with the __name syntax, and format those nodes.
+    """
+
+    def visit_Name(self, node):
+
+        name = node.id
+
+        if not name.startswith("__"):
+            return node
+
+        name = name[2:]
+
+        if (not name) or ("__" in name):
+            return node
+
+        prefix = renpy.lexer.munge_filename(compile_filename)
+
+        name = prefix + name
+
+        return ast.Name(id=name, ctx=node.ctx, lineno=node.lineno, col_offset=node.col_offset, end_lineno=node.end_lineno, end_col_offset=node.end_col_offset)
+
+wrap_formatted_value = WrapFormattedValue().visit
+
+
 class WrapNode(ast.NodeTransformer):
 
 
@@ -416,9 +449,9 @@ class WrapNode(ast.NodeTransformer):
         a larger scope, no cell is generated.
         """
 
-        node = self.generic_visit(node)
-
         variables = list(sorted(find_loaded_variables(node)))
+
+        node = self.generic_visit(node)
 
         lambda_args = [ ]
         call_args =[ ]
@@ -690,6 +723,10 @@ class WrapNode(ast.NodeTransformer):
             kwargs=None)
 
 
+    def visit_FormattedValue(self, n):
+        n = wrap_formatted_value(n)
+        return self.generic_visit(n)
+
 wrap_node = WrapNode()
 
 
@@ -776,20 +813,32 @@ py_compile_cache = { }
 old_py_compile_cache = { }
 
 
-# Duplicated from ast.py to prevent a gc cycle.
-def fix_missing_locations(node, lineno, col_offset):
-    if 'lineno' in node._attributes:
-        if not hasattr(node, 'lineno'):
-            node.lineno = lineno
-        else:
-            lineno = node.lineno
-    if 'col_offset' in node._attributes:
-        if not hasattr(node, 'col_offset'):
-            node.col_offset = col_offset
-        else:
-            col_offset = node.col_offset
+def fix_locations(node, lineno, col_offset):
+    """
+    Assigns locations to the given node, and all of its children, adding
+    any missing line numbers and column offsets.
+    """
+
+    start = max(
+        (lineno, col_offset),
+        (getattr(node, "lineno", None) or 1, getattr(node, "col_offset", None) or 0)
+    )
+
+    lineno, col_offset = start
+
+    node.lineno = lineno
+    node.col_offset = col_offset
+
+    ends = [ start, (getattr(node, "end_lineno", None) or 1, getattr(node, "end_col_offset", None) or 0) ]
+
     for child in ast.iter_child_nodes(node):
-        fix_missing_locations(child, lineno, col_offset)
+        fix_locations(child, lineno, col_offset)
+        ends.append((child.end_lineno, child.end_col_offset))
+
+    end = max(ends)
+
+    node.end_lineno = end[0]
+    node.end_col_offset = end[1]
 
 
 def quote_eval(s):
@@ -881,6 +930,9 @@ def quote_eval(s):
     return "".join(rv[:-2])
 
 
+# The filename being compiled.
+compile_filename = ""
+
 def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=True, py=None):
     """
     Compiles the given source code using the supplied codegenerator.
@@ -906,6 +958,8 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         Rather than returning compiled bytecode, returns the AST object
         that would be used.
     """
+
+    global compile_filename
 
     if ast_node:
         cache = False
@@ -956,6 +1010,7 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         source = quote_eval(source)
 
     line_offset = lineno - 1
+    compile_filename = filename
 
     try:
 
@@ -993,7 +1048,7 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         if mode == "hide":
             wrap_hide(tree)
 
-        fix_missing_locations(tree, 1, 0)
+        fix_locations(tree, 1, 0)
         ast.increment_lineno(tree, lineno - 1)
 
         line_offset = 0
@@ -1006,9 +1061,9 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         except SyntaxError as orig_e:
             try:
                 tree = renpy.compat.fixes.fix_ast(tree)
-                fix_missing_locations(tree, 1, 0)
+                fix_locations(tree, 1, 0)
                 rv = compile(tree, filename, py_mode, flags, 1)
-            except:
+            except Exception:
                 raise orig_e
 
 
@@ -1020,6 +1075,12 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         return rv
 
     except SyntaxError as e:
+
+        try:
+            # e.text = # renpy.lexer.get_line_text(e.filename, e.lineno)
+            e.text = source.splitlines()[e.lineno - 1]
+        except Exception:
+            pass
 
         if e.lineno is not None:
             e.lineno += line_offset
@@ -1112,7 +1173,7 @@ def raise_at_location(e, loc):
 
     node = ast.parse("raise e", filename)
     ast.increment_lineno(node, line - 1)
-    code = compile(node, filename, 'exec')
+    code = compile(node, filename, 'exec') #type: ignore
 
     # PY3 - need to change to exec().
     exec(code, { "e" : e })

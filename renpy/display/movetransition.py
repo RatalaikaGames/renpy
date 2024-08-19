@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -83,7 +83,7 @@ def MoveIn(pos, pos1, delay, d, **kwargs):
             return b
         return a
 
-    pos = tuple([aorb(a, b) for a, b in zip(pos, pos1)])
+    pos = tuple(aorb(a, b) for a, b in zip(pos, pos1))
     return renpy.display.motion.Move(pos, pos1, delay, d, **kwargs)
 
 
@@ -94,7 +94,7 @@ def MoveOut(pos, pos1, delay, d, **kwargs):
             return b
         return a
 
-    pos = tuple([aorb(a, b) for a, b in zip(pos, pos1)])
+    pos = tuple(aorb(a, b) for a, b in zip(pos, pos1))
     return renpy.display.motion.Move(pos1, pos, delay, d, **kwargs)
 
 
@@ -240,13 +240,13 @@ def OldMoveTransition(delay, old_widget=None, new_widget=None, factory=None, ent
             return rv
 
         def entering(sle):
-            new_d = wrap(new_sle)
+            new_d = wrap(sle)
             move = enter_factory(position(new_d), delay, new_d, **offsets(new_d))
 
             if move is None:
                 return
 
-            rv_sl.append(merge(new_sle, move))
+            rv_sl.append(merge(sle, move))
 
         def leaving(sle):
             old_d = wrap(sle)
@@ -256,7 +256,7 @@ def OldMoveTransition(delay, old_widget=None, new_widget=None, factory=None, ent
                 return
 
             move = renpy.display.layout.IgnoresEvents(move)
-            rv_sl.append(merge(old_sle, move))
+            rv_sl.append(merge(sle, move))
 
         def moving(old_sle, new_sle):
             old_d = wrap(old_sle)
@@ -345,7 +345,7 @@ def OldMoveTransition(delay, old_widget=None, new_widget=None, factory=None, ent
 # New Move Transition (since 6.14)
 
 
-class MoveInterpolate(renpy.display.core.Displayable):
+class MoveInterpolate(renpy.display.displayable.Displayable):
     """
     This displayable has two children. It interpolates between the positions
     of its two children to place them on the screen.
@@ -449,11 +449,16 @@ class MoveInterpolate(renpy.display.core.Displayable):
 def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=None, old=False, layers=[ 'master' ], time_warp=None, enter_time_warp=None, leave_time_warp=None):
     """
     :doc: transition function
-    :args: (delay, enter=None, leave=None, old=False, layers=['master'], time_warp=None, enter_time_warp=None, leave_time_warp=None)
+    :args: (delay, *, enter=None, leave=None, old=False, layers=['master'], time_warp=None, enter_time_warp=None, leave_time_warp=None)
     :name: MoveTransition
 
     Returns a transition that interpolates the position of images (with the
     same tag) in the old and new scenes.
+
+    As only layers have tags, MoveTransitions can only be applied to a single
+    layer or all layers at once, using the :ref:`with statement <with-statement>`.
+    in other contexts, like ATL, :doc:`ComposeTransition`, or other ways of
+    :func:`ComposeTransition`, or other ways of applying transitions.
 
     `delay`
         The time it takes for the interpolation to finish.
@@ -461,21 +466,23 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
     `enter`
         If not None, images entering the scene will also be moved. The value
         of `enter` should be a transform that is applied to the image to
-        get its starting position.
+        get it in its starting position.
 
     `leave`
-        If not None, images leaving the scene will also be move. The value
+        If not None, images leaving the scene will also be moved. The value
         of `leave` should be a transform that is applied to the image to
-        get its ending position.
+        get it in its ending position.
 
     `old`
-        If true, the old image will be used in preference to the new one.
+        If true, when a tag gets its image changed during the transition,
+        the old image will be used in preference to the new one. Otherwise,
+        the new images will be used.
 
     `layers`
         A list of layers that moves are applied to.
 
     `time_warp`
-        A time warp function that's applied to the interpolation. This
+        A :ref:`time warp function <warpers>` that's applied to the interpolation. This
         takes a number between 0.0 and 1.0, and should return a number in
         the same range.
 
@@ -484,8 +491,12 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
 
     `leave_time_warp`
         A time warp function that's applied to images leaving the scene.
-
     """
+
+    if renpy.config.developer:
+        for widget in (old_widget, new_widget):
+            if not (hasattr(widget, 'scene_list') or hasattr(widget, 'layers')):
+                raise Exception("MoveTransition can only be applied to one or all layers, not %s." % type(widget).__name__)
 
     use_old = old
 
@@ -513,31 +524,40 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
 
             rv = renpy.display.layout.MultiBox(layout='fixed')
 
-            rv.raw_layers = { }
             rv.layers = { }
 
             for layer in renpy.config.layers:
 
-                f = new.layers[layer]
-                d = new.raw_layers[layer]
+                d = merge_slide(old.layers[layer], new.layers[layer], merge_slide)
 
-                if (isinstance(d, renpy.display.layout.MultiBox)
-                    and layer in layers
-                    and d.scene_list is not None):
+                rv.layers[layer] = d
+                rv.add(d, True, True)
 
-                    d = merge_slide(old.raw_layers[layer], new.raw_layers[layer], merge_slide)
+            return rv
 
-                    adjust = renpy.display.layout.AdjustTimes(d, None, None)
-                    f = renpy.game.context().scene_lists.transform_layer(layer, adjust)
+        # Unpack old if needs be.
+        old = old.untransformed_layer or old
 
-                    if f is adjust:
-                        f = d
-                    else:
-                        f = renpy.display.layout.MatchTimes(f, adjust)
+        # If we're dealing with a wrapped layer widget, merge the raw
+        # children then re-apply the transform.
+        if new.untransformed_layer:
+            rv = new
 
-                rv.raw_layers[layer] = d
-                rv.layers[layer] = f
-                rv.add(f, True, True)
+            new = new.untransformed_layer
+            layer = new.layer_name
+
+            if (isinstance(new, renpy.display.layout.MultiBox) and
+                layer in layers and new.scene_list is not None):
+
+                d = merge_slide(old, new, merge_slide)
+
+                adjust = renpy.display.layout.AdjustTimes(d, None, None)
+                rv = renpy.game.context().scene_lists.transform_layer(layer, adjust)
+
+                if rv is adjust:
+                    rv = d
+                else:
+                    rv = renpy.display.layout.MatchTimes(rv, adjust)
 
             return rv
 
@@ -563,9 +583,9 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
             if not enter:
                 return
 
-            new_d = wrap(new_sle)
-            move = MoveInterpolate(delay, enter(new_d), new_d, False, enter_time_warp)
-            rv_sl.append(merge(new_sle, move))
+            new_d = wrap(sle)
+            move = MoveInterpolate(delay, renpy.store.At(new_d, enter), new_d, False, enter_time_warp)
+            rv_sl.append(merge(sle, move))
 
         def leaving(sle):
 
@@ -573,9 +593,9 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
                 return
 
             old_d = wrap(sle)
-            move = MoveInterpolate(delay, old_d, leave(old_d), True, leave_time_warp)
+            move = MoveInterpolate(delay, old_d, renpy.store.At(old_d, leave), True, leave_time_warp)
             move = renpy.display.layout.IgnoresEvents(move)
-            rv_sl.append(merge(old_sle, move))
+            rv_sl.append(merge(sle, move))
 
         def moving(old_sle, new_sle):
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -89,7 +89,7 @@ class NoRollback(SlottedNoRollback):
 
 class AlwaysRollback(renpy.revertable.RevertableObject):
     """
-    This is a revertible object that always participates in rollback.
+    This is a revertable object that always participates in rollback.
     It's used when a revertable object is created by an object that
     doesn't participate in the rollback system.
     """
@@ -133,6 +133,9 @@ def reached(obj, reachable, wait):
         nosave = getattr(obj, "nosave", None)
 
         if nosave is not None:
+
+            nosave = getattr(obj, "noreach", nosave)
+
             for k, v in vars(obj).items():
                 if k not in nosave:
                     reached(v, reachable, wait)
@@ -318,6 +321,10 @@ class Rollback(renpy.object.Object):
 
         # Add in objects reachable through the context.
         reached(self.context.info, reachable, wait)
+        reached(self.context.music, reachable, wait)
+        reached(self.context.movie, reachable, wait)
+        reached(self.context.modes, reachable, wait)
+
         for d in self.context.dynamic_stack:
             for v in d.values():
                 reached(v, reachable, wait)
@@ -368,7 +375,16 @@ class Rollback(renpy.object.Object):
         for obj, roll in reversed(self.objects):
 
             if roll is not None:
-                obj._rollback(roll)
+                try:
+                    obj._rollback(roll)
+                except AttributeError:
+                    if not hasattr(obj, "_rollback"):
+                        if isinstance(obj, tuple(renpy.config.ex_rollback_classes)):
+                            continue
+                        elif not renpy.config.developer:
+                            continue
+                        else:
+                            raise Exception("Load or rollback failed because class {} does not inherit from store.object, but did in the past. If this was an intentional change, add the class to config.ex_rollback_classes.".format(type(obj).__name__))
 
         for name, changes in self.stores.items():
             store = store_dicts.get(name, None)
@@ -392,8 +408,8 @@ class Rollback(renpy.object.Object):
 
         rng.pushback(self.random)
 
-        renpy.game.contexts.pop()
-        renpy.game.contexts.append(self.context)
+        self.rollback_control()
+
 
     def rollback_control(self):
         """
@@ -401,8 +417,7 @@ class Rollback(renpy.object.Object):
         the data information intact.
         """
 
-        renpy.game.contexts.pop()
-        renpy.game.contexts.append(self.context)
+        renpy.game.contexts = renpy.game.contexts[:-1] + [ self.context ]
 
 
 class RollbackLog(renpy.object.Object):
@@ -698,9 +713,6 @@ class RollbackLog(renpy.object.Object):
         if hard:
             self.retain_after_load_flag = False
 
-        if self.current.checkpoint:
-            return
-
         if not renpy.game.context().rollback:
             return
 
@@ -749,6 +761,8 @@ class RollbackLog(renpy.object.Object):
         """
 
         self.checkpointing_suspended = flag
+        self.current.not_greedy = True
+        renpy.game.contexts[0].force_checkpoint = True
 
     def block(self, purge=False):
         """
@@ -757,6 +771,8 @@ class RollbackLog(renpy.object.Object):
         """
 
         self.rollback_limit = 0
+        if self.current is not None:
+            self.current.not_greedy = True
         renpy.game.context().force_checkpoint = True
 
         if purge:
@@ -847,7 +863,7 @@ class RollbackLog(renpy.object.Object):
             and so on.
 
         `current_label`
-            A lable that is called when control returns to the current statement,
+            A label that is called when control returns to the current statement,
             after rollback. (At most one of `current_label` and `label` can be
             provided.)
         """
@@ -895,7 +911,7 @@ class RollbackLog(renpy.object.Object):
         force_checkpoint = False
 
         # Try to rollback to just after the previous checkpoint.
-        while greedy and self.log and (self.rollback_limit > 0):
+        while greedy and self.log:
 
             rb = self.log[-1]
 
@@ -912,41 +928,52 @@ class RollbackLog(renpy.object.Object):
 
         # Decide if we're replacing the current context (rollback command),
         # or creating a new set of contexts (loading).
-        if renpy.game.context().rollback:
-            replace_context = False
-            other_contexts = [ ]
 
-        else:
-            replace_context = True
-            other_contexts = renpy.game.contexts[1:]
-            renpy.game.contexts = renpy.game.contexts[0:1]
+        old_contexts = list(renpy.game.contexts)
 
-        if on_load and revlog[-1].retain_after_load:
-            retained = revlog.pop()
-            self.retain_after_load_flag = True
-        else:
-            retained = None
+        try:
 
-        come_from = None
+            if renpy.game.context().rollback:
+                replace_context = False
+                other_contexts = [ ]
+            else:
+                replace_context = True
+                other_contexts = renpy.game.contexts[1:]
+                renpy.game.contexts = renpy.game.contexts[0:1]
 
-        if current_label is not None:
-            come_from = renpy.game.context().current
-            label = current_label
+            if on_load and revlog[-1].retain_after_load:
+                retained = revlog.pop()
+                self.retain_after_load_flag = True
+            else:
+                retained = None
 
-        # Actually roll things back.
-        for rb in revlog:
-            rb.rollback()
+            come_from = None
 
-            if (rb.context.current == self.fixed_rollback_boundary) and (rb.context.current):
-                self.rollback_is_fixed = True
+            if current_label is not None:
+                come_from = renpy.game.context().current
+                label = current_label
 
-            if rb.forward is not None:
-                self.forward.insert(0, (rb.context.current, rb.forward))
+            # Actually roll things back.
+            for rb in revlog:
+                rb.rollback()
 
-        if retained is not None:
-            retained.rollback_control()
-            self.log.append(retained)
+                if (rb.context.current == self.fixed_rollback_boundary) and (rb.context.current):
+                    self.rollback_is_fixed = True
 
+                if rb.forward is not None:
+                    self.forward.insert(0, (rb.context.current, rb.forward))
+
+            if retained is not None:
+                retained.rollback_control()
+                self.log.append(retained)
+
+        except Exception:
+
+            # If there was an exception, restore the context list.
+            renpy.game.contexts = old_contexts
+            raise
+
+        # Preserve come_from.
         if (label is not None) and (come_from is None):
             come_from = renpy.game.context().current
 
@@ -1074,7 +1101,7 @@ class RollbackLog(renpy.object.Object):
 
         # Now, rollback to an acceptable point.
 
-        greedy = renpy.session.pop("_greedy_rollback", False)
+        greedy = renpy.session.pop("_greedy_rollback", True)
         self.rollback(0, force=True, label=label, greedy=greedy, on_load=True)
 
         # Because of the rollback, we never make it this far.

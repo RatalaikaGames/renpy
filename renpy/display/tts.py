@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -26,6 +26,7 @@ from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, r
 
 import sys
 import os
+import re
 import subprocess
 
 import pygame_sdl2 as pygame
@@ -52,6 +53,9 @@ root = None
 
 # The text of the last displayable.
 last = ""
+
+# The text of the last displayable, before config.tts_dictionary was applied.
+last_raw = ""
 
 # The speech synthesis process.
 process = None
@@ -107,8 +111,10 @@ def default_tts_function(s):
 
     fsencode = renpy.exports.fsencode
 
+    amplitude = renpy.game.preferences.get_mixer("voice")
+    amplitude_100 = int(amplitude * 100)
+    
     if True:
-
         if renpy.config.tts_voice is None:
             voice = "default voice"  # something that is unlikely to match.
         else:
@@ -122,12 +128,18 @@ def default_tts_function(s):
 
     elif renpy.linux:
 
-        if renpy.config.tts_voice is None:
-            process = subprocess.Popen([ "espeak", fsencode(s) ])
-        else:
-            process = subprocess.Popen([ "espeak", "-v", fsencode(renpy.config.tts_voice), fsencode(s) ])
+        cmd = [ "espeak", "-a", fsencode(str(amplitude_100)) ]
+
+        if renpy.config.tts_voice is not None:
+            cmd.extend([ "-v", fsencode(renpy.config.tts_voice) ])
+
+        cmd.append(fsencode(s))
+
+        process = subprocess.Popen(cmd)
 
     elif renpy.macintosh:
+
+        s = "[[volm {}]]".format(amplitude) + s
 
         if renpy.config.tts_voice is None:
             process = subprocess.Popen([ "say", fsencode(s) ])
@@ -143,30 +155,67 @@ def default_tts_function(s):
 
         say_vbs = os.path.join(os.path.dirname(sys.executable), "say.vbs")
         s = s.replace('"', "")
-        process = subprocess.Popen([ "wscript", fsencode(say_vbs), fsencode(s), fsencode(voice) ])
+        process = subprocess.Popen([ "wscript", fsencode(say_vbs), fsencode(s), fsencode(voice), fsencode(str(amplitude_100)) ])
 
     elif renpy.emscripten and renpy.config.webaudio:
 
         try:
             from renpy.audio.webaudio import call
-            call("tts", s)
+            call("tts", s, amplitude)
         except Exception:
             pass
+
+# A List of (regex, string) pairs.
+tts_substitutions = [ ]
+
+def init():
+    """
+    Initializes the TTS system. This is called automatically by ts, below.
+    """
+
+    for pattern, replacement in renpy.config.tts_substitutions:
+
+        if isinstance(pattern, basestring):
+            pattern = r'\b' + re.escape(pattern) + r'\b'
+            pattern = re.compile(pattern, re.IGNORECASE)
+            replacement = replacement.replace("\\", "\\\\")
+
+        tts_substitutions.append((pattern, replacement))
+
+
+def apply_substitutions(s):
+    """
+    Applies the TTS dictionary to `s`, returning the result.
+    """
+
+    def replace(m):
+        old = m.group(0)
+        if old.istitle():
+            template = replacement.title()
+        elif old.isupper():
+            template = replacement.upper()
+        elif old.islower():
+            template = replacement.lower()
+        else:
+            template = replacement
+
+        return m.expand(template)
+
+    for pattern, replacement in tts_substitutions:
+        s = pattern.sub(replace, s)
+
+    return s
 
 
 def tts(s):
     """
-    Speaks the queued messages using the specified function.
+    Causes `s` to be spoken.
     """
-
-    global queue
 
     try:
         renpy.config.tts_function(s)
     except Exception:
         pass
-
-    queue = [ ]
 
 
 def speak(s, translate=True, force=False):
@@ -192,6 +241,9 @@ def set_root(d):
 old_self_voicing = False
 
 
+# The text used to show a notification.
+notify_text = None
+
 def displayable(d):
     """
     Causes the TTS system to read the text of the displayable `d`.
@@ -199,6 +251,8 @@ def displayable(d):
 
     global old_self_voicing
     global last
+    global last_raw
+    global notify_text
 
     self_voicing = renpy.game.preferences.self_voicing
 
@@ -221,6 +275,8 @@ def displayable(d):
         else:
             prefix = renpy.translation.translate_string("Self-voicing enabled. ")
 
+        last_raw = None
+
     for i in renpy.config.tts_voice_channels:
         if not prefix and renpy.audio.music.get_playing(i):
             return
@@ -238,6 +294,14 @@ def displayable(d):
             else:
                 d = root
 
-    if s != last:
+    if notify_text and not s.startswith(notify_text):
+        s = notify_text + ": " + s
+        notify_text = None
+
+
+
+    if s != last_raw:
+        last_raw = s
+        s = apply_substitutions(s)
         last = s
         tts(prefix + s)

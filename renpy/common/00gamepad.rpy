@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -256,6 +256,9 @@ init -1200 python:
             Forces this function to always return true while :var:`config.developer`
             is true.
         """
+
+        if developer and config.developer:
+            return True
 
         return renpy.display.controller.exists()
 

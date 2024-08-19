@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -316,7 +316,27 @@ class ScreenDisplayable(renpy.display.layout.Container):
         'miss_cache',
         'profile',
         'phase',
-        'use_cache' ]
+        'use_cache',
+        'copied_from'
+        ]
+
+    noreach = [
+        'screen',
+        # 'child' needs to be reachable to keep the screen roll-backable.
+        'children',
+        'transforms',
+        'widgets',
+        'base_widgets',
+        'old_widgets',
+        'hidden_widgets',
+        'old_transforms',
+        'cache',
+        'miss_cache',
+        'profile',
+        'phase',
+        'use_cache',
+        'copied_from'
+    ]
 
     restarting = False
     hiding = False
@@ -337,6 +357,7 @@ class ScreenDisplayable(renpy.display.layout.Container):
         self.phase = UPDATE
         self.use_cache = { }
         self.miss_cache = { }
+        self.copied_from = None
 
         self.profile = profile.get(self.screen_name, None)
 
@@ -437,6 +458,10 @@ class ScreenDisplayable(renpy.display.layout.Container):
         # The lifecycle phase we are in - one of PREDICT, SHOW, UPDATE, or HIDE.
         self.phase = PREDICT
 
+        # If this screen was copied from another by _in_current_store, returns
+        # the screen it was copied from.
+        self.copied_from = None
+
     @property
     def name(self):
         return " ".join(self.screen_name)
@@ -531,6 +556,7 @@ class ScreenDisplayable(renpy.display.layout.Container):
                 i.set_transform_event(kind)
 
         hid.phase = HIDE
+        hid.copied_from = self
 
         rv = None
 
@@ -575,6 +601,7 @@ class ScreenDisplayable(renpy.display.layout.Container):
         rv = self.copy()
         rv.phase = OLD
         rv.child = self.child._in_current_store()
+        rv.copied_from = self
 
         return rv
 
@@ -975,6 +1002,9 @@ def prepare_screens():
             s.ast.unprepare_screen()
             s.ast.prepare_screen()
 
+        # Compile ATL in screens.
+        renpy.atl.compile_all()
+
         prepared = True
 
     finally:
@@ -1047,34 +1077,40 @@ def get_screen(name, layer=None):
     """
     :doc: screens
 
-    Returns the ScreenDisplayable with the given `name` on `layer`. `name`
-    is first interpreted as a tag name, and then as a screen name. If the
-    screen is not showing, returns None.
+    Returns information about the screen with the given `name` on `layer`.
+    `name` is first interpreted as a tag name, and then as a screen name.
+    If the screen is not showing, returns None.
 
     This can also take a list of names, in which case the first screen
     that is showing is returned.
 
-    This function can be used to check if a screen is showing::
+    This function can be used to check whether a screen is showing::
 
         if renpy.get_screen("say"):
             text "The say screen is showing."
         else:
             text "The say screen is hidden."
 
-    The ScreenDisplayable objects returned by this function have the
+    The objects returned by this function have the
     following documented fields:
 
-    .. attribute:: ScreenDisplayable.layer
+    .. attribute:: layer
 
         The layer the screen is being displayed on.
 
-    .. attribute:: ScreenDisplayable.name
+    .. attribute:: name
 
         The name of the screen.
 
-    .. attribute:: ScreenDisplayable.zorder
+    .. attribute:: zorder
 
         The zorder the screen is being displayed at.
+
+    .. warning::
+
+        Like other similar functions, the object this returns is meant to be used
+        in the short term after the function is called. Including it in save data
+        or making it participate in rollback is not advised.
     """
 
     if layer is None:
@@ -1119,7 +1155,7 @@ def has_screen(name):
 
 def get_screen_roll_forward(screen_name):
     """
-    Given a screeen name, determines if roll forward is enable for the
+    Given a screen name, determines if roll forward is enable for the
     screen.
     """
 
@@ -1139,6 +1175,7 @@ def get_screen_roll_forward(screen_name):
 def show_screen(_screen_name, *_args, **kwargs):
     """
     :doc: screens
+    :args: (_screen_name, *args, _layer=None, _zorder=None, _tag=None, _widget_properties={}, _transient=False, **kwargs)
 
     The programmatic equivalent of the show screen statement.
 
@@ -1147,19 +1184,23 @@ def show_screen(_screen_name, *_args, **kwargs):
     `_screen_name`
         The name of the screen to show.
     `_layer`
-        The layer to show the screen on.
+        The layer to show the screen on. This is equivalent to the
+        ``onlayer`` clause of the :ref:`show-screen-statement` statement.
     `_zorder`
         The zorder to show the screen on. If not specified, defaults to
-        the zorder associated with the screen. It that's not specified,
+        the zorder associated with the screen. If that's not specified,
         it is 0 by default.
     `_tag`
         The tag to show the screen with. If not specified, defaults to
-        the tag associated with the screen. It that's not specified,
+        the tag associated with the screen. If that's not specified,
         defaults to the name of the screen.
+
+        This is equivalent to the ``as`` clause of the
+        :ref:`show-screen-statement` statement.
     `_widget_properties`
-        A map from the id of a widget to a property name -> property
-        value map. When a widget with that id is shown by the screen,
-        the specified properties are added to it.
+        A map from the id of a widget to a property name -> property value
+        dictionary. When a widget with that id is shown by the screen, the
+        specified properties are added to it.
     `_transient`
         If true, the screen will be automatically hidden at the end of
         the current interaction.
@@ -1216,6 +1257,7 @@ def show_screen(_screen_name, *_args, **kwargs):
     sls = renpy.display.core.scene_lists()
 
     sls.add(_layer, d, _tag, zorder=_zorder, transient=_transient, keep_st=True, name=name)
+    sls.shown.predict_show(_layer, (_tag,), True)
 
 
 def predict_screen(_screen_name, *_args, **kwargs):
@@ -1237,6 +1279,7 @@ def predict_screen(_screen_name, *_args, **kwargs):
     _tag = kwargs.pop("_tag", None)
     _widget_properties = kwargs.pop("_widget_properties", {})
     _transient = kwargs.pop("_transient", False)
+    _zorder = kwargs.pop("_zorder", None)
 
     name = _screen_name
 
@@ -1303,8 +1346,12 @@ def hide_screen(tag, layer=None):
 
     screen = get_screen(tag, layer)
 
+
+    sls = renpy.display.core.scene_lists()
+
     if screen is not None:
-        renpy.exports.hide(screen.tag, layer=layer)
+        sls.remove(layer, screen.tag)
+        sls.shown.predict_hide(layer, screen.screen_name)
 
 
 def use_screen(_screen_name, *_args, **kwargs):
@@ -1349,11 +1396,14 @@ def current_screen(): # type: () -> ScreenDisplayable|None
     :doc: screens
     :name: renpy.current_screen
 
-    Returns the ScreenDisplayable corresponding to the screen currently being
+    Returns information about the screen currently being
     updated, rendered, or processed.
 
-    See :func:`get_screen` for documented fields on ScreenDisplayable.
+    See :func:`get_screen` for documented fields on the returned object.
     """
+
+    if _current_screen and _current_screen.copied_from:
+        return _current_screen.copied_from
 
     return _current_screen
 
@@ -1456,7 +1506,7 @@ def show_overlay_screens(suppress_overlay):
     show = not suppress_overlay
 
     if renpy.store._overlay_screens is None:
-        show = show
+        pass
     elif renpy.store._overlay_screens is True:
         show = True
     else:

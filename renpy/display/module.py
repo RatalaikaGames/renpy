@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -247,7 +247,7 @@ def bilinear_scale(src, dst, sx=0, sy=0, sw=None, sh=None, dx=0, dy=0, dw=None, 
     _renpy.bilinear(src, dst, sx, sy, sw, sh, dx, dy, dw, dh, precise=precise)
 
 
-transform = _renpy.transform
+self = _renpy.transform
 
 # Note: Blend requires all surfaces to be the same size.
 blend = _renpy.blend

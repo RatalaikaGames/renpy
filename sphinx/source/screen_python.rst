@@ -153,6 +153,7 @@ the adjustment and styles.
        store the adjustment, and periodic should call the
        adjustment's changed method.
 
+
 InputValue
 ==========
 
@@ -167,9 +168,9 @@ the enter key being pressed.
     some or all of the methods, and set the value of the default
     field.
 
-    .. attribute: editable
+    .. attribute:: editable
 
-        If true, this field is editable at all.
+        If not true, disables the input field from being editable at all.
 
     .. attribute:: default
 

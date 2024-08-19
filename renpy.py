@@ -3,7 +3,7 @@
 # This file is part of Ren'Py. The license below applies to Ren'Py only.
 # Games and other projects that use Ren'Py may use a different license.
 
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -89,7 +89,7 @@ def path_to_common(renpy_base):
     return renpy_base + "/renpy/common"
 
 
-def path_to_saves(gamedir, save_directory=None):
+def path_to_saves(gamedir, save_directory=None): # type: (str, str|None) -> str
     """
     Given the path to a Ren'Py game directory, and the value of config.
     save_directory, returns absolute path to the directory where save files
@@ -106,7 +106,7 @@ def path_to_saves(gamedir, save_directory=None):
 
     if save_directory is None:
         save_directory = renpy.config.save_directory
-        save_directory = renpy.exports.fsencode(save_directory)
+        save_directory = renpy.exports.fsencode(save_directory) # type: ignore
 
     # Makes sure the permissions are right on the save directory.
     def test_writable(d):
@@ -192,7 +192,7 @@ def path_to_saves(gamedir, save_directory=None):
         if 'APPDATA' in os.environ:
             return os.environ['APPDATA'] + "/RenPy/" + save_directory
         else:
-            rv = "~/RenPy/" + renpy.config.save_directory
+            rv = "~/RenPy/" + renpy.config.save_directory # type: ignore
             return os.path.expanduser(rv)
 
     else:
@@ -204,28 +204,32 @@ def path_to_saves(gamedir, save_directory=None):
 # the launcher, usually.)
 def path_to_renpy_base():
     """
-    Returns the absolute path to thew Ren'Py base directory.
+    Returns the absolute path to the Ren'Py base directory.
     """
 
-    renpy_base = os.path.dirname(os.path.realpath(sys.argv[0]))
+    renpy_base = os.path.dirname(os.path.abspath(__file__))
     renpy_base = os.path.abspath(renpy_base)
 
     return renpy_base
+
+def path_to_logdir(basedir):
+    """
+    Returns the absolute path to the log directory.
+    `basedir`
+        The base directory (config.basedir)
+    """
+
+    import renpy # @UnresolvedImport
+
+    if renpy.android:
+        return os.environ['ANDROID_PUBLIC']
+
+    return basedir
 
 ##############################################################################
 
 
 android = ("ANDROID_PRIVATE" in os.environ)
-
-# Android requires us to add code to the main module, and to command some
-# renderers.
-if android:
-    __main__ = sys.modules["__main__"]
-    __main__.path_to_gamedir = path_to_gamedir # type: ignore
-    __main__.path_to_renpy_base = path_to_renpy_base # type: ignore
-    __main__.path_to_common = path_to_common # type: ignore
-    __main__.path_to_saves = path_to_saves # type: ignore
-
 
 def main():
 
@@ -243,6 +247,9 @@ def main():
         print("Could not import renpy.bootstrap. Please ensure you decompressed Ren'Py", file=sys.stderr)
         print("correctly, preserving the directory structure.", file=sys.stderr)
         raise
+
+    # Set renpy.__main__ to this module.
+    renpy.__main__ = sys.modules[__name__] # type: ignore
 
     renpy.bootstrap.bootstrap(renpy_base)
 

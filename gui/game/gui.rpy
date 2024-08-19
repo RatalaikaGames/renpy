@@ -11,6 +11,8 @@ init offset = -2
 init python:
     gui.init(1280, 720)
 
+## Enable checks for invalid or unstable properties in screens or transforms
+define config.check_conflicting_properties = True
 
 
 ################################################################################
@@ -342,6 +344,9 @@ define config.history_length = 250
 ## at the cost of performance.
 define gui.history_height = gui.scale(140)
 
+## Additional space to add between history screen entries.
+define gui.history_spacing = 0
+
 ## The position, width, and alignment of the label giving the name of the
 ## speaking character.
 define gui.history_name_xpos = gui.scale(155)
@@ -398,6 +403,7 @@ define gui.nvl_thought_xalign = 0.0
 ## The position of nvl menu_buttons.
 define gui.nvl_button_xpos = gui.scale(450)
 define gui.nvl_button_xalign = 0.0
+
 
 ## Localization ################################################################
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -155,6 +155,7 @@ style_properties = sorted_dict(
     debug=None,
     drop_shadow=None,
     drop_shadow_color='renpy.easy.color',
+    emoji_font=None,
     first_indent=None,
     first_spacing=None,
     fit_first=None,
@@ -187,10 +188,12 @@ style_properties = sorted_dict(
     order_reverse=None,
     outlines='expand_outlines',
     outline_scaling=None,
+    prefer_emoji=None,
     rest_indent=None,
     right_margin=None,
     right_padding=None,
     ruby_style=None,
+    shaper=None,
     size=None,
     size_group=None,
     slow_abortable=None,
@@ -275,11 +278,11 @@ property_priority = sorted_dict(
 )
 
 # A list of synthetic style properties, where each property is expanded into
-# multiple style properties. Each property are mapped into a list of tuples,
+# multiple style properties. Each property is mapped into a list of tuples,
 # with each consisting of:
 #
-# * The name of the style to assign.
-# * A string giving the name of a functon to call to get the value to assign, a constant
+# * The name of the style property to assign.
+# * A string giving the name of a function to call to get the value to assign, a constant
 #   numeric value, or None to not change the argument.
 synthetic_properties = sorted_dict(
 
@@ -421,11 +424,18 @@ synthetic_properties = sorted_dict(
         ('ypos', None),
         ('yanchor', 0.5),
         ],
+
+    xycenter=[
+        ('xpos', 'index_0'),
+        ('ypos', 'index_1'),
+        ('xanchor', 0.5),
+        ('yanchor', 0.5),
+        ],
     )
 
 all_properties = collections.OrderedDict()
 
-for k, v in style_properties.items():
+for k in style_properties:
     all_properties[k] = [ (k, None) ]
 
 all_properties.update(synthetic_properties)
@@ -627,6 +637,13 @@ def generate_sets():
     for k, v in all_properties.items():
         ap[k] = [ i[0] for i in v ]
 
+    proxy_property_code = "{"
+
+    for p, l in synthetic_properties.items():
+        proxy_property_code += '"{}" : frozenset({}),'.format(p, [ el[0] for el in l ])
+
+    proxy_property_code += "}"
+
     prefix_priority = collections.OrderedDict()
     prefix_alts = collections.OrderedDict()
 
@@ -640,6 +657,7 @@ def generate_sets():
     g.write("")
     g.write('exec("""\\')
     g.write("all_properties = {}", ap)
+    g.write("proxy_properties = {}", proxy_property_code)
     g.write("prefix_priority = {}", prefix_priority)
     g.write("prefix_alts = {}", prefix_alts)
     g.write("prefix_search = {}", PREFIX_SEARCH)

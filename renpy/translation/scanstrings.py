@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -32,12 +32,12 @@ import renpy
 ################################################################################
 
 STRING_RE = r"""(?x)
-\b_[_p]?\s*\(\s*[uU]?(
+\b_[_p]?\s*(\((?:[\s\\\n]*[uU]?(?:
 \"\"\"(?:\\.|\\\n|\"{1,2}|[^\\"])*?\"\"\"
 |'''(?:\\.|\\\n|\'{1,2}|[^\\'])*?'''
 |"(?:\\.|\\\n|[^\\"])*"
 |'(?:\\.|\\\n|[^\\'])*'
-)\s*\)
+))+\s*\))
 """
 
 REGULAR_PRIORITIES = [
@@ -96,8 +96,9 @@ class String(object):
         else:
             pl = REGULAR_PRIORITIES
 
+        normalized_elided = self.elided.replace("\\", "/")
         for prefix, priority, launcher_file in pl:
-            if self.elided.startswith(prefix):
+            if normalized_elided.startswith(prefix):
                 break
         else:
             priority = 500
@@ -126,7 +127,7 @@ def scan_strings(filename):
     for line, s in renpy.game.script.translator.additional_strings[filename]: # @UndefinedVariable
         rv.append(String(filename, line, s, False))
 
-    for _filename, lineno, text in renpy.parser.list_logical_lines(filename):
+    for _filename, lineno, text in renpy.lexer.list_logical_lines(filename):
 
         for m in re.finditer(STRING_RE, text):
 
@@ -135,7 +136,6 @@ def scan_strings(filename):
 
             if s is not None:
                 s = s.strip()
-                s = "u" + s
                 s = eval(s)
 
                 if m.group(0).startswith("_p"):

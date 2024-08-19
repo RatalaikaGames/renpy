@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -178,29 +178,47 @@ init -1700 python:
 
     config.extend_interjection = "{fast}"
 
-    def extend(what, interact=True, *args, **kwargs):
-        who = _last_say_who
-        who = renpy.eval_who(who)
+    class _Extend(object):
 
-        if who is None:
-            who = narrator
-        elif isinstance(who, basestring):
-            who = Character(who, kind=name_only)
+        def get_who(self):
 
-        # This ensures extend works even with NVL mode.
-        who.do_extend()
+            who = _last_say_who
+            who = renpy.eval_who(who)
 
-        what = _last_say_what + config.extend_interjection + _last_raw_what
+            if who is None:
+                who = narrator
+            elif isinstance(who, basestring):
+                who = Character(who, kind=name_only)
 
-        args = args + _last_say_args
-        kw = dict(_last_say_kwargs)
-        kw.update(kwargs)
-        kw["interact"] = interact and kw.get("interact", True)
+            return who
 
-        renpy.exports.say(who, what, *args, **kw)
-        store._last_say_what = what
+        def __call__(self, what, interact=True, *args, **kwargs):
+            who = self.get_who()
 
-    extend.record_say = False
+            # This ensures extend works even with NVL mode.
+            who.do_extend()
+
+            what = _last_say_what + config.extend_interjection + _last_raw_what
+
+            args = args + _last_say_args
+            kw = dict(_last_say_kwargs)
+            kw.update(kwargs)
+            kw["interact"] = interact and kw.get("interact", True)
+
+            renpy.exports.say(who, what, *args, **kw)
+            store._last_say_what = what
+
+        record_say = False
+
+        def get_extend_text(self, what):
+            return config.extend_interjection + what
+
+        @property
+        def statement_name(self):
+            who = self.get_who()
+            return getattr(who, "statement_name", "say")
+
+    extend = _Extend()
 
 
     ##########################################################################
@@ -286,21 +304,22 @@ init -1700 python:
 
 
     ##########################################################################
-    # Name-only say statements.
+    # Constant stores.
+    #
+    # Set _constant on many default stores.
 
-    # This character is copied when a name-only say statement is called.
-    name_only = adv
+    _errorhandling._constant = True
+    _gamepad._constant = True
+    _renpysteam._constant = True
+    _warper._constant = True
+    audio._constant = True
+    achievement._constant = True
+    build._constant = True
+    director._constant = True
+    iap._constant = True
+    layeredimage._constant = True
+    #updater._constant = True
 
-    def predict_say(who, what):
-        who = Character(who, kind=name_only)
-        try:
-            who.predict(what)
-        except Exception:
-            pass
-
-    def say(who, what, interact=True, *args, **kwargs):
-        who = Character(who, kind=name_only)
-        who(what, interact=interact, *args, **kwargs)
 
     ##########################################################################
     # Misc.
@@ -314,6 +333,7 @@ init -1700 python:
 
     # License text.
     renpy.license = _("This program contains free software under a number of licenses, including the MIT License and GNU Lesser General Public License. A complete list of software, including links to full source code, can be found {a=https://www.renpy.org/l/license}here{/a}.")
+
 
 init -1000 python:
     # Set developer to the auto default.
@@ -453,7 +473,6 @@ label _developer:
 # its own layer.
 screen _ctc:
     add ctc
-
 
 # Creates the data structure that history is stored in.
 default _history = True

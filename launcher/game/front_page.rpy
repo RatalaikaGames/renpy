@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -159,11 +159,11 @@ screen front_page_project:
                 frame style "l_indent":
                     has vbox
 
-                    textbutton _("game") action OpenDirectory(os.path.join(p.path, "game"), absolute=True)
-                    textbutton _("base") action OpenDirectory(os.path.join(p.path, "."), absolute=True)
-                    textbutton _("images") action OpenDirectory(os.path.join(p.path, "game/images"), absolute=True)
-                    textbutton _("audio") action OpenDirectory(os.path.join(p.path, "game/audio"), absolute=True)
-                    textbutton _("gui") action OpenDirectory(os.path.join(p.path, "game/gui"), absolute=True)
+                    textbutton "game" action OpenDirectory(os.path.join(p.path, "game"), absolute=True)
+                    textbutton "base" action OpenDirectory(os.path.join(p.path, "."), absolute=True)
+                    textbutton "images" action OpenDirectory(os.path.join(p.path, "game/images"), absolute=True)
+                    textbutton "audio" action OpenDirectory(os.path.join(p.path, "game/audio"), absolute=True)
+                    textbutton "gui" action OpenDirectory(os.path.join(p.path, "game/gui"), absolute=True)
 
             vbox:
                 if persistent.show_edit_funcs:
@@ -216,10 +216,7 @@ screen front_page_project:
 
                 textbutton _("Android") action Jump("android")
                 textbutton _("iOS") action Jump("ios")
-                textbutton _("Web") + " " + _("(Beta)") action Jump("web"):
-                    if not PY2:
-                        text_color DISABLED
-
+                textbutton _("Web") + " " + _("(Beta)") action Jump("web")
                 textbutton _("Generate Translations") action Jump("translate")
                 textbutton _("Extract Dialogue") action Jump("extract_dialogue")
 
@@ -240,7 +237,7 @@ label front_page:
 
     if (not persistent.has_chosen_language) or ("RENPY_CHOOSE_LANGUAGE" in os.environ):
 
-        if _preferences.language is None:
+        if (_preferences.language is None) or ("RENPY_CHOOSE_LANGUAGE" in os.environ):
             hide screen bottom_info
             call choose_language
             show screen bottom_info

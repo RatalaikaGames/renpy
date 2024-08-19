@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -72,6 +72,7 @@ if 1 == 0:
     from . import behavior
     from . import controller
     from . import core
+    from . import displayable
     from . import dragdrop
     from . import emulator
     from . import error
@@ -93,6 +94,7 @@ if 1 == 0:
     from . import pgrender
     from . import predict
     from . import presplash
+    from . import quaternion
     from . import render
     from . import scale
     from . import screen

@@ -6,6 +6,7 @@ Movie
 Ren'Py is capable of using FFmpeg (included) to play movies using the
 video codecs:
 
+* AV1
 * VP9
 * VP8
 * Theora
@@ -19,6 +20,7 @@ and the following audio codecs:
 * Vorbis
 * MP3
 * MP2
+* FLAC
 * PCM
 
 inside the following container formats:
@@ -31,20 +33,25 @@ inside the following container formats:
 
 (Note that using some of these formats may require patent licenses.
 When in doubt, and especially for commercial games, we recommend using
-VP9, VP8, or Theora; Opus or Vorbis; and WebM, Matroska, or Ogg.)
+AV1, VP9, VP8, or Theora; Opus or Vorbis; and WebM, Matroska, or Ogg.)
 
 Movies can be displayed fullscreen or in a displayable. Fullscreen movies
-are more efficient.
+are more efficient. YUV444 movies are not hardware accelerated, use YUV420
+or YUV422 instead.
 
 Ren'Py's movie decoder does not support movies with alpha channels, but the
 `side_mask` parameter of the :func:`Movie` displayable can be used for that
-purpose. Here is an example of hhow to use ffmpeg to create a webm file with
+purpose. Here is an example of how to use ffmpeg to create a webm file with
 a side-by-side mask from a mov file with an alpha channel. ::
 
-        ffmpeg -i original.mov -filter:v alphaextract mask.mov
-        ffmpeg -i original.mov -i mask.mov -filter_complex "hstack" -codec:v vp8 -crf 10 output.webm
+    ffmpeg -i original.mov -filter:v alphaextract mask.mov
+    ffmpeg -i original.mov -i mask.mov -filter_complex "hstack" -codec:v vp8 -crf 10 output.webm
 
-Movies are not supported on the Web platform.
+Movies are supported on the Web platform, but the list of supported codecs differs
+from browser to browser. For cross-browser compatibility (especially to support Safari),
+the most efficient combination is H.264 with MP3 (or AAC) in a MP4 file. However, Ren'Py
+does not support H.264 decoding (or AAC), so this combination can only work on the
+Web platform.
 
 
 Fullscreen Movies
@@ -55,14 +62,7 @@ to use the :func:`renpy.movie_cutscene` function. This function displays the
 movie fullscreen until it either ends, or the player clicks to dismiss
 it. ::
 
-        $ renpy.movie_cutscene("On_Your_Mark.webm")
-
-On mobile platforms, such as Android and iOS, hardware video decoding is
-used when :var:`config.hw_video` is changed to True. This can be faster, but the list of
-supported movie formats depends on the
-platform. See for instance
-`Android's supported media formats <https://developer.android.com/guide/topics/media/media-formats>`_.
-A quick way to test if your videos are supported is to copy them to your target device and play them with its default video player.
+    $ renpy.movie_cutscene("On_Your_Mark.webm")
 
 Movie Displayables and Movie Sprites
 ------------------------------------

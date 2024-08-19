@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -53,7 +53,7 @@ def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=Fals
 
     `fadeout`
         If not None, this is a time in seconds to fade for. Otherwise the
-        fadeout time is taken from config.fade_music. This is ignored if
+        fadeout time is taken from config.fadeout_audio. This is ignored if
         the channel is paused when the music is played.
 
     `synchro_start`
@@ -111,15 +111,16 @@ def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=Fals
 
             loop_is_filenames = (c.loop == filenames)
 
-            c.dequeue()
-
             if fadeout is None:
-                fadeout = renpy.config.fade_music
+                fadeout = renpy.config.fadeout_audio
 
             if if_changed and c.get_playing() in filenames:
                 fadein = 0
                 loop_only = loop_is_filenames
+                if not loop_is_filenames:
+                    c.dequeue()
             else:
+                c.dequeue()
                 c.fadeout(fadeout)
                 loop_only = False
 
@@ -260,7 +261,7 @@ def playable(filename, channel="music"):
 
     filename, _, _ = c.split_filename(filename, False)
 
-    return renpy.loader.loadable(filename)
+    return renpy.loader.loadable(filename, directory="audio")
 
 
 def stop(channel="music", fadeout=None):
@@ -269,7 +270,7 @@ def stop(channel="music", fadeout=None):
 
     This stops the music that is currently playing, and dequeues all
     queued music. If fadeout is None, the music is faded out for the
-    time given in config.fade_music, otherwise it is faded for fadeout
+    time given in config.fadeout_audio, otherwise it is faded for fadeout
     seconds.
 
     This sets the last queued file to None.
@@ -279,7 +280,7 @@ def stop(channel="music", fadeout=None):
 
     `fadeout`
         If not None, this is a time in seconds to fade for. Otherwise the
-        fadeout time is taken from config.fade_music. This is ignored if
+        fadeout time is taken from config.fadeout_audio. This is ignored if
         the channel is paused.
 
 
@@ -298,7 +299,7 @@ def stop(channel="music", fadeout=None):
             ctx = c.copy_context()
 
             if fadeout is None:
-                fadeout = renpy.config.fade_music
+                fadeout = renpy.config.fadeout_audio
 
             c.fadeout(fadeout)
 
@@ -501,8 +502,7 @@ def set_pan(pan, delay, channel="music"):
         The amount of time it takes for the panning to occur.
 
     `channel`
-        The channel the panning takes place on. This can be a sound or a music
-        channel. Often, this is channel 7, the default music channel.
+        The channel the panning takes place on, defaulting to the music channel.
     """
 
     try:
@@ -561,6 +561,27 @@ def get_pause(channel="music"):
     except Exception:
 
         return False
+
+def pump():
+    """
+    :doc: audio
+
+    This 'pumps' the audio system. Normally, the effects of the ``play``,
+    ``queue``, and ``stop`` statements and the function equivalents take
+    place at the start of the next interaction. In some cases, the effects
+    of multiple statements can cancel each other out - for example, a
+    play followed by a stop causes the track to never be played.
+
+    If this function is called between the play and stop, the track will
+    begin playing before this function returns, which then allows the track
+    to be faded out. ::
+
+        play music "mytrack.opus"
+        $ renpy.music.pump()
+        stop music fadeout 4
+    """
+
+    renpy.audio.audio.pump()
 
 
 def set_mixer(channel, mixer, default=False):

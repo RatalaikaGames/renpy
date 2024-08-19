@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -154,6 +154,26 @@ init -1500 python:
         def get_selected(self):
             return _preferences.get_volume(self.mixer) == self.volume
 
+    def GetMixer(mixer, db=False):
+        """
+        :doc: audio_action
+
+        Returns the volume of `mixer`.
+
+        `db`
+            If true, returns the volume in decibels. If false, the default,
+            returns the volume as a number between 0.0 and 1.0.
+        """
+
+        import math
+
+        rv = _preferences.get_mixer(mixer)
+
+        if db:
+            rv = renpy.config.volume_db_range * rv - renpy.config.volume_db_range
+
+        return rv
+
     @renpy.pure
     class SetMute(Action, DictEquality):
         """
@@ -257,4 +277,3 @@ init -1500 python:
                 rv = not rv
 
             return rv
-

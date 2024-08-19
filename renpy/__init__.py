@@ -1,4 +1,4 @@
-# Copyright 2004-2022 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -25,6 +25,10 @@
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 #from typing import Any
 
+# Initial import of the __main__ module. This gets replaced in renpy.py
+# whatever that module has been imported as.
+import __main__
+
 # All imports should go below renpy.compat.
 
 # Backup object, as it'll be overwritten when renpy.object is imported.
@@ -44,7 +48,7 @@ def update_path():
 
     try:
         import _renpy
-        if hasattr(_renpy, '__file__'): # .so/.dll
+        if hasattr(_renpy, '__file__') and _renpy.__file__ != "built-in":
             libexec = os.path.dirname(_renpy.__file__)
             package.__path__.append(os.path.join(libexec, *name))
     except ImportError:
@@ -63,6 +67,7 @@ import os
 import copy
 import types
 import site
+from collections import namedtuple
 
 ################################################################################
 # Version information
@@ -70,37 +75,28 @@ import site
 
 # Version numbers.
 try:
-    from renpy.vc_version import vc_version, official, nightly
+    from renpy.vc_version import official, nightly, version_name, version
 except ImportError:
-    vc_version = 0
-    official = False
-    nightly = False
+    import renpy.versions
+    version_dict = renpy.versions.get_version()
+
+    official = version_dict["official"]
+    nightly = version_dict["nightly"]
+    version_name = version_dict["version_name"]
+    version = version_dict["version"]
 
 official = official and getattr(site, "renpy_build_official", False)
 
-if PY2:
-
-    # The tuple giving the version number.
-    version_tuple = (7, 5, 2, vc_version)
-
-    # The name of this version.
-    version_name = "TBD"
-
-else:
-
-    # The tuple giving the version number.
-    version_tuple = (8, 0, 3, vc_version)
-
-    # The name of this version.
-    version_name = "Heck Freezes Over"
+VersionTuple = namedtuple("VersionTuple", ["major", "minor", "patch", "commit"])
+version_tuple = VersionTuple(*(int(i) for i in version.split(".")))
 
 # A string giving the version number only (8.0.1.123), with a suffix if needed.
 version_only = ".".join(str(i) for i in version_tuple)
 
 if not official:
-    version_only += "u"
+    version_only += "+unofficial"
 elif nightly:
-    version_only += "n"
+    version_only += "+nightly"
 
 # A verbose string giving the version.
 version = "Ren'Py " + version_only
@@ -257,8 +253,10 @@ name_blacklist = {
     "renpy.audio.audio.lock",
     "renpy.audio.audio.periodic_condition",
     "renpy.webloader.queue_lock",
-    "renpy.persistent.save_MP_instances",
+    "renpy.persistent.MP_instances",
     "renpy.exports.sdl_dll",
+    "renpy.sl2.slast.serial",
+    "renpy.gl2.gl2draw.default_position",
     }
 
 class Backup(_object):
@@ -353,7 +351,7 @@ class Backup(_object):
 
         # Remove new variables from the module.
         for mod, names in self.names.items():
-            modvars = vars(mod)
+            modvars = mod.__dict__
             for name in set(modvars.keys()) - names:
                 del modvars[name]
 
@@ -425,9 +423,12 @@ def import_all():
     import renpy.curry
     import renpy.color
     import renpy.easy
+    #import renpy.encryption
     import renpy.execution
+    import renpy.lexer
     import renpy.loadsave
-    import renpy.savelocation # @UnresolvedImport
+    import renpy.savelocation
+    #import renpy.savetoken
     import renpy.persistent
     import renpy.scriptedit
     import renpy.parser
@@ -439,11 +440,12 @@ def import_all():
     import renpy.script
     import renpy.statements
     import renpy.util
+    import renpy.versions
 
     global plog
     plog = renpy.performance.log # type:ignore
 
-    import renpy.styledata # @UnresolvedImport
+    import renpy.styledata
 
     import renpy.style
     renpy.styledata.import_style_functions()
@@ -458,14 +460,15 @@ def import_all():
     import renpy.translation.extract
     import renpy.translation.merge
 
-    import renpy.display # @UnresolvedImport @Reimport
+    import renpy.display
 
     import renpy.display.presplash
     import renpy.display.pgrender
     import renpy.display.scale
     import renpy.display.module
-    import renpy.display.render # Most display stuff depends on this. @UnresolvedImport
-    import renpy.display.core # object @UnresolvedImport
+    import renpy.display.render
+    import renpy.display.displayable
+    import renpy.display.core
     import renpy.display.swdraw
 
     import renpy.text
@@ -486,13 +489,13 @@ def import_all():
     import renpy.display.layout
     import renpy.display.viewport
     import renpy.display.transform
-    import renpy.display.motion # layout @UnresolvedImport
-    import renpy.display.behavior # layout @UnresolvedImport
-    import renpy.display.transition # core, layout @UnresolvedImport
-    import renpy.display.movetransition # core @UnresolvedImport
+    import renpy.display.motion
+    import renpy.display.behavior
+    import renpy.display.transition
+    import renpy.display.movetransition
     import renpy.display.im
     import renpy.display.imagelike
-    import renpy.display.image # core, behavior, im, imagelike @UnresolvedImport
+    import renpy.display.image
     import renpy.display.video
     import renpy.display.focus
     import renpy.display.anim
@@ -508,6 +511,7 @@ def import_all():
     import renpy.display.tts
     import renpy.display.gesture
     import renpy.display.model
+    import renpy.display.quaternion
 
     import renpy.display.error
 
@@ -537,7 +541,7 @@ def import_all():
     import renpy.memory
 
     import renpy.exports
-    import renpy.character # depends on exports. @UnresolvedImport
+    import renpy.character
 
     import renpy.add_from
     import renpy.dump
@@ -550,8 +554,8 @@ def import_all():
     import renpy.gl2.gl2texture
     import renpy.gl2.live2d
 
-    import renpy.minstore # depends on lots. @UnresolvedImport
-    import renpy.defaultstore # depends on everything. @UnresolvedImport
+    import renpy.minstore
+    import renpy.defaultstore
 
     import renpy.test
     import renpy.test.testmouse
@@ -605,7 +609,7 @@ def post_import():
     # Import everything into renpy.exports, provided it isn't
     # already there.
     for k, v in globals().items():
-        vars(renpy.exports).setdefault(k, v)
+        renpy.exports.__dict__.setdefault(k, v)
 
 
 def issubmodule(sub, module):
@@ -700,12 +704,15 @@ if 1 == 0:
     from . import dump
     from . import easy
     from . import editor
+    from . import encryption
     from . import error
     from . import execution
     from . import exports
     from . import game
     #from . import gl
     #from . import gl2
+    from . import lexer
+    from . import lexersupport
     from . import lint
     from . import loader
     from . import loadsave
@@ -715,7 +722,6 @@ if 1 == 0:
     from . import minstore
     from . import object
     from . import parser
-    from . import parsersupport
     from . import performance
     from . import persistent
     from . import preferences
@@ -727,6 +733,7 @@ if 1 == 0:
     from . import revertable
     from . import rollback
     from . import savelocation
+    from . import savetoken
     from . import screenlang
     from . import script
     from . import scriptedit
@@ -742,5 +749,6 @@ if 1 == 0:
     from . import ui
     from . import util
     from . import vc_version
+    from . import versions
     from . import warp
     from . import webloader

@@ -25,21 +25,26 @@ statement after the label statement whenever the end of the block is reached.
 
 There are two kinds of labels: *global* and *local* labels. Global labels live
 in one global scope shared across all project files and thus should have unique
-names per game. Local labels logically reside inside the scope of the global label
-they are declared in. To declare a local label, prefix its name with a period ``.``.
+names per game. A local label on the other hand refer to a global label, so several
+local labels in the game can have the same name, provided they are related to
+different global labels. To declare a local label, prefix its name with a period
+``.``, and put it under a global label which it will belong to.
 For example::
 
     label global_label:
         "Inside a global label.."
-    label .local_name:
+    label .local_label:
         "..resides a local one."
-        jump .local_name
+        jump .another_local
+    label .another_local:
+        "And another !"
+        jump .local_label
 
 Local labels can be referenced directly inside the same global label they are
-declared in or by their full name, consisting of global and local name parts: ::
+declared in, or by their full name, consisting of global and local name parts::
 
     label another_global:
-        "Now lets jump inside local label located somewhere else."
+        "Now lets jump inside a local label located somewhere else."
         jump global_label.local_name
 
 The label statement may take an optional list of parameters. These parameters
@@ -67,6 +72,10 @@ evaluated, and the string so computed is used as the label name of the
 statement to jump to. If the ``expression`` keyword is not present, the label
 name of the statement to jump to must be explicitly given.
 
+A local label name can be passed, either with ``expression`` or without,
+and either with the global label prepended ("global_label.local_label"),
+or starting with a dot (".local_label").
+
 Unlike call, jump does not push the next statement onto a stack. As a
 result, there's no way to return to where you've jumped from. ::
 
@@ -89,6 +98,10 @@ If the ``expression`` keyword is present, the expression following it is evaluat
 string so computed is used as the name of the label to call. If the
 ``expression`` keyword is not present, the name of the statement to call must be
 explicitly given.
+
+A local label name can be passed, either with ``expression`` or without,
+and either with the global label prepended ("global_label.local_label"),
+or starting with a dot (".local_label").
 
 If the optional ``from`` clause is present, it has the effect of including a label
 statement with the given name as the statement immediately following the call
@@ -147,6 +160,8 @@ If the optional expression is given to return, it is evaluated, and it's result
 is stored in the ``_return`` variable. This variable is dynamically scoped to each
 context.
 
+.. _special-labels:
+
 Special Labels
 --------------
 
@@ -198,3 +213,37 @@ Labels & Control Flow Functions
 -------------------------------
 
 .. include:: inc/label
+
+.. _context:
+
+Contexts
+--------
+
+Contexts are used internally by Ren'Py to manage the changeable and saveable
+state of the game. Contexts include:
+
+* the currently running Ren'Py statement,
+* the call stack, as described above, and the names and former values of dynamic
+  variables created by :func:`renpy.dynamic`,
+* the images currently being shown (and informations about them like their attributes,
+  the transforms applied to them and so on),
+* the screens being shown, and the variables inside them,
+* the audio that is playing or queued.
+
+Most of the time there is only one context at play, and only one instance of each
+of these elements exists. This changes when entering the main or game game menus;
+everything above can be changed, and will be restored when leaving the menu
+context. Some of these changes are automatic, like the screens layer being
+cleared when entering a context.
+
+Ren'Py also creates new contexts as part of :ref:`replay` and when
+:func:`hiding the interface <HideInterface>`.
+
+The creation of :ref:`screen language <screens>` has considerably lessened the need
+for creating contexts.
+
+Rollback is only enabled in the base context (meaning, when there is only
+one context), and only the base context is saved, which is why the game menu
+uses a context.
+
+.. include:: inc/context
