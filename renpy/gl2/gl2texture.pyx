@@ -715,10 +715,10 @@ cdef class GLTexture(GL2Model):
 
     def load(self):
 
-        if self.properties.get("premultiplied", False):
-            self.load_gltexture_premultiplied()
-        else:
-            self.load_gltexture()
+        #if self.properties.get("premultiplied", False):
+        #    self.load_gltexture_premultiplied()
+        #else:
+        self.load_gltexture()
 
 
 
