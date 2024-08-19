@@ -209,7 +209,8 @@
 
     # choose_theme.rpy:370
     old "Planetarium"
-    new "Planetarium"
+    # Automatic translation.
+    new "Planétarium"
 
     # choose_theme.rpy:425
     old "Choose Theme"
@@ -1129,7 +1130,7 @@
 
     # updater.rpy:126
     old "Nightly"
-    new "Nightly"
+    new "Journalière"
 
     # updater.rpy:132
     old "The bleeding edge of Ren'Py development. This may have the latest features, or might not run at all."
@@ -2061,11 +2062,11 @@
 
     # game/updater.rpy:77
     old "Nightly (Ren'Py 8, Python 3)"
-    new "Nightly (Ren'Py 8, Python 3)"
+    new "Journalière (Ren'Py 8, Python 3)"
 
     # game/updater.rpy:78
     old "Nightly (Ren'Py 7, Python 2)"
-    new "Nightly (Ren'Py 7, Python 2)"
+    new "Journalière (Ren'Py 7, Python 2)"
 
     # game/preferences.rpy:327
     old "{#in language font}Welcome! Please choose a language"

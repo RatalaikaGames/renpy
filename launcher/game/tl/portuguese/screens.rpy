@@ -1,285 +1,323 @@
 ﻿
-translate piglatin strings:
+translate portuguese strings:
 
     # gui/game/screens.rpy:9
     old "## Styles"
-    new "## Tylessay"
+    # Automatic translation.
+    new "## Estilos"
 
     # gui/game/screens.rpy:81
     old "## In-game screens"
-    new "## Niay-amegay creenssay"
+    # Automatic translation.
+    new "## Telas no jogo"
 
     # gui/game/screens.rpy:85
     old "## Say screen"
-    new "## Aysay creensay"
+    # Automatic translation.
+    new "## Diga a tela"
 
     # gui/game/screens.rpy:87
     old "## The say screen is used to display dialogue to the player. It takes two parameters, who and what, which are the name of the speaking character and the text to be displayed, respectively. (The who parameter can be None if no name is given.)"
-    new "## Hetay aysay creensay isay useday otay isplayday ialogueday otay hetay ayerplay. Tiay akestay wotay arameterspay, howay anday hatway, hichway areay hetay amenay ofay hetay peakingsay aracterchay anday hetay exttay otay ebay isplayedday, espectivelyray. (Hetay howay arameterpay ancay ebay Onenay ifay onay amenay isay ivengay.)"
+    # Automatic translation.
+    new "## A tela say é usada para exibir o diálogo para o jogador. Ela recebe dois parâmetros, who e what, que são o nome do personagem que fala e o texto a ser exibido, respectivamente. (O parâmetro who pode ser None (Nenhum) se nenhum nome for fornecido)."
 
     # gui/game/screens.rpy:92
     old "## This screen must create a text displayable with id \"what\", as Ren'Py uses this to manage text display. It can also create displayables with id \"who\" and id \"window\" to apply style properties."
-    new "## Histay creensay ustmay reatecay aay exttay isplayableday ithway iday \"hatway\", asay Enray'Ypay usesay histay otay anagemay exttay isplayday. Tiay ancay alsoay reatecay isplayablesday ithway iday \"howay\" anday iday \"indowway\" otay applyay ylestay ropertiespay."
+    # Automatic translation.
+    new "## Essa tela deve criar um texto exibível com o id \"what\", pois o Ren'Py o utiliza para gerenciar a exibição de texto. Ela também pode criar exibíveis com id \"who\" e id \"window\" para aplicar propriedades de estilo."
 
     # gui/game/screens.rpy:96
     old "## https://www.renpy.org/doc/html/screen_special.html#say"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#aysay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#say"
 
     # gui/game/screens.rpy:114
     old "## If there's a side image, display it above the text. Do not display on the phone variant - there's no room."
-    new "## Fiay heretay'say aay idesay imageay, isplayday itay aboveay hetay exttay. Oday otnay isplayday onay hetay onephay ariantvay - heretay'say onay oomray."
+    # Automatic translation.
+    new "## Se houver uma imagem lateral, exiba-a acima do texto. Não exiba na variante do telefone - não há espaço."
 
     # gui/game/screens.rpy:120
     old "## Make the namebox available for styling through the Character object."
-    new "## Akemay hetay ameboxnay availableay orfay ylingstay hroughtay hetay Haractercay objectay."
+    # Automatic translation.
+    new "## Disponibilize a caixa de nome para estilização por meio do objeto Character."
 
     # gui/game/screens.rpy:165
     old "## Input screen"
-    new "## Nputiay creensay"
+    # Automatic translation.
+    new "## Tela de entrada"
 
     # gui/game/screens.rpy:167
     old "## This screen is used to display renpy.input. The prompt parameter is used to pass a text prompt in."
-    new "## Histay creensay isay useday otay isplayday enpyray.inputay. Hetay romptpay arameterpay isay useday otay asspay aay exttay romptpay inay."
+    # Automatic translation.
+    new "## Essa tela é usada para exibir renpy.input. O parâmetro prompt é usado para passar um prompt de texto."
 
     # gui/game/screens.rpy:170
     old "## This screen must create an input displayable with id \"input\" to accept the various input parameters."
-    new "## Histay creensay ustmay reatecay anay inputay isplayableday ithway iday \"inputay\" otay acceptay hetay ariousvay inputay arameterspay."
+    # Automatic translation.
+    new "## Essa tela deve criar um displayable de entrada com id \"input\" para aceitar os vários parâmetros de entrada."
 
     # gui/game/screens.rpy:173
     old "## https://www.renpy.org/doc/html/screen_special.html#input"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#inputay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#input"
 
     # gui/game/screens.rpy:200
     old "## Choice screen"
-    new "## Hoicecay creensay"
+    # Automatic translation.
+    new "## Tela de escolha"
 
     # gui/game/screens.rpy:202
     old "## This screen is used to display the in-game choices presented by the menu statement. The one parameter, items, is a list of objects, each with caption and action fields."
-    new "## Histay creensay isay useday otay isplayday hetay inay-amegay oiceschay resentedpay ybay hetay enumay atementstay. Hetay oneay arameterpay, itemsay, isay aay istlay ofay objectsay, eachay ithway aptioncay anday actionay ieldsfay."
+    # Automatic translation.
+    new "## Essa tela é usada para exibir as opções no jogo apresentadas pela instrução de menu. O único parâmetro, itens, é uma lista de objetos, cada um com campos de legenda e ação."
 
     # gui/game/screens.rpy:206
     old "## https://www.renpy.org/doc/html/screen_special.html#choice"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#oicechay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#choice"
 
     # gui/game/screens.rpy:234
     old "## Quick Menu screen"
-    new "## Uickqay Enumay creensay"
+    # Automatic translation.
+    new "## Tela do menu rápido"
 
     # gui/game/screens.rpy:236
     old "## The quick menu is displayed in-game to provide easy access to the out-of-game menus."
-    new "## Hetay uickqay enumay isay isplayedday inay-amegay otay rovidepay easyay accessay otay hetay outay-ofay-amegay enusmay."
+    # Automatic translation.
+    new "## O menu rápido é exibido no jogo para fornecer acesso fácil aos menus fora do jogo."
 
     # gui/game/screens.rpy:241
     old "## Ensure this appears on top of other screens."
-    new "## Nsureeay histay appearsay onay optay ofay otheray creenssay."
-
-    # gui/game/screens.rpy:252
-    old "Back"
-    new "Ackbay"
+    # Automatic translation.
+    new "## Certifique-se de que isso apareça na parte superior de outras telas."
 
     # gui/game/screens.rpy:253
     old "History"
-    new "Istoryhay"
+    # Automatic translation.
+    new "Histórico"
 
     # gui/game/screens.rpy:254
     old "Skip"
-    new "Kipsay"
+    # Automatic translation.
+    new "Pular"
 
     # gui/game/screens.rpy:255
     old "Auto"
-    new "Utoaay"
+    # Automatic translation.
+    new "Automotivo"
 
     # gui/game/screens.rpy:256
     old "Save"
-    new "Avesay"
+    # Automatic translation.
+    new "Salvar"
 
     # gui/game/screens.rpy:257
     old "Q.Save"
-    new "Qay.Avesay"
+    # Automatic translation.
+    new "Q.Salvar"
 
     # gui/game/screens.rpy:258
     old "Q.Load"
-    new "Qay.Oadlay"
+    # Automatic translation.
+    new "Q. Carga"
 
     # gui/game/screens.rpy:259
     old "Prefs"
-    new "Refspay"
+    new "Prefs"
 
     # gui/game/screens.rpy:262
     old "## This code ensures that the quick_menu screen is displayed in-game, whenever the player has not explicitly hidden the interface."
-    new "## Histay odecay ensuresay hattay hetay uick_menuqay creensay isay isplayedday inay-amegay, heneverway hetay ayerplay ashay otnay explicitlyay iddenhay hetay interfaceay."
+    # Automatic translation.
+    new "## Esse código garante que a tela quick_menu seja exibida no jogo, sempre que o jogador não tiver ocultado explicitamente a interface."
 
     # gui/game/screens.rpy:280
     old "## Main and Game Menu Screens"
-    new "## Ainmay anday Amegay Enumay Creenssay"
+    # Automatic translation.
+    new "## Telas do menu principal e do menu do jogo"
 
     # gui/game/screens.rpy:283
     old "## Navigation screen"
-    new "## Avigationnay creensay"
+    # Automatic translation.
+    new "## Tela de navegação"
 
     # gui/game/screens.rpy:285
     old "## This screen is included in the main and game menus, and provides navigation to other menus, and to start the game."
-    new "## Histay creensay isay includeday inay hetay ainmay anday amegay enusmay, anday rovidespay avigationnay otay otheray enusmay, anday otay artstay hetay amegay."
+    # Automatic translation.
+    new "## Essa tela está incluída nos menus principal e do jogo e fornece navegação para outros menus e para iniciar o jogo."
 
     # gui/game/screens.rpy:300
     old "Start"
-    new "Tartsay"
+    # Automatic translation.
+    new "Início"
 
     # gui/game/screens.rpy:308
     old "Load"
-    new "Oadlay"
+    # Automatic translation.
+    new "Carga"
 
     # gui/game/screens.rpy:310
     old "Preferences"
-    new "Referencespay"
+    # Automatic translation.
+    new "Preferências"
 
     # gui/game/screens.rpy:314
     old "End Replay"
-    new "Ndeay Eplayray"
+    # Automatic translation.
+    new "Fim da reprodução"
 
     # gui/game/screens.rpy:318
     old "Main Menu"
-    new "Ainmay Enumay"
-
-    # gui/game/screens.rpy:320
-    old "About"
-    new "Boutaay"
+    # Automatic translation.
+    new "Menu principal"
 
     # gui/game/screens.rpy:324
     old "## Help isn't necessary or relevant to mobile devices."
-    new "## Elphay isnay'tay ecessarynay oray elevantray otay obilemay evicesday."
+    # Automatic translation.
+    new "## A ajuda não é necessária ou relevante para dispositivos móveis."
 
     # gui/game/screens.rpy:325
     old "Help"
-    new "Elphay"
+    # Automatic translation.
+    new "Ajuda"
 
     # gui/game/screens.rpy:329
     old "## The quit button is banned on iOS and unnecessary on Android and Web."
-    new "## Hetay uitqay uttonbay isay annedbay onay iOSay anday unnecessaryay onay Ndroidaay anday Ebway."
-
-    # gui/game/screens.rpy:330
-    old "Quit"
-    new "Uitqay"
+    # Automatic translation.
+    new "## O botão Sair é proibido no iOS e desnecessário no Android e na Web."
 
     # gui/game/screens.rpy:344
     old "## Main Menu screen"
-    new "## Ainmay Enumay creensay"
+    # Automatic translation.
+    new "## Tela do menu principal"
 
     # gui/game/screens.rpy:346
     old "## Used to display the main menu when Ren'Py starts."
-    new "## Seduay otay isplayday hetay ainmay enumay henway Enray'Ypay artsstay."
+    # Automatic translation.
+    new "## Usado para exibir o menu principal quando o Ren'Py é iniciado."
 
     # gui/game/screens.rpy:348
     old "## https://www.renpy.org/doc/html/screen_special.html#main-menu"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#ainmay-enumay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#main-menu"
 
     # gui/game/screens.rpy:352
     old "## This ensures that any other menu screen is replaced."
-    new "## Histay ensuresay hattay anyay otheray enumay creensay isay eplacedray."
+    # Automatic translation.
+    new "## Isso garante que qualquer outra tela de menu seja substituída."
 
     # gui/game/screens.rpy:357
     old "## This empty frame darkens the main menu."
-    new "## Histay emptyay amefray arkensday hetay ainmay enumay."
+    # Automatic translation.
+    new "## Esse quadro vazio escurece o menu principal."
 
     # gui/game/screens.rpy:361
     old "## The use statement includes another screen inside this one. The actual contents of the main menu are in the navigation screen."
-    new "## Hetay useay atementstay includesay anotheray creensay insideay histay oneay. Hetay actualay ontentscay ofay hetay ainmay enumay areay inay hetay avigationnay creensay."
+    # Automatic translation.
+    new "## A instrução de uso inclui outra tela dentro desta. O conteúdo real do menu principal está na tela de navegação."
 
     # gui/game/screens.rpy:406
     old "## Game Menu screen"
-    new "## Amegay Enumay creensay"
+    # Automatic translation.
+    new "## Tela do menu do jogo"
 
     # gui/game/screens.rpy:408
     old "## This lays out the basic common structure of a game menu screen. It's called with the screen title, and displays the background, title, and navigation."
-    new "## Histay ayslay outay hetay asicbay ommoncay ructurestay ofay aay amegay enumay creensay. Tiay'say alledcay ithway hetay creensay itletay, anday isplaysday hetay ackgroundbay, itletay, anday avigationnay."
-
-    # gui/game/screens.rpy:411
-    old "## The scroll parameter can be None, or one of \"viewport\" or \"vpgrid\". This screen is intended to be used with one or more children, which are transcluded (placed) inside it."
-    new "## Hetay crollsay arameterpay ancay ebay Onenay, oray oneay ofay \"iewportvay\" oray \"pgridvay\". Histay creensay isay intendeday otay ebay useday ithway oneay oray oremay ildrenchay, hichway areay anscludedtray (acedplay) insideay itay."
+    # Automatic translation.
+    new "## Isso estabelece a estrutura básica comum de uma tela de menu de jogo. Ela é chamada com o título da tela e exibe o plano de fundo, o título e a navegação."
 
     # gui/game/screens.rpy:429
     old "## Reserve space for the navigation section."
-    new "## Eserveray pacesay orfay hetay avigationnay ectionsay."
-
-    # gui/game/screens.rpy:471
-    old "Return"
-    new "Eturnray"
+    # Automatic translation.
+    new "## Reserve espaço para a seção de navegação."
 
     # gui/game/screens.rpy:534
     old "## About screen"
-    new "## Boutaay creensay"
+    # Automatic translation.
+    new "## Sobre a tela"
 
     # gui/game/screens.rpy:536
     old "## This screen gives credit and copyright information about the game and Ren'Py."
-    new "## Histay creensay ivesgay reditcay anday opyrightcay informationay aboutay hetay amegay anday Enray'Ypay."
+    # Automatic translation.
+    new "## Essa tela fornece informações de crédito e direitos autorais sobre o jogo e Ren'Py."
 
     # gui/game/screens.rpy:539
     old "## There's nothing special about this screen, and hence it also serves as an example of how to make a custom screen."
-    new "## Heretay'say othingnay pecialsay aboutay histay creensay, anday encehay itay alsoay ervessay asay anay exampleay ofay owhay otay akemay aay ustomcay creensay."
+    # Automatic translation.
+    new "## Não há nada de especial nessa tela e, portanto, ela também serve como exemplo de como criar uma tela personalizada."
 
     # gui/game/screens.rpy:546
     old "## This use statement includes the game_menu screen inside this one. The vbox child is then included inside the viewport inside the game_menu screen."
-    new "## Histay useay atementstay includesay hetay ame_menugay creensay insideay histay oneay. Hetay boxvay ildchay isay hentay includeday insideay hetay iewportvay insideay hetay ame_menugay creensay."
+    # Automatic translation.
+    new "## Essa instrução de uso inclui a tela game_menu dentro desta. O filho vbox é então incluído na janela de visualização dentro da tela game_menu."
 
     # gui/game/screens.rpy:556
     old "Version [config.version!t]\n"
-    new "Ersionvay [config.version!t]\n"
+    # Automatic translation.
+    new "Versão [config.version!t]\n"
 
     # gui/game/screens.rpy:558
     old "## gui.about is usually set in options.rpy."
-    new "## uigay.aboutay isay usuallyay etsay inay optionsay.pyray."
+    # Automatic translation.
+    new "## gui.about é normalmente definido em options.rpy."
 
     # gui/game/screens.rpy:562
     old "Made with {a=https://www.renpy.org/}Ren'Py{/a} [renpy.version_only].\n\n[renpy.license!t]"
-    new "Ademay ithway {a=https://www.renpy.org/}Enray'Ypay{/a} [renpy.version_only].\n\n[renpy.license!t]"
+    # Automatic translation.
+    new "Feito com {a=https://www.renpy.org/}Ren'Py{/a} [renpy.version_only] .\n\n[renpy.license!t]"
 
     # gui/game/screens.rpy:573
     old "## Load and Save screens"
-    new "## Oadlay anday Avesay creenssay"
+    # Automatic translation.
+    new "## Carregar e salvar telas"
 
     # gui/game/screens.rpy:575
     old "## These screens are responsible for letting the player save the game and load it again. Since they share nearly everything in common, both are implemented in terms of a third screen, file_slots."
-    new "## Hesetay creenssay areay esponsibleray orfay ettinglay hetay ayerplay avesay hetay amegay anday oadlay itay againay. Incesay heytay areshay earlynay everythingay inay ommoncay, othbay areay implementeday inay ermstay ofay aay hirdtay creensay, ile_slotsfay."
+    # Automatic translation.
+    new "## Essas telas são responsáveis por permitir que o jogador salve o jogo e o carregue novamente. Como elas têm quase tudo em comum, ambas são implementadas em termos de uma terceira tela, file_slots."
 
     # gui/game/screens.rpy:579
     old "## https://www.renpy.org/doc/html/screen_special.html#save https://www.renpy.org/doc/html/screen_special.html#load"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#avesay ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#oadlay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#save https://www.renpy.org/doc/html/screen_special.html#load"
 
     # gui/game/screens.rpy:598
     old "Page {}"
-    new "Agepay {}"
+    # Automatic translation.
+    new "Página {}"
 
     # gui/game/screens.rpy:598
     old "Automatic saves"
-    new "Utomaticaay avessay"
+    # Automatic translation.
+    new "Salvamentos automáticos"
 
     # gui/game/screens.rpy:598
     old "Quick saves"
-    new "Uickqay avessay"
+    # Automatic translation.
+    new "Salvamentos rápidos"
 
     # gui/game/screens.rpy:604
     old "## This ensures the input will get the enter event before any of the buttons do."
-    new "## Histay ensuresay hetay inputay illway etgay hetay enteray eventay eforebay anyay ofay hetay uttonsbay oday."
+    # Automatic translation.
+    new "## Isso garante que a entrada receberá o evento enter antes de qualquer um dos botões."
 
     # gui/game/screens.rpy:608
     old "## The page name, which can be edited by clicking on a button."
-    new "## Hetay agepay amenay, hichway ancay ebay editeday ybay ickingclay onay aay uttonbay."
+    # Automatic translation.
+    new "## O nome da página, que pode ser editado clicando em um botão."
 
     # gui/game/screens.rpy:620
     old "## The grid of file slots."
-    new "## Hetay idgray ofay ilefay otsslay."
+    # Automatic translation.
+    new "## A grade de slots de arquivo."
 
     # gui/game/screens.rpy:640
     old "{#file_time}%A, %B %d %Y, %H:%M"
-    new "{#file_time}%Aay, %Bay %day %Yay, %Hay:%May"
+    new "{#file_time}%A, %B %d %Y, %H:%M"
 
     # gui/game/screens.rpy:640
     old "empty slot"
-    new "emptyay otslay"
+    # Automatic translation.
+    new "slot vazio"
 
     # gui/game/screens.rpy:648
     old "## Buttons to access other pages."
-    new "## Uttonsbay otay accessay otheray agespay."
+    # Automatic translation.
+    new "## Botões para acessar outras páginas."
 
     # gui/game/screens.rpy:660
     old "<"
@@ -287,15 +325,16 @@ translate piglatin strings:
 
     # gui/game/screens.rpy:663
     old "{#auto_page}A"
-    new "{#auto_page}Aay"
+    new "{#auto_page}A"
 
     # gui/game/screens.rpy:666
     old "{#quick_page}Q"
-    new "{#quick_page}Qay"
+    new "{#quick_page}Q"
 
     # gui/game/screens.rpy:668
     old "## range(1, 10) gives the numbers from 1 to 9."
-    new "## angeray(1ay, 01ay) ivesgay hetay umbersnay omfray 1ay otay 9ay."
+    # Automatic translation.
+    new "## range(1, 10) fornece os números de 1 a 9."
 
     # gui/game/screens.rpy:672
     old ">"
@@ -303,372 +342,431 @@ translate piglatin strings:
 
     # gui/game/screens.rpy:676
     old "Upload Sync"
-    new "Ploaduay Yncsay"
+    new "Upload Sync"
 
     # gui/game/screens.rpy:680
     old "Download Sync"
-    new "Ownloadday Yncsay"
+    # Automatic translation.
+    new "Baixar o Sync"
 
     # gui/game/screens.rpy:717
     old "## Preferences screen"
-    new "## Referencespay creensay"
+    # Automatic translation.
+    new "## Tela de preferências"
 
     # gui/game/screens.rpy:719
     old "## The preferences screen allows the player to configure the game to better suit themselves."
-    new "## Hetay referencespay creensay allowsay hetay ayerplay otay onfigurecay hetay amegay otay etterbay uitsay hemselvestay."
+    # Automatic translation.
+    new "## A tela de preferências permite que o jogador configure o jogo para se adequar melhor."
 
     # gui/game/screens.rpy:722
     old "## https://www.renpy.org/doc/html/screen_special.html#preferences"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#referencespay"
-
-    # gui/game/screens.rpy:739
-    old "Display"
-    new "Isplayday"
-
-    # gui/game/screens.rpy:740
-    old "Window"
-    new "Indowway"
-
-    # gui/game/screens.rpy:741
-    old "Fullscreen"
-    new "Ullscreenfay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#preferences"
 
     # gui/game/screens.rpy:746
     old "Unseen Text"
-    new "Nseenuay Exttay"
+    # Automatic translation.
+    new "Texto invisível"
 
     # gui/game/screens.rpy:747
     old "After Choices"
-    new "Fteraay Hoicescay"
+    # Automatic translation.
+    new "Após as escolhas"
 
     # gui/game/screens.rpy:748
     old "Transitions"
-    new "Ransitionstay"
+    # Automatic translation.
+    new "Transições"
 
     # gui/game/screens.rpy:750
     old "## Additional vboxes of type \"radio_pref\" or \"check_pref\" can be added here, to add additional creator-defined preferences."
-    new "## Dditionalaay boxesvay ofay ypetay \"adio_prefray\" oray \"eck_prefchay\" ancay ebay addeday erehay, otay adday additionalay reatorcay-efinedday referencespay."
+    # Automatic translation.
+    new "## Vboxes adicionais do tipo \"radio_pref\" ou \"check_pref\" podem ser adicionadas aqui para acrescentar outras preferências definidas pelo criador."
 
     # gui/game/screens.rpy:761
     old "Text Speed"
-    new "Exttay Peedsay"
+    # Automatic translation.
+    new "Velocidade do texto"
 
     # gui/game/screens.rpy:765
     old "Auto-Forward Time"
-    new "Utoaay-Orwardfay Imetay"
+    # Automatic translation.
+    new "Tempo de encaminhamento automático"
 
     # gui/game/screens.rpy:772
     old "Music Volume"
-    new "Usicmay Olumevay"
-
-    # gui/game/screens.rpy:779
-    old "Sound Volume"
-    new "Oundsay Olumevay"
+    # Automatic translation.
+    new "Volume da música"
 
     # gui/game/screens.rpy:785
     old "Test"
-    new "Esttay"
+    # Automatic translation.
+    new "Teste"
 
     # gui/game/screens.rpy:789
     old "Voice Volume"
-    new "Oicevay Olumevay"
+    # Automatic translation.
+    new "Volume da voz"
 
     # gui/game/screens.rpy:800
     old "Mute All"
-    new "Utemay Llaay"
+    # Automatic translation.
+    new "Silenciar tudo"
 
     # gui/game/screens.rpy:876
     old "## History screen"
-    new "## Istoryhay creensay"
+    # Automatic translation.
+    new "## Tela de histórico"
 
     # gui/game/screens.rpy:878
     old "## This is a screen that displays the dialogue history to the player. While there isn't anything special about this screen, it does have to access the dialogue history stored in _history_list."
-    new "## Histay isay aay creensay hattay isplaysday hetay ialogueday istoryhay otay hetay ayerplay. Hileway heretay isnay'tay anythingay pecialsay aboutay histay creensay, itay oesday avehay otay accessay hetay ialogueday istoryhay oredstay inay history_list_ay."
+    # Automatic translation.
+    new "## Essa é uma tela que exibe o histórico de diálogo para o jogador. Embora não haja nada de especial nessa tela, ela precisa acessar o histórico de diálogo armazenado em _history_list."
 
     # gui/game/screens.rpy:882
     old "## https://www.renpy.org/doc/html/history.html"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/istoryhay.tmlhay"
+    new "## https://www.renpy.org/doc/html/history.html"
 
     # gui/game/screens.rpy:888
     old "## Avoid predicting this screen, as it can be very large."
-    new "## Voidaay redictingpay histay creensay, asay itay ancay ebay eryvay argelay."
+    # Automatic translation.
+    new "## Evite prever essa tela, pois ela pode ser muito grande."
 
     # gui/game/screens.rpy:899
     old "## This lays things out properly if history_height is None."
-    new "## Histay ayslay hingstay outay roperlypay ifay istory_heighthay isay Onenay."
+    # Automatic translation.
+    new "## Isso organiza as coisas corretamente se history_height for None."
 
     # gui/game/screens.rpy:909
     old "## Take the color of the who text from the Character, if set."
-    new "## Aketay hetay olorcay ofay hetay howay exttay omfray hetay Haractercay, ifay etsay."
+    # Automatic translation.
+    new "## Pegue a cor do texto who do caractere, se definido."
 
     # gui/game/screens.rpy:918
     old "The dialogue history is empty."
-    new "Hetay ialogueday istoryhay isay emptyay."
+    # Automatic translation.
+    new "O histórico de diálogo está vazio."
 
     # gui/game/screens.rpy:921
     old "## This determines what tags are allowed to be displayed on the history screen."
-    new "## Histay eterminesday hatway agstay areay alloweday otay ebay isplayedday onay hetay istoryhay creensay."
+    # Automatic translation.
+    new "## Isso determina quais tags podem ser exibidas na tela de histórico."
 
     # gui/game/screens.rpy:966
     old "## Help screen"
-    new "## Elphay creensay"
+    # Automatic translation.
+    new "## Tela de ajuda"
 
     # gui/game/screens.rpy:968
     old "## A screen that gives information about key and mouse bindings. It uses other screens (keyboard_help, mouse_help, and gamepad_help) to display the actual help."
-    new "## Aay creensay hattay ivesgay informationay aboutay eykay anday ousemay indingsbay. Tiay usesay otheray creenssay (eyboard_helpkay, ouse_helpmay, anday amepad_helpgay) otay isplayday hetay actualay elphay."
+    # Automatic translation.
+    new "## Uma tela que fornece informações sobre as combinações de teclas e mouse. Ela usa outras telas (keyboard_help, mouse_help e gamepad_help) para exibir a ajuda real."
 
     # gui/game/screens.rpy:987
     old "Keyboard"
-    new "Eyboardkay"
+    # Automatic translation.
+    new "Teclado"
 
     # gui/game/screens.rpy:988
     old "Mouse"
-    new "Ousemay"
+    new "Mouse"
 
     # gui/game/screens.rpy:991
     old "Gamepad"
-    new "Amepadgay"
+    # Automatic translation.
+    new "Controle de jogo"
 
     # gui/game/screens.rpy:1004
     old "Enter"
-    new "Ntereay"
+    # Automatic translation.
+    new "Entrar"
 
     # gui/game/screens.rpy:1005
     old "Advances dialogue and activates the interface."
-    new "Dvancesaay ialogueday anday activatesay hetay interfaceay."
+    # Automatic translation.
+    new "Avança o diálogo e ativa a interface."
 
     # gui/game/screens.rpy:1008
     old "Space"
-    new "Pacesay"
+    # Automatic translation.
+    new "Espaço"
 
     # gui/game/screens.rpy:1009
     old "Advances dialogue without selecting choices."
-    new "Dvancesaay ialogueday ithoutway electingsay oiceschay."
+    # Automatic translation.
+    new "Avança o diálogo sem selecionar opções."
 
     # gui/game/screens.rpy:1012
     old "Arrow Keys"
-    new "Rrowaay Eyskay"
+    # Automatic translation.
+    new "Teclas de seta"
 
     # gui/game/screens.rpy:1013
     old "Navigate the interface."
-    new "Avigatenay hetay interfaceay."
+    # Automatic translation.
+    new "Navegue pela interface."
 
     # gui/game/screens.rpy:1016
     old "Escape"
-    new "Scapeeay"
+    # Automatic translation.
+    new "Fuga"
 
     # gui/game/screens.rpy:1017
     old "Accesses the game menu."
-    new "Ccessesaay hetay amegay enumay."
+    # Automatic translation.
+    new "Acessa o menu do jogo."
 
     # gui/game/screens.rpy:1020
     old "Ctrl"
-    new "Trlcay"
+    new "Ctrl"
 
     # gui/game/screens.rpy:1021
     old "Skips dialogue while held down."
-    new "Kipssay ialogueday hileway eldhay ownday."
+    # Automatic translation.
+    new "Pula o diálogo quando pressionado."
 
     # gui/game/screens.rpy:1024
     old "Tab"
-    new "Abtay"
+    new "Tab"
 
     # gui/game/screens.rpy:1025
     old "Toggles dialogue skipping."
-    new "Ogglestay ialogueday kippingsay."
+    # Automatic translation.
+    new "Alterna o salto de diálogo."
 
     # gui/game/screens.rpy:1028
     old "Page Up"
-    new "Agepay Puay"
+    # Automatic translation.
+    new "Página para cima"
 
     # gui/game/screens.rpy:1029
     old "Rolls back to earlier dialogue."
-    new "Ollsray ackbay otay earlieray ialogueday."
+    # Automatic translation.
+    new "Volta ao diálogo anterior."
 
     # gui/game/screens.rpy:1032
     old "Page Down"
-    new "Agepay Ownday"
+    # Automatic translation.
+    new "Página para baixo"
 
     # gui/game/screens.rpy:1033
     old "Rolls forward to later dialogue."
-    new "Ollsray orwardfay otay aterlay ialogueday."
+    # Automatic translation.
+    new "Rola para frente o diálogo posterior."
 
     # gui/game/screens.rpy:1037
     old "Hides the user interface."
-    new "Ideshay hetay useray interfaceay."
+    # Automatic translation.
+    new "Oculta a interface do usuário."
 
     # gui/game/screens.rpy:1041
     old "Takes a screenshot."
-    new "Akestay aay creenshotsay."
+    # Automatic translation.
+    new "Faz uma captura de tela."
 
     # gui/game/screens.rpy:1045
     old "Toggles assistive {a=https://www.renpy.org/l/voicing}self-voicing{/a}."
-    new "Ogglestay assistiveay {a=https://www.renpy.org/l/voicing}elfsay-oicingvay{/a}."
+    # Automatic translation.
+    new "Alterna a assistência {a=https://www.renpy.org/l/voicing}auto-voz{/a}."
 
     # gui/game/screens.rpy:1049
     old "Opens the accessibility menu."
-    new "Pensoay hetay accessibilityay enumay."
+    # Automatic translation.
+    new "Abre o menu de acessibilidade."
 
     # gui/game/screens.rpy:1055
     old "Left Click"
-    new "Eftlay Lickcay"
+    # Automatic translation.
+    new "Clique com o botão esquerdo do mouse"
 
     # gui/game/screens.rpy:1059
     old "Middle Click"
-    new "Iddlemay Lickcay"
+    # Automatic translation.
+    new "Clique no meio"
 
     # gui/game/screens.rpy:1063
     old "Right Click"
-    new "Ightray Lickcay"
+    # Automatic translation.
+    new "Clique com o botão direito do mouse"
 
     # gui/game/screens.rpy:1067
     old "Mouse Wheel Up\nClick Rollback Side"
-    new "Ousemay Heelway Puay\nLickcay Ollbackray Idesay"
+    # Automatic translation.
+    new "Roda do mouse para cima\nClique em Rollback Side"
 
     # gui/game/screens.rpy:1071
     old "Mouse Wheel Down"
-    new "Ousemay Heelway Ownday"
+    # Automatic translation.
+    new "Roda do mouse para baixo"
 
     # gui/game/screens.rpy:1078
     old "Right Trigger\nA/Bottom Button"
-    new "Ightray Riggertay\nAay/Ottombay Uttonbay"
+    # Automatic translation.
+    new "Gatilho direito\nBotão A/inferior"
 
     # gui/game/screens.rpy:1082
     old "Left Trigger\nLeft Shoulder"
-    new "Eftlay Riggertay\nEftlay Houldersay"
+    # Automatic translation.
+    new "Gatilho esquerdo\nOmbro esquerdo"
 
     # gui/game/screens.rpy:1086
     old "Right Shoulder"
-    new "Ightray Houldersay"
+    # Automatic translation.
+    new "Ombro direito"
 
     # gui/game/screens.rpy:1091
     old "D-Pad, Sticks"
-    new "Day-Adpay, Tickssay"
+    # Automatic translation.
+    new "D-Pad, bastões"
 
     # gui/game/screens.rpy:1095
     old "Start, Guide"
-    new "Tartsay, Uidegay"
+    # Automatic translation.
+    new "Início, Guia"
 
     # gui/game/screens.rpy:1099
     old "Y/Top Button"
-    new "Yay/Optay Uttonbay"
+    # Automatic translation.
+    new "Botão Y/Top"
 
     # gui/game/screens.rpy:1102
     old "Calibrate"
-    new "Alibratecay"
+    # Automatic translation.
+    new "Calibrar"
 
     # gui/game/screens.rpy:1130
     old "## Additional screens"
-    new "## Dditionalaay creenssay"
+    # Automatic translation.
+    new "## Telas adicionais"
 
     # gui/game/screens.rpy:1134
     old "## Confirm screen"
-    new "## Onfirmcay creensay"
+    # Automatic translation.
+    new "## Confirmar tela"
 
     # gui/game/screens.rpy:1136
     old "## The confirm screen is called when Ren'Py wants to ask the player a yes or no question."
-    new "## Hetay onfirmcay creensay isay alledcay henway Enray'Ypay antsway otay askay hetay ayerplay aay esyay oray onay uestionqay."
+    # Automatic translation.
+    new "## A tela de confirmação é chamada quando Ren'Py quer fazer uma pergunta de sim ou não ao jogador."
 
     # gui/game/screens.rpy:1139
     old "## https://www.renpy.org/doc/html/screen_special.html#confirm"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#onfirmcay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#confirm"
 
     # gui/game/screens.rpy:1143
     old "## Ensure other screens do not get input while this screen is displayed."
-    new "## Nsureeay otheray creenssay oday otnay etgay inputay hileway histay creensay isay isplayedday."
-
-    # gui/game/screens.rpy:1167
-    old "Yes"
-    new "Esyay"
-
-    # gui/game/screens.rpy:1168
-    old "No"
-    new "Onay"
+    # Automatic translation.
+    new "## Certifique-se de que outras telas não recebam entrada enquanto essa tela estiver sendo exibida."
 
     # gui/game/screens.rpy:1170
     old "## Right-click and escape answer \"no\"."
-    new "## Ightray-ickclay anday escapeay answeray \"onay\"."
+    # Automatic translation.
+    new "## Clique com o botão direito do mouse e escape a resposta \"não\"."
 
     # gui/game/screens.rpy:1197
     old "## Skip indicator screen"
-    new "## Kipsay indicatoray creensay"
+    # Automatic translation.
+    new "## Pular a tela do indicador"
 
     # gui/game/screens.rpy:1199
     old "## The skip_indicator screen is displayed to indicate that skipping is in progress."
-    new "## Hetay kip_indicatorsay creensay isay isplayedday otay indicateay hattay kippingsay isay inay rogresspay."
+    # Automatic translation.
+    new "## A tela skip_indicator é exibida para indicar que o salto está em andamento."
 
     # gui/game/screens.rpy:1202
     old "## https://www.renpy.org/doc/html/screen_special.html#skip-indicator"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#kipsay-indicatoray"
+    new "## https://www.renpy.org/doc/html/screen_special.html#skip-indicator"
 
     # gui/game/screens.rpy:1214
     old "Skipping"
-    new "Kippingsay"
+    # Automatic translation.
+    new "Pular"
 
     # gui/game/screens.rpy:1221
     old "## This transform is used to blink the arrows one after another."
-    new "## Histay ansformtray isay useday otay inkblay hetay arrowsay oneay afteray anotheray."
+    # Automatic translation.
+    new "## Essa transformação é usada para piscar as setas uma após a outra."
 
     # gui/game/screens.rpy:1248
     old "## We have to use a font that has the BLACK RIGHT-POINTING SMALL TRIANGLE glyph in it."
-    new "## Eway avehay otay useay aay ontfay hattay ashay hetay Lackbay Ightray-Ointingpay Mallsay Riangletay yphglay inay itay."
+    # Automatic translation.
+    new "## Temos que usar uma fonte que tenha o glifo BLACK RIGHT-POINTING SMALL TRIANGLE."
 
     # gui/game/screens.rpy:1253
     old "## Notify screen"
-    new "## Otifynay creensay"
+    # Automatic translation.
+    new "## Tela de notificação"
 
     # gui/game/screens.rpy:1255
     old "## The notify screen is used to show the player a message. (For example, when the game is quicksaved or a screenshot has been taken.)"
-    new "## Hetay otifynay creensay isay useday otay owshay hetay ayerplay aay essagemay. (Orfay exampleay, henway hetay amegay isay uicksavedqay oray aay creenshotsay ashay eenbay akentay.)"
+    # Automatic translation.
+    new "## A tela de notificação é usada para mostrar uma mensagem ao jogador. (Por exemplo, quando o jogo é salvo rapidamente ou quando uma captura de tela é feita)."
 
     # gui/game/screens.rpy:1258
     old "## https://www.renpy.org/doc/html/screen_special.html#notify-screen"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#otifynay-creensay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#notify-screen"
 
     # gui/game/screens.rpy:1292
     old "## NVL screen"
-    new "## Vlnay creensay"
+    # Automatic translation.
+    new "## Tela NVL"
 
     # gui/game/screens.rpy:1294
     old "## This screen is used for NVL-mode dialogue and menus."
-    new "## Histay creensay isay useday orfay Vlnay-odemay ialogueday anday enusmay."
+    # Automatic translation.
+    new "## Essa tela é usada para o diálogo e os menus do modo NVL."
 
     # gui/game/screens.rpy:1296
     old "## https://www.renpy.org/doc/html/screen_special.html#nvl"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/creen_specialsay.tmlhay#vlnay"
+    new "## https://www.renpy.org/doc/html/screen_special.html#nvl"
 
     # gui/game/screens.rpy:1307
     old "## Displays dialogue in either a vpgrid or the vbox."
-    new "## Isplaysday ialogueday inay eitheray aay pgridvay oray hetay boxvay."
+    # Automatic translation.
+    new "## Exibe o diálogo em uma vpgrid ou na vbox."
 
     # gui/game/screens.rpy:1320
     old "## Displays the menu, if given. The menu may be displayed incorrectly if config.narrator_menu is set to True."
-    new "## Isplaysday hetay enumay, ifay ivengay. Hetay enumay aymay ebay isplayedday incorrectlyay ifay onfigcay.arrator_menunay isay etsay otay Ruetay."
+    # Automatic translation.
+    new "## Exibe o menu, se fornecido. O menu poderá ser exibido incorretamente se config.narrator_menu estiver definido como True."
 
     # gui/game/screens.rpy:1350
     old "## This controls the maximum number of NVL-mode entries that can be displayed at once."
-    new "## Histay ontrolscay hetay aximummay umbernay ofay Vlnay-odemay entriesay hattay ancay ebay isplayedday atay onceay."
+    # Automatic translation.
+    new "## Isso controla o número máximo de entradas do modo NVL que podem ser exibidas de uma vez."
 
     # gui/game/screens.rpy:1410
     old "## Bubble screen"
-    new "## Ubblebay creensay"
+    # Automatic translation.
+    new "## Tela de bolhas"
 
     # gui/game/screens.rpy:1412
     old "## The bubble screen is used to display dialogue to the player when using speech bubbles. The bubble screen takes the same parameters as the say screen, must create a displayable with the id of \"what\", and can create displayables with the \"namebox\", \"who\", and \"window\" ids."
-    new "## Hetay ubblebay creensay isay useday otay isplayday ialogueday otay hetay ayerplay henway usingay peechsay ubblesbay. Hetay ubblebay creensay akestay hetay amesay arameterspay asay hetay aysay creensay, ustmay reatecay aay isplayableday ithway hetay iday ofay \"hatway\", anday ancay reatecay isplayablesday ithway hetay \"ameboxnay\", \"howay\", anday \"indowway\" idsay."
+    # Automatic translation.
+    new "## A tela de balão é usada para exibir o diálogo para o jogador ao usar balões de fala. A tela de bolhas recebe os mesmos parâmetros que a tela de dizer, deve criar um exibível com o ID de \"what\" e pode criar exibíveis com os IDs \"namebox\", \"who\" e \"window\"."
 
     # gui/game/screens.rpy:1417
     old "## https://www.renpy.org/doc/html/bubble.html#bubble-screen"
-    new "## ttpshay://wwway.enpyray.orgay/ocday/tmlhay/ubblebay.tmlhay#ubblebay-creensay"
+    new "## https://www.renpy.org/doc/html/bubble.html#bubble-screen"
 
     # gui/game/screens.rpy:1501
     old "## Mobile Variants"
-    new "## Obilemay Ariantsvay"
+    # Automatic translation.
+    new "## Variantes do celular"
 
     # gui/game/screens.rpy:1508
     old "## Since a mouse may not be present, we replace the quick menu with a version that uses fewer and bigger buttons that are easier to touch."
-    new "## Incesay aay ousemay aymay otnay ebay resentpay, eway eplaceray hetay uickqay enumay ithway aay ersionvay hattay usesay ewerfay anday iggerbay uttonsbay hattay areay easieray otay ouchtay."
+    # Automatic translation.
+    new "## Como o mouse pode não estar presente, substituímos o menu rápido por uma versão que usa menos botões e maiores, que são mais fáceis de tocar."
 
     # gui/game/screens.rpy:1526
     old "Menu"
-    new "Enumay"
+    new "Menu"
+
+translate portuguese strings:
+
+    # gui/game/screens.rpy:411
+    old "## The scroll parameter can be None, or one of \"viewport\" or \"vpgrid\". This screen is intended to be used with one or more children, which are transcluded (placed) inside it."
+    # Automatic translation.
+    new "## O parâmetro de rolagem pode ser Nenhum ou um dos parâmetros \"viewport\" ou \"vpgrid\". Essa tela deve ser usada com um ou mais filhos, que são transcluídos (colocados) dentro dela."
+
