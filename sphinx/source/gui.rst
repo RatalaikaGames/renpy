@@ -217,11 +217,6 @@ dialogue.
 
     Sets the size of character names.
 
-.. var:: gui.textbox_height = 278
-
-    The height of the textbox. This should be the same height as the height
-    of gui/textbox.png.
-
 By default, the character name label uses the accent color. The color can
 be easily changed when defining a character::
 
@@ -982,12 +977,12 @@ The textbox (or window) is the window the dialogue is displayed in. In addition
 to changing gui/textbox.png, the following variables control how the textbox
 is displayed.
 
-.. var: gui.textbox_height = 278
+.. var:: gui.textbox_height = 278
 
     The height of the textbox window, which should also be the height of gui/
     textbox.png.
 
-.. var: gui.textbox_yalign = 1.0
+.. var:: gui.textbox_yalign = 1.0
 
     The placement of the textbox vertically on the screen. 0.0 is the top,
     0.5 is center, and 1.0 is the bottom.

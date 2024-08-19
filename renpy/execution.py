@@ -159,16 +159,24 @@ class Context(renpy.object.Object):
 
     def __repr__(self):
 
-        if not self.current:
-            return "<Context>"
+        try:
 
-        node = renpy.game.script.lookup(self.current)
+            if self.current is not None:
 
-        return "<Context: {}:{} {!r}>".format(
-            node.filename,
-            node.linenumber,
-            node.diff_info(),
-            )
+                node = renpy.game.script.lookup(self.current)
+
+                return "<Context: {}:{} {!r}>".format(
+                    node.filename,
+                    node.linenumber,
+                    node.diff_info(),
+                    )
+
+        except Exception:
+            pass
+
+        return "<Context>"
+
+
 
     def after_upgrade(self, version):
         if version < 1:
@@ -333,6 +341,9 @@ class Context(renpy.object.Object):
         # The translate identifier of the last say statement with
         # interact = False.
         self.deferred_translate_identifier = None
+
+        # When adding something here, consider if it needs to be added in
+        # renpy.rollback.Rollback.purge_unreachable.
 
     def replace_node(self, old, new):
 
