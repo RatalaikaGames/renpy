@@ -72,16 +72,19 @@ class CacheEntry(object):
             rv += self.width * self.height
 
         if self.texture is not None:
-            #MBG - not sure what this is without a get_size_texels but this is better than nothing
-            if hasattr(self.texture,"get_size_texels"):
-                rv += self.texture.get_size_texels()
-            else:
-                rv += self.bounds[2] * self.bounds[3]
-                
+            
+            has_mipmaps = getattr(self.texture, "has_mipmaps", None)
+
             if has_mipmaps and has_mipmaps():
                 mipmap_multiplier = 1.34
             else:
                 mipmap_multiplier = 1.0
+
+            #MBG - not sure what this is without a get_size_texels but this is better than nothing
+            if hasattr(self.texture,"get_size_texels"):
+                rv += self.texture.get_size_texels()
+            else:
+                rv += int(self.bounds[2] * self.bounds[3] * mipmap_multiplier)
 
         return rv
 
@@ -935,7 +938,7 @@ class Composite(ImageBase):
         os = self.oversample
         size = [s*os for s in size]
 
-        rv = renpy.display.pgrender.surface(size, True, True)
+        rv = renpy.display.pgrender.surface(size, True)
 
         for pos, im in zip(self.positions, self.images):
             rv.blit(cache.get(im), [p*os for p in pos])
