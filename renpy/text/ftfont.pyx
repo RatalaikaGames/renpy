@@ -423,7 +423,7 @@ cdef class FTFont:
 
         rv.index = index
 
-        error = FT_Load_Glyph(face, index, self.hinting | FT_LOAD_COLOR)
+        error = FT_Load_Glyph(face, index, self.hinting)
         if error:
             raise FreetypeError(error)
 
@@ -494,7 +494,7 @@ cdef class FTFont:
             rv.bitmap_left = face.glyph.bitmap_left + self.expand // 2
             rv.bitmap_top = face.glyph.bitmap_top - self.expand // 2
 
-        if bitmap.pixel_mode != FT_PIXEL_MODE_GRAY and bitmap.pixel_mode != FT_PIXEL_MODE_BGRA:
+        if bitmap.pixel_mode != FT_PIXEL_MODE_GRAY: #and bitmap.pixel_mode != FT_PIXEL_MODE_BGRA:
             FT_Bitmap_Convert(library, &(bitmap), &(rv.bitmap), 4)
 
             # Freetype gives us a bitmap where values range from 0 to 1.
@@ -793,7 +793,7 @@ cdef class FTFont:
 
             if glyph.draw:
 
-                if cache.bitmap.pixel_mode == FT_PIXEL_MODE_BGRA:
+                if False: #cache.bitmap.pixel_mode == FT_PIXEL_MODE_BGRA:
 
                     for py from 0 <= py < rows:
 
