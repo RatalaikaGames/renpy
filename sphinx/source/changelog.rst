@@ -42,6 +42,9 @@ system that allows dialogue to be displayed in comic-like speech bubbles, and
 includes an interactive editor that allows the speech bubbles to be
 repositions, and the look of a bubble to be changed interactively.
 
+Adding bubble support to an existing game requires adding files and script
+to the game. The bubble documentation includes the required changes.
+
 Platform Improvements
 ---------------------
 
@@ -140,7 +143,7 @@ These releases add support for two new image formats:
   sacrificing image quality.
 
 * SVG files are a vector graphics format used on the web. Ren'Py supports a
-  SVG files containing a large subset of SVGs  capability. (Notably, Ren'Py
+  SVG files containing a subset of SVGs  capability. (Notably, Ren'Py
   does not support text in SVG files.) Ren'Py will automatically oversample
   (or undersample) SVGs when the game is scaled, to ensure the SVGs remain
   sharp at any resolution, similar to the way it oversamples text. This makes
@@ -222,7 +225,7 @@ in a valid Python file. For example::
 
     """renpy
     init python:
-    """"
+    """
 
     flag = True
 
@@ -351,7 +354,17 @@ There are several new properties that affect the 3D Stage:
     Rotates a sprite or the camera around all three axes at once,
     using the shortest path on a sphere.
 
+Live2D
+------
 
+Ren'Py now supports the new features found in Live2D Cubism Editor
+4.2. To support these features, it should be run with Cubism 4 Sdk
+for Native R6_2 or later.
+
+Live2D is now supported on x86_64 Android.
+
+The new Live2D.blend_opacity method makes it possible for a
+Live2D update_function to change the opacity of the Live2D model.
 
 More New Features
 -----------------

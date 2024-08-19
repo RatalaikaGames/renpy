@@ -293,7 +293,6 @@ class Context(object):
         Returns True if any variable cannot be compared.
         """
 
-
         try:
 
             if renpy.config.at_transform_compare_full_context:
@@ -336,9 +335,16 @@ class ATLTransformBase(renpy.object.Object):
     def __init__(self, atl, context, parameters):
 
         # The constructor will be called by atltransform.
-
         if parameters is None:
             parameters = ATLTransformBase.parameters
+        else:
+
+            # Apply the default parameters.
+            context = context.copy()
+
+            for k, v in parameters.parameters:
+                if v is not None:
+                    context[k] = renpy.python.py_eval(v, locals=context)
 
         # The parameters that we take.
         self.parameters = parameters
@@ -391,6 +397,7 @@ class ATLTransformBase(renpy.object.Object):
 
         if renpy.game.context().init_phase:
             compile_queue.append(self)
+
 
     def _handles_event(self, event):
 
@@ -469,10 +476,6 @@ class ATLTransformBase(renpy.object.Object):
         _args = kwargs.pop("_args", None)
 
         context = self.context.context.copy()
-
-        for k, v in self.parameters.parameters:
-            if v is not None:
-                context[k] = renpy.python.py_eval(v)
 
         positional = list(self.parameters.positional)
         args = list(args)
@@ -976,22 +979,29 @@ class Block(Statement):
     def visit(self):
         return [ j for i in self.statements for j in i.visit() ]
 
-incompatible_props = {"alignaround" : {"xaround", "yaround", "xanchoraround", "yanchoraround"},
-                      "align" : {"xanchor", "yanchor", "xpos", "ypos"},
-                      "anchor" : {"xanchor", "yanchor"},
-                      "angle" : {"xpos", "ypos"},
-                      "around" : {"xaround", "yaround", "xanchoraround", "yanchoraround"},
-                      "offset" : {"xoffset", "yoffset"},
-                      "pos" : {"xpos", "ypos"},
-                      "radius" : {"xpos", "ypos"},
-                      "size" : {"xsize", "ysize"},
-                      "xalign" : {"xpos", "xanchor"},
-                      "xcenter" : {"xpos", "xanchor"},
-                      "xycenter" : {"xpos", "ypos", "xanchor", "yanchor"},
-                      "xysize" : {"xsize", "ysize"},
-                      "yalign" : {"ypos", "yanchor"},
-                      "ycenter" : {"ypos", "yanchor"},
-                      }
+# A list of properties
+incompatible_props = {
+    "alignaround" : {"xaround", "yaround", "xanchoraround", "yanchoraround"},
+    "align" : {"xanchor", "yanchor", "xpos", "ypos"},
+    "anchor" : {"xanchor", "yanchor"},
+    "angle" : {"xpos", "ypos"},
+    "around" : {"xaround", "yaround", "xanchoraround", "yanchoraround"},
+    "offset" : {"xoffset", "yoffset"},
+    "pos" : {"xpos", "ypos"},
+    "radius" : {"xpos", "ypos"},
+    "size" : {"xsize", "ysize"},
+    "xalign" : {"xpos", "xanchor"},
+    "xcenter" : {"xpos", "xanchor"},
+    "xycenter" : {"xpos", "ypos", "xanchor", "yanchor"},
+    "xysize" : {"xsize", "ysize"},
+    "yalign" : {"ypos", "yanchor"},
+    "ycenter" : {"ypos", "yanchor"},
+    }
+
+# A list of sets of pairs of properties that do not conflict.
+compatible_pairs = [
+    {"radius", "angle"}
+]
 
 # This can become one of four things:
 #
@@ -1042,6 +1052,14 @@ class RawMultipurpose(RawStatement):
             old = None
 
         self.properties.append((name, exprs))
+
+        if old is not None:
+            pair = { old, name }
+
+            for i in compatible_pairs:
+                if pair == i:
+                    old = None
+
         return old
 
     def add_expression(self, expr, with_clause):

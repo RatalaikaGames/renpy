@@ -28,7 +28,7 @@ locations.
 
 Pressing the properties buttons will select between sets of properties
 associated with the speech bubble. For the default speech bubble, the
-different properties control the positionm of the speech bubble tail.
+different properties control the position of the speech bubble tail.
 
 Once you've changed the area or properties for a character (or group of
 characters with the same image tage), those properties remain set until
@@ -42,12 +42,13 @@ clicking on a button will prevent the current line from setting the value.
 Tips
 ----
 
-The speech bubbles use the same identifiers used by the translation system.
-These identifiers can change if:
+The speech bubbles use the same identifiers used by the translation system,
+see the :ref:`Translation Tips <translation-tips>` for more information
+about them. These identifiers can change if:
 
 * The text of a line changes.
-* A second line with the same text inside the same label is added or removed.
-* The label before the line is added or removes (however, adding or removing
+* Another line with the same text inside the same label is added or removed.
+* A label before the line is added or removed (however, adding or removing
   a label with the ``hide`` clause will not change the translation identifier).
 
 If you edit a scene, it's suggested that you replay through it to make sure
@@ -57,7 +58,7 @@ the changes did not affect speech bubble placement.
 Configuration Variables
 -----------------------
 
-The speech bubble system is controlled by variables in th ``bubble`` namespace,
+The speech bubble system is controlled by variables in the ``bubble`` namespace,
 and by the ``bubble`` screen and its associated styles.
 
 The ``bubble`` namespace contains the following variables:
@@ -89,8 +90,8 @@ The ``bubble`` namespace contains the following variables:
 
     These are properties, apart from the area, that can be used to customize
     the speech bubble. This is a map from the name of a set of proprerties
-    to a dictionary of properties and values. These properties supersede the properties given
-    the character, and are then supplied to the ``bubble`` screen.
+    to a dictionary of properties and values. These properties supersede those
+    given to the character, and are then supplied to the ``bubble`` screen.
 
     This uses the same prefixing system as :func:`Character` does. Properties
     beginning with ``window_`` have the prefix removed, and are passed to the
@@ -186,3 +187,105 @@ It's separate from the say screen as it uses its own set of styles, including
 ``bubble_window``, ``bubble_what``, ``bubble_namebox``, and ``bubble_who``.
 These styles can be customized directly to avoid having to set a property
 in all of the sets of properties in :var:`bubble.properties`.
+
+
+Adding Bubble Support to a Game
+-------------------------------
+
+Games made before the release of Ren'Py 8.1 won't include the default screens
+and settings required for the speech bubble system. There are two things you
+need to do to fix this. First, download:
+
+* https://raw.githubusercontent.com/renpy/renpy/master/gui/game/gui/bubble.png
+* https://raw.githubusercontent.com/renpy/renpy/master/gui/game/gui/thoughtbubble.png
+
+And place the files in the ``game/gui`` directory of your game. Then, add this to
+the end of screens.rpy::
+
+    ## Bubble screen ###############################################################
+    ##
+    ## The bubble screen is used to display dialogue to the player when using
+    ## speech bubbles. The bubble screen takes the same parameters as the say
+    ## screen, must create a displayable with the id of "what", and can create
+    ## displayables with the "namebox", "who", and "window" ids.
+    ##
+    ## https://www.renpy.org/doc/html/bubble.html#bubble-screen
+
+    screen bubble(who, what):
+        style_prefix "bubble"
+
+        window:
+            id "window"
+
+            if who is not None:
+
+                window:
+                    id "namebox"
+                    style "bubble_namebox"
+
+                    text who:
+                        id "who"
+
+            text what:
+                id "what"
+
+    style bubble_window is empty
+    style bubble_namebox is empty
+    style bubble_who is default
+    style bubble_what is default
+
+    style bubble_window:
+        xpadding 30
+        top_padding 5
+        bottom_padding 5
+
+    style bubble_namebox:
+        xalign 0.5
+
+    style bubble_who:
+        xalign 0.5
+        textalign 0.5
+        color "#000"
+
+    style bubble_what:
+        align (0.5, 0.5)
+        text_align 0.5
+        layout "subtitle"
+        color "#000"
+
+    define bubble.frame = Frame("gui/bubble.png", 55, 55, 55, 95)
+    define bubble.thoughtframe = Frame("gui/thoughtbubble.png", 55, 55, 55, 55)
+
+    define bubble.properties = {
+        "bottom_left" : {
+            "window_background" : Transform(bubble.frame, xzoom=1, yzoom=1),
+            "window_bottom_padding" : 27,
+        },
+
+        "bottom_right" : {
+            "window_background" : Transform(bubble.frame, xzoom=-1, yzoom=1),
+            "window_bottom_padding" : 27,
+        },
+
+        "top_left" : {
+            "window_background" : Transform(bubble.frame, xzoom=1, yzoom=-1),
+            "window_top_padding" : 27,
+        },
+
+        "top_right" : {
+            "window_background" : Transform(bubble.frame, xzoom=-1, yzoom=-1),
+            "window_top_padding" : 27,
+        },
+
+        "thought" : {
+            "window_background" : bubble.thoughtframe,
+        }
+    }
+
+    define bubble.expand_area = {
+        "bottom_left" : (0, 0, 0, 22),
+        "bottom_right" : (0, 0, 0, 22),
+        "top_left" : (0, 22, 0, 0),
+        "top_right" : (0, 22, 0, 0),
+        "thought" : (0, 0, 0, 0),
+    }

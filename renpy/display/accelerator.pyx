@@ -860,7 +860,7 @@ cdef class RenderTransform:
         if state.zzoom and z11:
             zzoom = (z11 - state.zpos) / z11
 
-            m = Matrix.offset(width / 2, -height / 2, 0.0)
+            m = Matrix.offset(-width / 2, -height / 2, 0.0)
             m = Matrix.scale(zzoom, zzoom, 1) * m
             m = Matrix.offset(width / 2, height / 2, 0.0) * m
 
@@ -950,6 +950,9 @@ cdef class RenderTransform:
 
         self.widtho = widtho
         self.heighto = heighto
+
+        self.state.available_width = widtho
+        self.state.available_height = heighto
 
         transform = self.transform
         state = self.state

@@ -2094,10 +2094,9 @@ class SLUse(SLNode):
             args = [ ]
             kwargs = { }
 
-        if ctx.updating:
-            scope = ctx.old_cache.get("scope", None) or ctx.miss_cache.get("scope", None) or { }
-        else:
-            scope = { }
+        scope = ctx.old_cache.get("scope", None) or ctx.miss_cache.get("scope", None) or { }
+        if not ctx.updating:
+            scope.clear()
 
         # Apply the arguments to the parameters (if present) or to the scope of the used screen.
         if ast.parameters is not None:
@@ -2115,9 +2114,7 @@ class SLUse(SLNode):
             scope.update(kwargs)
 
         scope["_scope"] = scope
-
-        if not ctx.predicting:
-            ctx.new_cache["scope"] = scope
+        ctx.new_cache["scope"] = scope
 
         # Run the child screen.
         ctx.scope = scope
@@ -2368,10 +2365,9 @@ class SLCustomUse(SLNode):
 
         ast = self.ast
 
-        if ctx.updating:
-            scope = ctx.old_cache.get("scope", None) or ctx.miss_cache.get("scope", None) or { }
-        else:
-            scope = { }
+        scope = ctx.old_cache.get("scope", None) or ctx.miss_cache.get("scope", None) or { }
+        if not ctx.updating:
+            scope.clear()
 
         # Apply the arguments to the parameters (if present) or to the scope of the used screen.
         if ast.parameters is not None:
@@ -2389,9 +2385,7 @@ class SLCustomUse(SLNode):
             scope.update(kwargs)
 
         scope["_scope"] = scope
-
-        if not ctx.predicting:
-            ctx.new_cache["scope"] = scope
+        ctx.new_cache["scope"] = scope
 
         # Run the child screen.
         ctx.scope = scope

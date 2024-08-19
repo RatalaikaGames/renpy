@@ -12,12 +12,35 @@ features.
 Incompatible changes to the GUI are documented at :ref:`gui-changes`, as
 such changes only take effect when the GUI is regenerated.
 
+Pending Deprecations
+--------------------
+
+These are changes that will take effect in a future version of Ren'Py.
+
+Support for Python 2 and Ren'Py 7 will be dropped 1 year after Ren'Py 8.1 is
+released, in May 2024.
+
+The original OpenGL renderer will be removed 1 year after Ren'Py 8.1 is
+released, in May 2024. If your game sets config.gl2 to False, you should
+set it to True, and make sure your game runs well. If it doesn't, please
+report any issues. When reporting issues, please determine the hardware
+(device and GPU), os and driver versions, and year of manufacture.
+
 
 .. _incompatible-8.1.0:
 .. _incompatible-7.6.0:
 
 8.1.0 / 7.6.0
 -------------
+
+**Speech Bubbles** Adding bubble support to an existing game requires
+adding files and script to the game. The :doc:`bubble` documentation
+includes the required changes.
+
+
+**Live2D** Ren'Py now requires Live2D Cubism 4 SDK for Native R6_2 or later.
+It may refuse to run if an older version is used.
+
 
 **Texture Memory** Ren'Py now accounts for texture memory more precisely.
 In general, games can raise :var:`config.image_cache_size_mb` by 33%, and
@@ -29,6 +52,11 @@ a default fadeout of 0.016 seconds, to prevent pops. This is controlled by
 the :var:`config.fadeout_audio` variable. To disable the fadeout::
 
     define config.fadeout_audio = 0.0
+
+Fading is now logarithmic, which sounds smoother to the human ear as it matches
+the way ears perceive sound. To revert to the old linear fades::
+
+    define config.linear_fades = True
 
 
 **Translate None** Ren'Py will now produce an error when encountering an explicit
@@ -138,7 +166,7 @@ the store can be set to non-constant with (for example)::
 and 1.0 is 0 dB (power). To use the old format, where the samples were multiplied
 by volume ** 2, use::
 
-    define config.quadratic_volume = True
+    define config.quadratic_volumes = True
 
 Alternatively, you can determine new default volumes for :var:`config.default_music_volume`,
 :var:`config.default_sfx_volume`, and :var:`config.default_voice_volume` variables. If any
