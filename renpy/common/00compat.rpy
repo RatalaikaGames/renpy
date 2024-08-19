@@ -208,7 +208,6 @@ init -1900 python:
         if version <= (7, 3, 5):
             config.side_image_requires_attributes = False
             config.window_functions_set_auto = False
-            config.hw_video = True
             config.who_what_sub_compat = 0
 
         if version <= (7, 4, 0):
@@ -295,6 +294,12 @@ init -1900 python:
         if _compat_versions(version, (7, 6, 1), (8, 1, 1)):
             config.tts_front_to_back = False
             _greedy_rollback = False
+
+        if _compat_versions(version, (7, 6, 99), (8, 1, 99)):
+            config.simple_box_reverse = True
+            build.itch_channels = list(build.itch_channels.items())
+            style.default.shaper = "freetype"
+            style.default.hinting = "auto"
 
     # The version of Ren'Py this script is intended for, or
     # None if it's intended for the current version.

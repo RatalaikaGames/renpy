@@ -609,7 +609,7 @@ init -1500 python:
         The sensitivity and selectedness of this action match those
         of the `yes` action.
 
-        See :func:`layout.yesno_screen` for a function version of this action.
+        See :func:`renpy.confirm` for a function version of this action.
         """
 
 
@@ -700,10 +700,8 @@ init -1500 python:
                 amount = delta * adjustment.step
             elif self.amount == "page":
                 amount = delta * adjustment.page
-            elif isinstance(self.amount, float) and not isinstance(self.amount, absolute):
-                amount = delta * self.amount * adjustment.range
             else:
-                amount = delta * self.amount
+                amount = absolute.compute_raw(delta*self.amount, adjustment.range)
 
             if self.delay == 0.0:
                 adjustment.change(adjustment.value + amount)
@@ -877,6 +875,24 @@ init -1500 python:
             return None
 
         return current.screen_name[0]
+
+    @renpy.pure
+    class CopyToClipboard(Action):
+        """
+        :doc: other_action
+
+        Copies the string `s` to the system clipboard, if possible. This
+        should work on desktop and mobile platforms, but will not work
+        on the web.
+        """
+
+        def __init__(self, s):
+            self.s = s
+
+        def __call__(self):
+            import pygame.scrap
+            pygame.scrap.put(pygame.SCRAP_TEXT, self.s.encode("utf-8"))
+
 
 init -1500:
 

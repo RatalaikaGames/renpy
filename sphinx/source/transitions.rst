@@ -44,7 +44,10 @@ statement. For example::
     transition class.
 
     Move transitions, and similar transitions like ease, can only be applied
-    to one or all layers, not individual displayables.
+    to a single layer or all layers at once, using the
+    :ref:`with statement <with-statement>`. It will not work in other contexts
+    such as :ref:`ATL <expression-atl-statement>`, :func:`ComposeTransition`,
+    or other ways of applying transitions.
 
 .. var:: moveinright
 
@@ -155,8 +158,8 @@ transition to a variable::
     define annoytheuser = Dissolve(1.0)
 
     label start:
-         show bg washington
-         with annoytheuser
+        show bg washington
+        with annoytheuser
 
 
 The time_warp argument taken by many transition classes can be given

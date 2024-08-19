@@ -292,10 +292,6 @@ You may be using a system install of python. Please run {0}.sh,
                 renpy.config.args = [ ] # type: ignore
 
                 # MBG - needed customizing
-                #if renpy.android:
-                #    renpy.config.logdir = os.environ['ANDROID_PUBLIC']
-                #else:
-                #    renpy.config.logdir = basedir
                 renpy.config.logdir = "/tmp"
                 if not os.path.exists(renpy.config.logdir):
                     os.makedirs(renpy.config.logdir, 0o777)

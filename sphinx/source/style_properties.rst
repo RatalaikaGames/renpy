@@ -80,18 +80,18 @@ text inside the button. The :propref:`background` style property sets the
 background of a button, while the :propref:`color` property sets the color of
 text.::
 
-     # The button background is gray when insensitive, light
-     # blue when hovered, and dark blue otherwise.
-     style button:
-         background "#006"
-         insensitive_background "#444"
-         hover_background "#00a"
+    # The button background is gray when insensitive, light
+    # blue when hovered, and dark blue otherwise.
+    style button:
+        background "#006"
+        insensitive_background "#444"
+        hover_background "#00a"
 
-     # The button text is yellow when selected, and white
-     # otherwise.
-     style button_text:
-         color "#fff"
-         selected_color "#ff0"
+    # The button text is yellow when selected, and white
+    # otherwise.
+    style button_text:
+        color "#fff"
+        selected_color "#ff0"
 
 
 Style Property Values
@@ -101,55 +101,57 @@ Each style property expects a specific kind of data. Many of these are
 standard Python types, but a few are novel. Here are descriptions of the
 novel kinds of value a style property can expect.
 
-`position`
-    Positions are used to specify locations relative to the upper-left
-    corner of the containing area. (For positions, the containing area is
-    given by the layout the displayable is in, if one is given, or the screen
-    otherwise. For anchors, the containing area is the size of the
-    displayable itself.)
+.. glossary::
 
-    The way a position value is interpreted depends on the type of the
-    value:
+    position
+        Positions are used to specify locations relative to the upper-left
+        corner of the containing area. (For positions, the containing area is
+        given by the layout the displayable is in, if one is given, or the screen
+        otherwise. For anchors, the containing area is the size of the
+        displayable itself.)
 
-    int (like 0, 1, 37, or 42)
-        An integer is interpreted as the number of pixels from the left
-        or top side of the containing area.
-    float (like 0.0, 0.5, or 1.0)
-        A floating-point number is interpreted as a fraction of the
-        containing area. For example, 0.5 is a point halfway between the
-        sides of the containing area, while 1.0 is on the right or bottom
-        side.
-    absolute (like absolute(100.25))
-        An ``absolute`` number is interpreted as the number of pixels from the
-        left or top side of the screen, when using subpixel-precise rendering.
+        The way a position value is interpreted depends on the type of the
+        value:
 
-`displayable`
-    Any displayable. If a displayable contains a "[prefix\_]" substitution,
-    a prefix search is performed as described below.
+        int (like 0, 1, 37, or 42)
+            An integer is interpreted as the number of pixels from the left
+            or top side of the containing area.
+        float (like 0.0, 0.5, or 1.0)
+            A floating-point number is interpreted as a fraction of the
+            containing area. For example, 0.5 is a point halfway between the
+            sides of the containing area, while 1.0 is on the right or bottom
+            side.
+        absolute (like absolute(100.25))
+            An ``absolute`` number is interpreted as the number of pixels from the
+            left or top side of the screen, when using subpixel-precise rendering.
 
-`color`
-    Colors in Ren'Py can be expressed as strings beginning with the hash
-    mark (#), followed by a hex triple or hex quadruple, with each of the
-    three or four elements consisting of a one or two hexadecimal character
-    color code.
+    displayable
+        Any displayable. If a displayable contains a "[prefix\_]" substitution,
+        a prefix search is performed as described below.
 
-    In a triple, the components represent red, green, and blue. In a
-    quadruple, the components represent red, green, blue, and alpha. For
-    example:
+    color
+        Colors in Ren'Py can be expressed as strings beginning with the hash
+        mark (#), followed by a hex triple or hex quadruple, with each of the
+        three or four elements consisting of a one or two hexadecimal character
+        color code.
 
-    * ``"#f00"`` and ``"#ff0000"`` represent an opaque red color.
-    * ``"#0f08"`` and ``#00ff0080"`` represent a semi-transparent green
-      color.
+        In a triple, the components represent red, green, and blue. In a
+        quadruple, the components represent red, green, blue, and alpha. For
+        example:
 
-    The color triples are the same as used in HTML.
+        * ``"#f00"`` and ``"#ff0000"`` represent an opaque red color.
+        * ``"#0f08"`` and ``#00ff0080"`` represent a semi-transparent green
+          color.
 
-    Colors can also be represented as a 4-component tuple, with the 4
-    components being integers between 0 and 255. The components correspond to
-    red, green, blue, and alpha, in that order.
+        The color triples are the same as used in HTML.
 
-    * ``(0, 0, 255, 255)`` represents an opaque blue color.
+        Colors can also be represented as a 4-component tuple, with the 4
+        components being integers between 0 and 255. The components correspond to
+        red, green, blue, and alpha, in that order.
 
-    Finally, colors can be an instance of :class:`Color`.
+        * ``(0, 0, 255, 255)`` represents an opaque blue color.
+
+        Finally, colors can be an instance of :class:`Color`.
 
 
 .. _style-prefix-search:
@@ -467,6 +469,12 @@ Text Style Properties
     the font is rendered in this color. When using an image-based
     font, white is mapped to this color.
 
+.. style-property:: emoji_font string
+
+    The font that's used to render Emoji characters. This is automatically
+    used when a sequence of one or more Emoji are encountered, and no
+    font text tag is in use.
+
 .. style-property:: first_indent int
 
     The amount that the first line of text in a paragraph is indented
@@ -644,6 +652,12 @@ Text Style Properties
 
         The window scaling factor is always above 1.
 
+.. style-property:: prefer_emoji boolean
+
+    Some unicode characters have both Emoji and non-Emjoji presentations. This
+    style property chooses if such characters are given the Emoji presentation
+    or not.
+
 .. style-property:: rest_indent int
 
     Specifies the number of pixels the second and later lines in a
@@ -653,6 +667,12 @@ Text Style Properties
 
     If not None, this should be a style object. The style that's used for
     ruby text.
+
+.. style-property:: shaper "harfbuzz" or "freetype".
+
+    The shaper used on text. This should be one of "harfbuzz" or "freetype".
+    The harfbuzz shape is more capable but only works on Ren'Py 8, while
+    "freetype"
 
 .. style-property:: slow_abortable boolean
 

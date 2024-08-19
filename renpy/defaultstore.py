@@ -391,6 +391,7 @@ adv = ADVCharacter(None,
                 callback=None,
                 type='say',
                 advance=True,
+                retain=False,
 
                 who_style='say_label',
                 what_style='say_dialogue',
@@ -415,7 +416,7 @@ def predict_say(who, what):
 
 def say(who, what, interact=True, *args, **kwargs):
     who = Character(who, kind=adv)
-    who(what, interact=interact, *args, **kwargs)
+    who(what, *args, interact=interact, **kwargs)
 
 # Used by renpy.reshow_say and extend.
 _last_say_who = None
