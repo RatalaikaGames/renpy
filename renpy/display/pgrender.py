@@ -186,13 +186,13 @@ def load_image(f, filename, size=None):
     try:
 
         if ext.lower() in safe_formats:
-            surf = pygame.image.load(f, renpy.exports.fsencode(filename), size=size)
+            surf = pygame.image.load(f, renpy.exports.fsencode(filename))
         else:
 
             # Non-whitelisted formats may not be able to load in a reentrant
             # fashion.
             with image_load_lock:
-                surf = pygame.image.load(f, renpy.exports.fsencode(filename), size=size)
+                surf = pygame.image.load(f, renpy.exports.fsencode(filename))
 
     except Exception as e:
 
