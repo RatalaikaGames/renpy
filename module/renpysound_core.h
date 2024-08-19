@@ -34,7 +34,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 void RPS_stop(int channel);
 void RPS_dequeue(int channel, int even_tight);
 int RPS_queue_depth(int channel);
-PyObject *RPS_playing_name(int channel);
+PyObject* RPS_playing_name(int channel);
 void RPS_fadeout(int channel, int ms);
 void RPS_pause(int channel, int pause);
 void RPS_unpause_all_at_start(void);
@@ -48,8 +48,8 @@ void RPS_set_secondary_volume(int channel, float vol2, float delay);
 
 
 int RPS_video_ready(int channel);
-PyObject *RPS_read_video(int channel);
-void RPS_sample_surfaces(PyObject *rgb, PyObject *rgba);
+PyObject* RPS_read_video(int channel);
+void RPS_sample_surfaces(PyObject* rgb, PyObject* rgba);
 void RPS_set_video(int channel, int video);
 
 void RPS_init(int freq, int stereo, int samples, int status, int equal_mono);
@@ -58,9 +58,9 @@ void RPS_quit(void);
 void RPS_advance_time(void);
 void RPS_periodic(void);
 
-char *RPS_get_error(void);
+char* RPS_get_error(void);
 
-extern void (*RPS_generate_audio_c_function)(float *stream, int length);
+extern void (*RPS_generate_audio_c_function)(float* stream, int length);
 
 
 #endif

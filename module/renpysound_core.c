@@ -65,7 +65,7 @@ static void myUnlockAudio()
 
 #endif
 
-/* Declarations of ffdecode functions. */
+      /* Declarations of ffdecode functions. */
 struct MediaState;
 typedef struct MediaState MediaState;
 
@@ -113,7 +113,7 @@ SDL_mutex *name_mutex;
  * function. */
 #define error(err) RPS_error = err
 int RPS_error = SUCCESS;
-static const char *error_msg = NULL;
+static const char* error_msg = NULL;
 
 /* Have we been initialized? */
 static int initialized = 0;
@@ -135,7 +135,7 @@ struct Interpolate {
 
 
 
-void init_interpolate(struct Interpolate *i, float value) {
+void init_interpolate(struct Interpolate* i, float value) {
     i->done = 0;
     i->duration = 0;
     i->start = value;
@@ -146,17 +146,18 @@ static inline float lerp(float start, float end, float done) {
     return start + (end - start) * done;
 }
 
-static inline void tick_interpolate(struct Interpolate *i) {
+static inline void tick_interpolate(struct Interpolate* i) {
     if (i->done < i->duration) {
         i->done += 1;
     }
 }
 
-static inline float get_interpolate(struct Interpolate *i) {
+static inline float get_interpolate(struct Interpolate* i) {
     if (i->done >= i->duration) {
         return i->end;
-    } else {
-        return lerp(i->start, i->end, (float) i->done / (float) i->duration);
+    }
+    else {
+        return lerp(i->start, i->end, (float)i->done / (float)i->duration);
     }
 }
 
@@ -173,15 +174,17 @@ static inline float get_interpolate(struct Interpolate *i) {
  * The units of the log power level are odd, to make things faster - it's
  * log2f(power) + 10, to make calculations faster.
  */
-static inline float get_interpolate_power(struct Interpolate *i) {
+static inline float get_interpolate_power(struct Interpolate* i) {
 
     float log_power = get_interpolate(i);
 
     if (log_power == MIN_POWER) {
         return 0;
-    } else if (log_power == MAX_POWER) {
+    }
+    else if (log_power == MAX_POWER) {
         return 1.0;
-    } else {
+    }
+    else {
         return powf(2, log_power - 10);
     }
 }
@@ -192,9 +195,11 @@ static inline float get_interpolate_power(struct Interpolate *i) {
 static inline float log_power(float power) {
     if (power <= 0.0) {
         return MIN_POWER;
-    } else if (power >= 1.0) {
+    }
+    else if (power >= 1.0) {
         return MAX_POWER;
-    } else {
+    }
+    else {
         return log2f(power) + 10;
     }
 }
@@ -208,7 +213,7 @@ struct Channel {
 
     /* The currently playing stream, NULL if this sample isn't playing
        anything. */
-    struct MediaState *playing;
+    struct MediaState* playing;
 
     /* The name of the playing stream. */
     PyObject *playing_name;
@@ -226,7 +231,7 @@ struct Channel {
     float playing_relative_volume;
 
     /* The queued up stream. */
-    struct MediaState *queued;
+    struct MediaState* queued;
 
     /* The name of the queued up stream. */
     PyObject *queued_name;
@@ -311,7 +316,7 @@ int num_channels = 0;
 /*
  * All of the channels that the system knows about.
  */
-struct Channel *channels = NULL;
+struct Channel* channels = NULL;
 
 /*
  * The spec of the audio that is playing.
@@ -319,11 +324,11 @@ struct Channel *channels = NULL;
 SDL_AudioSpec audio_spec;
 
 static int ms_to_samples(int ms) {
-    return ((long long) ms) * audio_spec.freq / 1000;
+    return ((long long)ms) * audio_spec.freq / 1000;
 }
 
 static int samples_to_ms(int samples) {
-    return ((long long) samples) * 1000 / audio_spec.freq;
+    return ((long long)samples) * 1000 / audio_spec.freq;
 }
 
 static void start_stream(struct Channel* c, int reset_fade) {
@@ -343,7 +348,7 @@ static void start_stream(struct Channel* c, int reset_fade) {
     }
 }
 
-static void free_stream(struct MediaState *ss) {
+static void free_stream(struct MediaState* ss) {
     media_close(ss);
 }
 
@@ -353,8 +358,8 @@ static void free_stream(struct MediaState *ss) {
 
 
 
-static void post_event(struct Channel *c) {
-    if (! c->event) {
+static void post_event(struct Channel* c) {
+    if (!c->event) {
         return;
     }
 
@@ -368,7 +373,7 @@ static void post_event(struct Channel *c) {
 #define ZERO_PAN 0.7071067811865476 // cos(PI / 4) and sin(PI / 4)
 
 
-static inline void mix_sample(struct Channel *c, short left_in, short right_in, float *left_out, float *right_out) {
+static inline void mix_sample(struct Channel* c, short left_in, short right_in, float* left_out, float* right_out) {
 
     tick_interpolate(&c->fade);
     tick_interpolate(&c->secondary_volume);
@@ -382,7 +387,8 @@ static inline void mix_sample(struct Channel *c, short left_in, short right_in, 
     if (pan == 0.0) {
         left *= ZERO_PAN;
         right *= ZERO_PAN;
-    } else {
+    }
+    else {
         float theta = PI * (pan + 1) / 4;
         left *= cosf(theta);
         right *= sinf(theta);
@@ -422,9 +428,9 @@ static void callback(void *userdata, Uint8 *stream, int length) {
         // The number of samples that have been mixed.
         int mixed = 0;
 
-        struct Channel *c = &channels[channel];
+        struct Channel* c = &channels[channel];
 
-        if (! c->playing) {
+        if (!c->playing) {
             continue;
         }
 
@@ -442,14 +448,14 @@ static void callback(void *userdata, Uint8 *stream, int length) {
             int read_length;
 
             // Decode some amount of data.
-            read_length = media_read_audio(c->playing, (Uint8 *) stream_buffer, mixleft * 2 * sizeof(short));
+            read_length = media_read_audio(c->playing, (Uint8*)stream_buffer, mixleft * 2 * sizeof(short));
             read_length /= (2 * sizeof(short));
 
             // If we're done with this stream, skip to the next.
             if (c->stop_samples == 0 || read_length == 0) {
 
                 int old_tight = c->playing_tight;
-                struct Dying *d;
+                struct Dying* d;
 
                 post_event(c);
 
@@ -482,7 +488,7 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
                 UNLOCK_NAME()
 
-                start_stream(c, !old_tight);
+                    start_stream(c, !old_tight);
 
                 continue;
             }
@@ -521,8 +527,8 @@ static void callback(void *userdata, Uint8 *stream, int length) {
             right = MIN_SHORT;
         }
 
-        ((short *) stream)[i * 2] = left;
-        ((short *) stream)[i * 2 + 1] = right;
+        ((short*)stream)[i * 2] = left;
+        ((short*)stream)[i * 2 + 1] = right;
     }
 
     free(mix_buffer);
@@ -549,7 +555,7 @@ static int check_channel(int c) {
 
         for (i = num_channels; i <= c; i++) {
 
-        	memset(&channels[i], 0, sizeof(struct Channel));
+            memset(&channels[i], 0, sizeof(struct Channel));
 
             channels[i].mixer_volume = 1.0;
             channels[i].paused = 1;
@@ -571,12 +577,13 @@ static int check_channel(int c) {
  * Loads the provided stream. Returns the stream on success, NULL on
  * failure.
  */
-struct MediaState *load_stream(SDL_RWops *rw, const char *ext, double start, double end, int video) {
-    struct MediaState *rv;
+struct MediaState* load_stream(SDL_RWops* rw, const char* ext, double start, double end, int video) {
+    struct MediaState* rv;
     rv = media_open(rw, ext);
-    if(!rv)
+    if (rv == NULL)
+    {
         return NULL;
-
+    }
     media_start_end(rv, start, end);
 
     if (video) {
@@ -646,12 +653,10 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
         return;
     }
 
-    c->playing_name = name;
-
+    c->playing_name = strdup(name);
     c->playing_fadein = fadein;
     c->playing_tight = tight;
-
-    c->playing_start_ms = (int) (start * 1000);
+    c->playing_start_ms = (int)(start * 1000);
     c->playing_relative_volume = relative_volume;
 
     c->paused = paused;
@@ -718,7 +723,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     c->queued_fadein = fadein;
     c->queued_tight = tight;
 
-    c->queued_start_ms = (int) (start * 1000);
+    c->queued_start_ms = (int)(start * 1000);
     c->queued_relative_volume = relative_volume;
 
 
@@ -734,7 +739,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 void RPS_stop(int channel) {
     BEGIN();
 
-    struct Channel *c;
+    struct Channel* c;
 
     if (check_channel(channel)) {
         return;
@@ -787,7 +792,7 @@ void RPS_stop(int channel) {
 void RPS_dequeue(int channel, int even_tight) {
     BEGIN();
 
-    struct Channel *c;
+    struct Channel* c;
 
     if (check_channel(channel)) {
         return;
@@ -797,12 +802,13 @@ void RPS_dequeue(int channel, int even_tight) {
 
     ENTER();
 
-    if (c->queued && (! c->playing_tight || even_tight)) {
+    if (c->queued && (!c->playing_tight || even_tight)) {
         free_stream(c->queued);
         c->queued = NULL;
         names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
-    } else {
+    }
+    else {
         c->queued_tight = 0;
     }
 
@@ -821,7 +827,7 @@ int RPS_queue_depth(int channel) {
     int rv = 0;
     BEGIN();
 
-    struct Channel *c;
+    struct Channel* c;
 
     if (check_channel(channel)) {
         return 0;
@@ -899,13 +905,13 @@ void RPS_fadeout(int channel, int ms) {
 
         // If the fadeout will fit into the current file, dequeue the next file, so
         // that the next track will begin playing immediately.
-        if ((position + ms / 1000.0 < duration) || (! c->playing_tight) || (ms <= 32)) {
-                free_stream(c->queued);
-                c->queued = NULL;
-                free(c->queued_name);
-                c->queued_name = NULL;
-                c->queued_start_ms = 0;
-                c->queued_relative_volume = 1.0;
+        if ((position + ms / 1000.0 < duration) || (!c->playing_tight) || (ms <= 32)) {
+            free_stream(c->queued);
+            c->queued = NULL;
+            free(c->queued_name);
+            c->queued_name = NULL;
+            c->queued_start_ms = 0;
+            c->queued_relative_volume = 1.0;
         }
     }
 
@@ -918,8 +924,6 @@ void RPS_fadeout(int channel, int ms) {
         error(SUCCESS);
         return;
     }
-
-
 
     c->fade.start = get_interpolate(&c->fade);
     c->fade.end = MIN_POWER;
@@ -944,7 +948,7 @@ void RPS_fadeout(int channel, int ms) {
 void RPS_pause(int channel, int pause) {
     BEGIN();
 
-    struct Channel *c;
+    struct Channel* c;
 
     if (check_channel(channel)) {
         return;
@@ -1015,7 +1019,8 @@ int RPS_get_pos(int channel) {
 
     if (c->playing) {
         rv = samples_to_ms(c->pos) + c->playing_start_ms;
-    } else {
+    }
+    else {
         rv = -1;
     }
 
@@ -1045,7 +1050,8 @@ double RPS_get_duration(int channel) {
 
     if (c->playing) {
         rv = media_duration(c->playing);
-    } else {
+    }
+    else {
         rv = 0.0;
     }
 
@@ -1196,7 +1202,8 @@ PyObject *RPS_read_video(int channel) {
 
     if (surf) {
         return PySurface_New(surf);
-    } else {
+    }
+    else {
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -1204,7 +1211,7 @@ PyObject *RPS_read_video(int channel) {
 }
 
 int RPS_video_ready(int channel) {
-    struct Channel *c;
+    struct Channel* c;
     int rv;
 
     BEGIN();
@@ -1219,7 +1226,8 @@ int RPS_video_ready(int channel) {
 
     if (c->playing) {
         rv = media_video_ready(c->playing);
-    } else {
+    }
+    else {
         rv = 1;
     }
 
@@ -1234,9 +1242,9 @@ int RPS_video_ready(int channel) {
  * Marks channel as a video channel.
  */
 void RPS_set_video(int channel, int video) {
-	struct Channel *c;
+    struct Channel* c;
 
-	if (check_channel(channel)) {
+    if (check_channel(channel)) {
         return;
     }
 
@@ -1310,7 +1318,7 @@ void RPS_init(int freq, int stereo, int samples, int status, int equal_mono) {
 void RPS_quit() {
     BEGIN();
 
-    if (! initialized) {
+    if (!initialized) {
         return;
     }
 
@@ -1354,16 +1362,16 @@ void RPS_periodic() {
 }
 
 void RPS_advance_time(void) {
-	media_advance_time();
+    media_advance_time();
 }
 
-void RPS_sample_surfaces(PyObject *rgb, PyObject *rgba) {
+void RPS_sample_surfaces(PyObject* rgb, PyObject* rgba) {
     import_pygame_sdl2();
 
     media_sample_surfaces(
-			PySurface_AsSurface(rgb),
-			PySurface_AsSurface(rgba)
-		);
+        PySurface_AsSurface(rgb),
+        PySurface_AsSurface(rgba)
+    );
 
 }
 
@@ -1371,19 +1379,17 @@ void RPS_sample_surfaces(PyObject *rgb, PyObject *rgba) {
  * Returns the error message string if an error has occured, or
  * NULL if no error has happened.
  */
-char *RPS_get_error() {
-    switch(RPS_error) {
+char* RPS_get_error() {
+    switch (RPS_error) {
     case 0:
-        return (char *) "";
+        return (char*)"";
     case SDL_ERROR:
-        return (char *) SDL_GetError();
+        return (char*)SDL_GetError();
     case SOUND_ERROR:
-        return (char *) "Some sort of codec error.";
+        return (char*)"Some sort of codec error.";
     case RPS_ERROR:
-        return (char *) error_msg;
+        return (char*)error_msg;
     default:
-        return (char *) "Error getting error.";
+        return (char*)"Error getting error.";
     }
 }
-
-
