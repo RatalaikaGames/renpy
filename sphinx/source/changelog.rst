@@ -5,6 +5,91 @@ Changelog (Ren'Py 7.x-)
 *There is also a list of* :doc:`incompatible changes <incompatible>`
 
 
+.. _renpy-8.1.2:
+.. _renpy-7.6.2:
+
+8.1.2 / 7.6.2
+=============
+
+Changes
+-------
+
+There have been many documentation improvements.
+
+When using :func:`renpy.classify`, a directory will now match patterns
+that do not end with /. (For example, "renpy.app" will match the renpy.app
+directory.
+
+ATL has been changed to use a deep compare to determine if a transform should
+be continued or restarted. This means a transform will restart if global
+variables it uses are changed.
+
+The styles of a viewport's children will not change when it gains drag
+focus. This was rarely used, and the style change could cause drags to
+be slow or missed.
+
+Load will now roll the game back to the statement after the last statement
+that interacted to the user. (Previously, it would roll back to the start
+of the current statement.) This makes rollback on load match other rollbacks.
+
+The :func:`_autosave` variable now takes precedence over forced autosaves,
+including those on quit and at choice menus.
+
+PYTHON* variables are filtered from the environment when launching a
+Ren'Py project from the launcher.
+
+In self-voicing mode, Ren'Py will try to ensure that self-voicing
+notificatons are fully spoken to the player, even if the notification
+window fades away.
+
+Self voicing now speaks screens closer to the player before those
+further away from the player.
+
+:func:`Frame` will ensure that the frames it draws are at least one
+pixel in size in both dimensions.
+
+:func:`renpy.pause` can now roll forward to calls and jumps from screens.
+
+On the web browser, the Window preference now disables fullscreen mode.
+
+It is now possible to bind mouse buttons to skipping.
+
+MMX acceleration for video playback has been re-enabled on Windows and
+Linux.
+
+Fixes
+-----
+
+Problems with the web port entering fullscreen mode have been fixed.
+
+The Ren'Py 8 launcher can now launch games on Windows systems where the
+path to Ren'Py is not representable in the system encoding.
+
+The functionality to import Python from the game/ directory has been
+improved to better comply with Python's PEP 302.
+
+:func:`GamepadExist` now works as documented. As a byproduct of this fix,
+the gamepad screen will be displayed in Help when in developer mode.
+
+An issue analyzing nested comprehensions in screen has been fixed, fixing a
+case where nested comprehensions could cause default variables to not be
+available.
+
+Viewport inertia continues even if the interaction restarts during the
+animation.
+
+The if_changed clause to ``play`` (and :func:`renpy.music.play`) now
+considers and preserves looping.
+
+VS Code launch has been fixed on Linux.
+
+Several crashes on the web port of Ren'Py 7 have been fixed.
+
+Movie functions now ensure the relevant channels exist before playing. This
+can fix issue caused by loading a Movie from a save file.
+
+
+
 .. _renpy-8.1.1:
 .. _renpy-7.6.1:
 
@@ -53,6 +138,10 @@ silently ignored.
 
 Other Changes
 -------------
+
+Ren'Py will disable text input methods when text editing is not possible, which
+makes it possible to use the space key to advance the game even if an input
+method that uses the space key is active.
 
 The "system cursor" :func:`Preference` now applies to :var:`config.mouse_displayable`,
 when it used to only disable :var:`config.mouse`.
@@ -2636,8 +2725,8 @@ First, Ren'Py now uses `future <https://python-future.org/>`_ to provide
 standard library compatibility. It's now possible to import modules using
 their Python 3 names, when a renaming has occured.
 
-When a .rpyc file begins with the new ``rpy python 3``, the file is compiled
-in a Python 3 compatibility mode. The two changes this causes are:
+When a .rpy file begins with the new ``rpy python 3`` statement, the file is
+compiled in a Python 3 compatibility mode. The two changes this causes are:
 
 * Ren'Py will compile the file in a mode that attempts to emulate Python 3
   semantics, including the change to division. In Python 3, ``1/2`` is equal
@@ -2966,7 +3055,7 @@ problems when ``window show`` is in effect.
 
 When a :func:`Call` with `from_current` set to true occurs during a
 multi-part statement (like a menu with dialogue), control is restored
-to the first part of that multi-part statement (thus causing the dialouge
+to the first part of that multi-part statement (thus causing the dialogue
 to be displayed).
 
 More functions now use a tag's default layer.

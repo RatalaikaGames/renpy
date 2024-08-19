@@ -43,6 +43,9 @@ statement. For example::
     their new locations. An instance of the :func:`MoveTransition`
     transition class.
 
+    Move transitions, and similar transitions like ease, can only be applied
+    to one or all layers, not individual displayables.
+
 .. var:: moveinright
 
     Also: **moveinleft, moveintop, moveinbottom**
@@ -80,7 +83,8 @@ statement. For example::
 .. var:: vpunch
 
     When invoked, this transition shakes the screen vertically for a
-    quarter second.
+    quarter second. Imitating and customizing this transition and
+    :var:`hpunch` is best done using :ref:`atl-transitions`.
 
 .. var:: hpunch
 

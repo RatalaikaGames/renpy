@@ -214,6 +214,8 @@ class Container(renpy.display.core.Displayable):
         if child._duplicatable:
             self._duplicatable = True
 
+        renpy.display.render.invalidate(self)
+
     def _clear(self):
         self.child = None
         self.children = self._list_type()
@@ -2067,7 +2069,7 @@ class AdjustTimes(Container):
 
     def event(self, ev, x, y, st):
         st, _ = self.adjusted_times()
-        Container.event(self, ev, x, y, st)
+        return Container.event(self, ev, x, y, st)
 
     def get_placement(self):
         return self.child.get_placement()

@@ -1439,7 +1439,7 @@ def say(who, what, *args, **kwargs):
     `who`
         Either the character that will say something, None for the narrator,
         or a string giving the character name. In the latter case, the
-        :func:`say` is used to create the speaking character.
+        :var:`say` store function is called.
 
     `what`
         A string giving the line to say. Percent-substitutions are performed
@@ -1456,6 +1456,7 @@ def say(who, what, *args, **kwargs):
         e "Hello, world."
         $ renpy.say(e, "Hello, world.")
         $ e("Hello, world.") # when e is not a string
+        $ say(e, "Hello, world.") # when e is a string
     """
 
     if renpy.config.old_substitutions:
@@ -1595,7 +1596,7 @@ def pause(delay=None, music=None, with_none=None, hard=False, predict=False, che
 
     roll_forward = renpy.exports.roll_forward_info()
 
-    if roll_forward not in [ True, False ]:
+    if type(roll_forward) not in (bool, renpy.game.CallException, renpy.game.JumpException):
         roll_forward = None
 
     if (delay is not None) and renpy.game.after_rollback and not renpy.config.pause_after_rollback:
@@ -2442,7 +2443,7 @@ def context_dynamic(*variables):
 
     This can be given one or more variable names as arguments. This makes
     the variables dynamically scoped to the current context. The variables will
-    be reset to their original value when the call returns.
+    be reset to their original value when returning to the prior context.
 
     An example call is::
 
@@ -2991,8 +2992,9 @@ def pop_call():
     :doc: label
     :name: renpy.pop_call
 
-    Pops the current call from the call stack, without returning to
-    the location.
+    Pops the current call from the call stack, without returning to the
+    location. Also reverts the values of :func:`dynamic <renpy.dynamic>`
+    variables, the same way the Ren'Py return statement would.
 
     This can be used if a label that is called decides not to return
     to its caller.
@@ -3499,6 +3501,8 @@ def display_notify(message):
 
     hide_screen('notify')
     show_screen('notify', message=message)
+    renpy.display.tts.notify_text = renpy.text.extras.filter_alt_text(message)
+
     restart_interaction()
 
 
@@ -3902,6 +3906,12 @@ def set_return_stack(stack):
 
     Statement names may be strings (for labels) or opaque tuples (for
     non-label statements).
+
+    The most common use of this is to use::
+
+        renpy.set_return_stack([])
+
+    to clear the return stack.
     """
 
     renpy.game.context().set_return_stack(stack)

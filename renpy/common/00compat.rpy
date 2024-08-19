@@ -233,7 +233,6 @@ init -1900 python:
 
         if version <= (7, 4, 8):
             config.relative_transform_size = False
-            config.tts_front_to_back = False
 
         if version <= (7, 4, 10):
             config.always_unfocus = False
@@ -292,6 +291,10 @@ init -1900 python:
             store.iap._constant = True
             store.layeredimage._constant = True
             store.updater._constant = True
+
+        if _compat_versions(version, (7, 6, 1), (8, 1, 1)):
+            config.tts_front_to_back = False
+            _greedy_rollback = False
 
     # The version of Ren'Py this script is intended for, or
     # None if it's intended for the current version.

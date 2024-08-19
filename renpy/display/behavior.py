@@ -98,18 +98,22 @@ def compile_event(key, keydown):
         mouse = True
         rv = "(ev.type == %d" % pygame.MOUSEBUTTONUP
 
+        if not keydown:
+            return "(False)"
+
     elif part[0] == "mousedown":
         mouse = True
-        rv = "(ev.type == %d" % pygame.MOUSEBUTTONDOWN
+
+        if keydown:
+            rv = "(ev.type == %d" % pygame.MOUSEBUTTONDOWN
+        else:
+            rv = "(ev.type == %d" % pygame.MOUSEBUTTONUP
 
     elif keydown:
         rv = "(ev.type == %d" % pygame.KEYDOWN
 
     else:
         rv = "(ev.type == %d" % pygame.KEYUP
-
-    if mouse and not keydown:
-        return
 
     if not mouse:
 
@@ -1899,6 +1903,19 @@ class Adjustment(renpy.object.Object):
         self.ranged = ranged
         self.force_step = force_step
 
+    def viewport_replaces(self, replaces): # type: (Adjustment) -> None
+        if replaces is self:
+            return
+
+        self.range = replaces.range
+        self.value = replaces.value
+
+        self.animation_amplitude = replaces.animation_amplitude
+        self.animation_target = replaces.animation_target
+        self.animation_start = replaces.animation_start
+        self.animation_delay = replaces.animation_delay
+        self.animation_warper = replaces.animation_warper
+
     def round_value(self, value, release):
         # Prevent deadlock border points
         if value <= 0:
@@ -2036,6 +2053,10 @@ class Adjustment(renpy.object.Object):
 
         if self.animation_start is None:
             self.animation_start = st
+
+        if st < self.animation_start:
+            self.end_animation(instantly=True)
+            return 0
 
         done = (st - self.animation_start) / self.animation_delay
         done = self.animation_warper(done)
@@ -2857,7 +2878,7 @@ class WebInput(renpy.display.core.Displayable):
 
     @staticmethod
     def post_find_focusable():
-        if not renpy.emscripten:
+        if PY2 or not renpy.emscripten:
             return
 
         if WebInput.active is None:

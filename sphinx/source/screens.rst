@@ -1439,7 +1439,7 @@ following properties:
     * Properties beginning with ``viewport_`` are passed to the viewport.
     * Properties beginning with ``side_`` are passed to the side.
     * Properties beginning with ``scrollbar_`` are passed to the horizontal scrollbar, if it exists.
-    * Properties beginning with ``vscrollbar_`` are passed to the verical scrollbar, if it exists.
+    * Properties beginning with ``vscrollbar_`` are passed to the vertical scrollbar, if it exists.
 
     Unprefixed properties are also accepted. :ref:`position-style-properties` are
     passed to the side, while other unprefixed properties are supplied to the
@@ -2324,6 +2324,7 @@ hidden. This allows them to be used for overlay purposes.
     if rare_case:
         show rare_screen nopredict
 
+.. _hide-screen-statement:
 
 Hide Screen
 -----------
@@ -2366,6 +2367,8 @@ Similar to the ``show screen`` statement, ``hide screen`` also takes the
     hide screen overlay_screen
     $ screen_name = "some_screen"
     hide screen expression screen_name
+
+.. _call-screen-statement:
 
 Call Screen
 -----------
