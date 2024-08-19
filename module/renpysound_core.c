@@ -404,7 +404,7 @@ static inline void mix_sample(struct Channel* c, short left_in, short right_in, 
 /** If not NULL, this can be replaced with a function that will be called
     to generate audio. The functtio is called with a consistion of 2*length
     shorts, and should fill the buffer with audio data. */
-void (*RPS_generate_audio_c_function)(float *stream, int length) = NULL;
+void (*RPS_generate_audio_c_function)(float* stream, int length) = NULL;
 
 
 static void callback(void *userdata, Uint8 *stream, int length) {
@@ -442,7 +442,6 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
             // How much do we have left to mix on this channel?
             int mixleft = length - mixed;
-            //MBG - removed VLA
 
             // The number of samples that we read.
             int read_length;
@@ -551,7 +550,13 @@ static int check_channel(int c) {
     }
 
     if (c >= num_channels) {
-        channels = realloc(channels, sizeof(struct Channel) * (c + 1));
+        struct Channel* extended_channels = realloc(channels, sizeof(struct Channel) * (c + 1));
+        if (extended_channels == NULL) {
+            error(RPS_ERROR);
+            error_msg = "Unable to allocate additional channels.";
+            return -1;
+        }
+        channels = extended_channels;
 
         for (i = num_channels; i <= c; i++) {
 
@@ -590,15 +595,16 @@ struct MediaState* load_stream(SDL_RWops* rw, const char* ext, double start, dou
         media_want_video(rv, video);
     }
 
+    media_start(rv);
     return rv;
 }
 
-void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, int paused, double start, double end, float relative_volume, void* maybeAlreadyMediaState) {
+void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int fadein, int tight, int paused, double start, double end, float relative_volume) {
 
     BEGIN();
 
     struct Channel *c;
-    struct MediaState * newMedia;
+    //struct MediaState * newMedia;
 
     if (check_channel(channel)) {
         return;
@@ -606,12 +612,12 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
 
     c = &channels[channel];
 
-		if(maybeAlreadyMediaState)
-			newMedia = (struct MediaState*) maybeAlreadyMediaState;
-    else newMedia = load_stream(rw, ext, start, end, c->video);
+	//	if(maybeAlreadyMediaState)
+	//		newMedia = (struct MediaState*) maybeAlreadyMediaState;
+    //else newMedia = load_stream(rw, ext, start, end, c->video);
 
-        if(!newMedia)
-            return;
+      //  if(!newMedia)
+        //    return;
 
     Py_INCREF(name);
 
@@ -642,7 +648,6 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int f
 
     /* Allocate playing sample. */
 
-    c->playing = newMedia;
     c->playing = load_stream(rw, ext, start, end, c->video);
 
     if (! c->playing) {
@@ -683,8 +688,6 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
 
     c = &channels[channel];
 
-    newMedia = load_stream(rw, ext, start, end, c->video);
-    
     Py_INCREF(name);
 
     ENTER();
@@ -693,7 +696,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     if (!c->playing) {
         EXIT();
         Py_DECREF(name);
-        RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end, relative_volume, newMedia);
+        RPS_play(channel, rw, ext, name, fadein, tight, 0, start, end, relative_volume);
         return;
     }
 
@@ -710,8 +713,8 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
     }
 
     /* Allocate queued sample. */
-    c->queued = load_stream(rw, ext, start, end, c->video);
-    media_start(newMedia);
+    c->queued = ms;
+
 
     if (! c->queued) {
         EXIT();
@@ -719,7 +722,7 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int 
         return;
     }
 
-    c->queued_name = name;
+    c->queued_name = strdup(name);
     c->queued_fadein = fadein;
     c->queued_tight = tight;
 
@@ -857,7 +860,6 @@ PyObject *RPS_playing_name(int channel) {
         return Py_None;
     }
 
-
     c = &channels[channel];
 
     ALTENTER();
@@ -865,12 +867,12 @@ PyObject *RPS_playing_name(int channel) {
     ALTEXIT();
 
     if (c->playing_name) {
-        rv = c->playing_name;
-    } else {
+        rv = PyBytes_FromString(c->playing_name);
+    }
+    else {
+        Py_INCREF(Py_None);
         rv = Py_None;
     }
-
-    Py_INCREF(rv);
 
     ALTENTER();
     UNLOCK_NAME();
@@ -977,22 +979,19 @@ void RPS_unpause_all_at_start(void) {
     BEGIN();
 
     ENTER();
-
-    for (i = 0; i < num_channels; i++) {
-        if (channels[i].playing && channels[i].paused && channels[i].pos == 0) {
-            EXIT();
-            media_wait_ready(channels[i].playing);
-            ENTER();
+        for (i = 0; i < num_channels; i++) {
+            if (channels[i].playing && channels[i].paused && channels[i].pos == 0) {
+                media_wait_ready(channels[i].playing);
+            }
         }
-    }
 
 
-    for (i = 0; i < num_channels; i++) {
-        if (channels[i].playing && channels[i].pos == 0) {
-            channels[i].paused = 0;
-            media_pause(channels[i].playing, 0);
+        for (i = 0; i < num_channels; i++) {
+            if (channels[i].playing && channels[i].pos == 0) {
+                channels[i].paused = 0;
+                media_pause(channels[i].playing, 0);
+            }
         }
-    }
 
     EXIT();
 
