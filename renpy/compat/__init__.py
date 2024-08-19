@@ -187,16 +187,16 @@ if PY2:
 
 ################################################################################
 # Chance the default for subprocess.Popen.
-#if PY2:
-    #import subprocess
+if PY2:
+    import subprocess
     if hasattr(subprocess, 'Popen'):  # Web2 does not have subprocess.Popen
-    class Popen(subprocess.Popen):
-        def __init__(self, *args, **kwargs):
-            if ("stdout" not in kwargs) and ("stderr" not in kwargs) and ("stdin" not in kwargs):
-                kwargs.setdefault("close_fds", True)
-            super(Popen, self).__init__(*args, **kwargs)
+        class Popen(subprocess.Popen):
+            def __init__(self, *args, **kwargs):
+                if ("stdout" not in kwargs) and ("stderr" not in kwargs) and ("stdin" not in kwargs):
+                    kwargs.setdefault("close_fds", True)
+                super(Popen, self).__init__(*args, **kwargs)
 
-    subprocess.Popen = Popen
+        subprocess.Popen = Popen
 
 
 ################################################################################
