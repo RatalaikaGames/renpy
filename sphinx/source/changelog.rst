@@ -218,6 +218,44 @@ can fix issue caused by loading a Movie from a save file.
 
 
 
+.. _renpy-8.1.3:
+.. _renpy-7.6.3:
+
+8.1.3 / 7.6.3
+=============
+
+Changes
+-------
+
+Ren'Py now considers :var:`config.gl2` to be true on macOS. This is because
+there are several fixes for window resizing on newer versions of macOS
+in the gl2 renderer that are not present in the gl renderer.
+
+MMX acceleration for video playback has been re-enabled on Windows and
+Linux.
+
+The way the Steam Deck keyboard is shown has changed. They keyboard
+is now show, once, when a text input is displayed. By default, the
+keyboard is shown at the top of the screen, and the keyboard will
+only be shown once. If it's hidden (for example, the Steam button
+is pressed), the player needs to hit Steam+X to show it. This works
+around issues with the Steam Deck.
+
+The 32-bit windows Live2D library will be installed into Ren'Py 7.
+You may need to reinstall Live2D to get this library.
+
+Fixes
+-----
+
+An issue that prevented keys from being bound to text (for example,
+keysyms like "r" rather than "K_r") has been fixed.
+
+There have been several documentation fixes.
+
+An issue with rollback not working at the start of the game has been
+fixed.
+
+
 .. _renpy-8.1.2:
 .. _renpy-7.6.2:
 
@@ -231,7 +269,7 @@ There have been many documentation improvements.
 
 When using :func:`renpy.classify`, a directory will now match patterns
 that do not end with /. (For example, "renpy.app" will match the renpy.app
-directory.
+directory).
 
 ATL has been changed to use a deep compare to determine if a transform should
 be continued or restarted. This means a transform will restart if global
@@ -239,13 +277,13 @@ variables it uses are changed.
 
 The styles of a viewport's children will not change when it gains drag
 focus. This was rarely used, and the style change could cause drags to
-be slow or missed.
+be slow or to miss.
 
 Load will now roll the game back to the statement after the last statement
 that interacted to the user. (Previously, it would roll back to the start
 of the current statement.) This makes rollback on load match other rollbacks.
 
-The :func:`_autosave` variable now takes precedence over forced autosaves,
+The :var:`_autosave` variable now takes precedence over forced autosaves,
 including those on quit and at choice menus.
 
 PYTHON* variables are filtered from the environment when launching a
@@ -263,12 +301,10 @@ pixel in size in both dimensions.
 
 :func:`renpy.pause` can now roll forward to calls and jumps from screens.
 
-On the web browser, the Window preference now disables fullscreen mode.
+On the web browser, the ``"display" : "window"`` preference now disables
+fullscreen mode.
 
 It is now possible to bind mouse buttons to skipping.
-
-MMX acceleration for video playback has been re-enabled on Windows and
-Linux.
 
 Fixes
 -----
@@ -279,7 +315,7 @@ The Ren'Py 8 launcher can now launch games on Windows systems where the
 path to Ren'Py is not representable in the system encoding.
 
 The functionality to import Python from the game/ directory has been
-improved to better comply with Python's PEP 302.
+improved to better comply with Python's :pep:`302`.
 
 :func:`GamepadExist` now works as documented. As a byproduct of this fix,
 the gamepad screen will be displayed in Help when in developer mode.
@@ -291,8 +327,8 @@ available.
 Viewport inertia continues even if the interaction restarts during the
 animation.
 
-The if_changed clause to ``play`` (and :func:`renpy.music.play`) now
-considers and preserves looping.
+The if_changed clause to :ref:`play <play-statement>` (and
+:func:`renpy.music.play`) now considers and preserves looping.
 
 VS Code launch has been fixed on Linux.
 

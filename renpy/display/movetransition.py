@@ -457,7 +457,7 @@ def MoveTransition(delay, old_widget=None, new_widget=None, enter=None, leave=No
 
     As only layers have tags, MoveTransitions can only be applied to a single
     layer or all layers at once, using the :ref:`with statement <with-statement>`.
-    It will not work in other contexts such as :ref:`ATL <expression-atl-statement>`,
+    in other contexts, like ATL, :doc:`ComposeTransition`, or other ways of
     :func:`ComposeTransition`, or other ways of applying transitions.
 
     `delay`

@@ -1940,8 +1940,6 @@ class Interface(object):
 
             pygame.event.set_blocked(i)
 
-        pygame.event.set_blocked(pygame.TEXTINPUT)
-
         # Fix a problem with fullscreen and maximized.
         if renpy.game.preferences.fullscreen:
             renpy.game.preferences.maximized = False
@@ -2038,7 +2036,7 @@ class Interface(object):
             if i in renderers:
                 gl2_renderers.append(i + "2")
 
-        if renpy.config.gl2:
+        if renpy.config.gl2 or renpy.macintosh:
             renderers = gl2_renderers + renderers
 
             # Prevent a performance warning if the renderer
@@ -2139,7 +2137,6 @@ class Interface(object):
         # Stop the resizing.
         pygame.key.stop_text_input() # @UndefinedVariable
         pygame.key.set_text_input_rect(None) # @UndefinedVariable
-        pygame.event.set_blocked(pygame.TEXTINPUT)
         self.text_rect = None
         self.old_text_rect = None
         self.display_reset = False
@@ -2929,7 +2926,6 @@ class Interface(object):
                 rect = (x0, y0, x1 - x0, y1 - y0)
 
                 pygame.key.set_text_input_rect(rect) # @UndefinedVariable
-                pygame.event.set_allowed(pygame.TEXTINPUT)
 
             if not self.old_text_rect or not_shown:
                 pygame.key.start_text_input() # @UndefinedVariable
@@ -2946,7 +2942,6 @@ class Interface(object):
             if self.old_text_rect:
                 pygame.key.stop_text_input() # @UndefinedVariable
                 pygame.key.set_text_input_rect(None) # @UndefinedVariable
-                pygame.event.set_blocked(pygame.TEXTINPUT)
 
                 if self.touch_keyboard:
                     renpy.exports.hide_screen('_touch_keyboard', layer='screens')
