@@ -574,7 +574,9 @@ cdef class GL2Draw:
         else:
             maximized = renpy.game.preferences.maximized
 
-        pygame.display.get_window().resize((width, height), opengl=True, fullscreen=fullscreen, maximized=maximized)
+        #David: our pygame_sdl2 version does not support the 2 extra parameters at this moment 
+        #pygame.display.get_window().resize((width, height), opengl=True, fullscreen=fullscreen, maximized=maximized)
+        pygame.display.get_window().resize((width, height), opengl=True)
 
     def update(self, force=False):
         """
