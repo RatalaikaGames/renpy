@@ -589,7 +589,7 @@ struct MediaState* load_stream(SDL_RWops* rw, const char* ext, double start, dou
 }
 
 
-void RPS_play(int channel, SDL_RWops* rw, const char* ext, const char* name, int fadein, int tight, int paused, double start, double end, float relative_volume) {
+void RPS_play(int channel, SDL_RWops* rw, const char* ext, PyObject* name, int fadein, int tight, int paused, double start, double end, float relative_volume) {
 
     struct Channel* c;
 
@@ -647,7 +647,7 @@ void RPS_play(int channel, SDL_RWops* rw, const char* ext, const char* name, int
     error(SUCCESS);
 }
 
-void RPS_queue(int channel, SDL_RWops* rw, const char* ext, const char* name, int fadein, int tight, double start, double end, float relative_volume) {
+void RPS_queue(int channel, SDL_RWops* rw, const char* ext, PyObject* name, int fadein, int tight, double start, double end, float relative_volume) {
 
     struct Channel* c;
 
