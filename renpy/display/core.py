@@ -19,6 +19,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+# This file contains code for initializing and managing the display
+# window.
+
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
@@ -107,6 +110,29 @@ enabled_events = {
     REDRAW,
     EVENTNAME,
     }
+
+input_events = {
+    pygame.KEYDOWN,
+    pygame.KEYUP,
+
+    pygame.TEXTEDITING,
+    pygame.TEXTINPUT,
+
+    pygame.MOUSEMOTION,
+    pygame.MOUSEBUTTONDOWN,
+    pygame.MOUSEBUTTONUP,
+    pygame.MOUSEWHEEL,
+
+    pygame.JOYAXISMOTION,
+    pygame.JOYHATMOTION,
+    pygame.JOYBALLMOTION,
+    pygame.JOYBUTTONDOWN,
+    pygame.JOYBUTTONUP,
+
+    pygame.CONTROLLERAXISMOTION,
+    pygame.CONTROLLERBUTTONDOWN,
+    pygame.CONTROLLERBUTTONUP,
+}
 
 # The number of msec between periodic events.
 PERIODIC_INTERVAL = 50
@@ -294,6 +320,56 @@ for fn in (
         setattr(absolute, fn, absolute_wrap(f))
 
 del absolute_wrap, fn, f # type: ignore
+
+
+def place(width, height, sw, sh, placement):
+    """
+    Performs the Ren'Py placement algorithm.
+
+    `width`, `height`
+        The width and height of the area the image will be
+        placed in.
+
+    `size`
+        The size of the image to be placed.
+
+    `placement`
+        The tuple returned by Displayable.get_placement().
+    """
+
+    xpos, ypos, xanchor, yanchor, xoffset, yoffset, _subpixel = placement
+
+    if xpos is None:
+        xpos = 0
+    if ypos is None:
+        ypos = 0
+    if xanchor is None:
+        xanchor = 0
+    if yanchor is None:
+        yanchor = 0
+    if xoffset is None:
+        xoffset = 0
+    if yoffset is None:
+        yoffset = 0
+
+    # We need to use type, since isinstance(absolute(0), float).
+    if xpos.__class__ is float:
+        xpos *= width
+
+    if xanchor.__class__ is float:
+        xanchor *= sw
+
+    x = xpos + xoffset - xanchor
+
+    if ypos.__class__ is float:
+        ypos *= height
+
+    if yanchor.__class__ is float:
+        yanchor *= sh
+
+    y = ypos + yoffset - yanchor
+
+    return x, y
 
 
 class SceneListEntry(renpy.object.Object):
@@ -1620,6 +1696,8 @@ class Interface(object):
         # The time when the event was dispatched.
         self.event_time = 0
 
+        self.input_event_time = 0
+
         # The time we saw the last mouse event.
         self.mouse_event_time = None
 
@@ -2067,21 +2145,18 @@ class Interface(object):
             if name not in renderers:
                 return False
 
-            #try:
-            __import__(mod)
-            module = sys.modules[mod]
-            draw_class = getattr(module, cls)
-            draw_objects[name] = draw_class(*args)
-            return True
+            try:
+                __import__(mod)
+                module = sys.modules[mod]
+                draw_class = getattr(module, cls)
+                draw_objects[name] = draw_class(*args)
+                return True
 
-#           except:
-#                renpy.display.log.write("Couldn't import {0} renderer:".format(name))
-#                renpy.display.log.exception()
-#
-#                return False
+            except Exception:
+                renpy.display.log.write("Couldn't import {0} renderer:".format(name))
+                renpy.display.log.exception()
 
-        # MBG - I dont understand... why do create all these? it causes a lot of noise and mistakes due to incompatible things getting provoked with strange GL action
-        # I am commenting out all but the one I want..
+                return False
 
         #make_draw("gl", "renpy.gl.gldraw", "GLDraw", "gl")
         #make_draw("angle", "renpy.gl.gldraw", "GLDraw", "angle")
@@ -3102,12 +3177,7 @@ class Interface(object):
 
             # Step 2: Push textures to GPU.
             elif step == 2:
-                    renpy.webloader.process_downloaded_resources()
-            # Step 3: Push textures to GPU.
-
-            if expensive and renpy.emscripten:
-                self.exec_js_cmd()
-
+                renpy.display.draw.ready_one_texture()
                 step += 1
 
             # Step 3: Predict more images.
@@ -3360,7 +3430,7 @@ class Interface(object):
                 new_widget=new_d)
 
             if not isinstance(trans, Displayable):
-                raise Exception("Expected transition to return a displayable, not a {!r}".format(trans))
+                raise Exception("Expected transition to be a displayable, not a %r" % trans)
 
             if isinstance(trans, renpy.display.transform.Transform) and isinstance(old_trans, renpy.display.transform.Transform):
                 trans.take_state(old_trans)
@@ -3412,7 +3482,7 @@ class Interface(object):
             trans = instantiate_transition(None, old_root, layers_root)
 
             if not isinstance(trans, Displayable):
-                raise Exception("Expected transition to return a displayable, not a {!r}".format(trans))
+                raise Exception("Expected transition to be a displayable, not a %r" % trans)
 
             transition_time = self.transition_time.get(None, None)
             root_widget.add(trans, transition_time, transition_time)
@@ -3962,6 +4032,9 @@ class Interface(object):
                 renpy.display.behavior.skipping(ev)
 
                 self.event_time = end_time = get_time()
+
+                if ev.type in input_events:
+                    self.input_event_time = self.event_time
 
                 try:
 
