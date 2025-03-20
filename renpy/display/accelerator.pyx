@@ -130,6 +130,11 @@ def transform_render(self, widtho, heighto, st, at):
     # Should we perform clipping?
     clipping = False
 
+    # every single time we do renpy.config is wasted work
+    # this is an improvement: but it would be even better, since the config variables are invariant, if they were set GLOBALLY once during bootup (into cython cdef variables)
+    # for example: renpt_config_perspective_2 = renpy.config.perspective[2]
+    config = renpy.config
+
     # (would be more efficient if these were cdefs)
     self_st = self.st
     self_at = self.at
