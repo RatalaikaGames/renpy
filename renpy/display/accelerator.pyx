@@ -67,41 +67,18 @@ z11 = 0.0
 # This file contains implementations of methods of classes that
 # are found in other files, for performance reasons.
 
-def transform_render(self, widtho, heighto, st, at):
+def make_mesh(cr, mesh, blur, mesh_pad):
 
-    cdef double rxdx, rxdy, rydx, rydy
-    cdef double cosa, sina
-    cdef double xo, x1, x2, x3, px
-    cdef double yo, y1, y2, y3, py
-    cdef float zoom, xzoom, yzoom
-    cdef double cw, ch, nw, nh
-    cdef Render rv, cr, tcr
-    cdef double angle
-    cdef double alpha
-    cdef double width = widtho
-    cdef double height = heighto
-    cdef double cwidth
-    cdef double cheight
-    cdef int xtile, ytile
-    cdef int i, j
+    mr = Render(cr.width, cr.height)
 
-    global z11
+    if mesh_pad:
 
-
-    def make_mesh(cr):
-
-        mr = Render(cr.width, cr.height)
-
-        mesh_pad = state.mesh_pad
-
-        if state.mesh_pad:
-
-            if len(mesh_pad) == 4:
-                pad_left, pad_top, pad_right, pad_bottom = mesh_pad
-            else:
-                pad_right, pad_bottom = mesh_pad
-                pad_left = 0
-                pad_top = 0
+        if len(mesh_pad) == 4:
+            pad_left, pad_top, pad_right, pad_bottom = mesh_pad
+        else:
+            pad_right, pad_bottom = mesh_pad
+            pad_left = 0
+            pad_top = 0
 
             padded = Render(cr.width + pad_left + pad_right, cr.height + pad_top + pad_bottom)
             padded.blit(cr, (pad_left, pad_top))
@@ -130,6 +107,25 @@ def transform_render(self, widtho, heighto, st, at):
 
         return mr
 
+def transform_render(self, widtho, heighto, st, at):
+
+    cdef double rxdx, rxdy, rydx, rydy
+    cdef double cosa, sina
+    cdef double xo, x1, x2, x3, px
+    cdef double yo, y1, y2, y3, py
+    cdef float zoom, xzoom, yzoom
+    cdef double cw, ch, nw, nh
+    cdef Render rv, cr, tcr
+    cdef double angle
+    cdef double alpha
+    cdef double width = widtho
+    cdef double height = heighto
+    cdef double cwidth
+    cdef double cheight
+    cdef int xtile, ytile
+    cdef int i, j
+
+    global z11
 
     # Should we perform clipping?
     clipping = False
@@ -242,7 +238,7 @@ def transform_render(self, widtho, heighto, st, at):
         mesh = True
 
     if mesh and not perspective:
-        mr = cr = make_mesh(cr)
+        mr = cr = make_mesh(cr, mesh, blur, state.mesh_pad)
 
     # The width and height of the child.
     width = cr.width
@@ -540,7 +536,7 @@ def transform_render(self, widtho, heighto, st, at):
         rv.blit(cr, pos)
 
     if mesh and perspective:
-        mr = rv = make_mesh(rv)
+        mr = rv = make_mesh(rv, mesh, blur, state.mesh_pad)
 
     # Nearest neighbor.
     rv.nearest = state.nearest
