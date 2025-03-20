@@ -130,15 +130,21 @@ def transform_render(self, widtho, heighto, st, at):
     # Should we perform clipping?
     clipping = False
 
+    # (would be more efficient if these were cdefs)
+    self_st = self.st
+    self_at = self.at
+    self_st_offset = self.st_offset
+    self_at_offset = self.at_offset
+
     # Prevent time from ticking backwards, as can happen if we replace a
     # transform but keep its state.
-    if st + self.st_offset <= self.st:
-        self.st_offset = self.st - st
-    if at + self.at_offset <= self.at:
-        self.at_offset = self.at - at
+    if st + self.st_offset <= self_st:
+        self_st_offset = self.st - st
+    if at + self.at_offset <= self_st:
+        self_at_offset = self_at - at
 
-    self.st = st = st + self.st_offset
-    self.at = at = at + self.at_offset
+    self.st = st = st + self_st_offset
+    self.at = at = at + self_at_offset
 
     # Update the state.
     self.update_state()
