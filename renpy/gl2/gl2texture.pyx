@@ -223,7 +223,8 @@ cdef class TextureLoader:
 
             self.allocated.discard(texture_number)
 
-        self.free_list = [ ]
+        #self.free_list = []
+        self.free_list *= 0     # fastest way to clean a list according to some search
 
 
     def ready_one_texture(self):
