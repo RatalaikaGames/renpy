@@ -67,18 +67,41 @@ z11 = 0.0
 # This file contains implementations of methods of classes that
 # are found in other files, for performance reasons.
 
-def make_mesh(cr, mesh, blur, mesh_pad):
+def transform_render(self, widtho, heighto, st, at):
 
-    mr = Render(cr.width, cr.height)
+    cdef double rxdx, rxdy, rydx, rydy
+    cdef double cosa, sina
+    cdef double xo, x1, x2, x3, px
+    cdef double yo, y1, y2, y3, py
+    cdef float zoom, xzoom, yzoom
+    cdef double cw, ch, nw, nh
+    cdef Render rv, cr, tcr
+    cdef double angle
+    cdef double alpha
+    cdef double width = widtho
+    cdef double height = heighto
+    cdef double cwidth
+    cdef double cheight
+    cdef int xtile, ytile
+    cdef int i, j
 
-    if mesh_pad:
+    global z11
 
-        if len(mesh_pad) == 4:
-            pad_left, pad_top, pad_right, pad_bottom = mesh_pad
-        else:
-            pad_right, pad_bottom = mesh_pad
-            pad_left = 0
-            pad_top = 0
+
+    def make_mesh(cr):
+
+        mr = Render(cr.width, cr.height)
+
+        mesh_pad = state.mesh_pad
+
+        if state.mesh_pad:
+
+            if len(mesh_pad) == 4:
+                pad_left, pad_top, pad_right, pad_bottom = mesh_pad
+            else:
+                pad_right, pad_bottom = mesh_pad
+                pad_left = 0
+                pad_top = 0
 
             padded = Render(cr.width + pad_left + pad_right, cr.height + pad_top + pad_bottom)
             padded.blit(cr, (pad_left, pad_top))
@@ -107,49 +130,19 @@ def make_mesh(cr, mesh, blur, mesh_pad):
 
         return mr
 
-def transform_render(self, widtho, heighto, st, at):
-
-    cdef double rxdx, rxdy, rydx, rydy
-    cdef double cosa, sina
-    cdef double xo, x1, x2, x3, px
-    cdef double yo, y1, y2, y3, py
-    cdef float zoom, xzoom, yzoom
-    cdef double cw, ch, nw, nh
-    cdef Render rv, cr, tcr
-    cdef double angle
-    cdef double alpha
-    cdef double width = widtho
-    cdef double height = heighto
-    cdef double cwidth
-    cdef double cheight
-    cdef int xtile, ytile
-    cdef int i, j
-
-    global z11
 
     # Should we perform clipping?
     clipping = False
 
-    # every single time we do renpy.config is wasted work
-    # this is an improvement: but it would be even better, since the config variables are invariant, if they were set GLOBALLY once during bootup (into cython cdef variables)
-    # for example: renpt_config_perspective_2 = renpy.config.perspective[2]
-    config = renpy.config
-
-    # (would be more efficient if these were cdefs)
-    self_st = self.st
-    self_at = self.at
-    self_st_offset = self.st_offset
-    self_at_offset = self.at_offset
-
     # Prevent time from ticking backwards, as can happen if we replace a
     # transform but keep its state.
-    if st + self.st_offset <= self_st:
-        self_st_offset = self.st - st
-    if at + self.at_offset <= self_st:
-        self_at_offset = self_at - at
+    if st + self.st_offset <= self.st:
+        self.st_offset = self.st - st
+    if at + self.at_offset <= self.at:
+        self.at_offset = self.at - at
 
-    self.st = st = st + self_st_offset
-    self.at = at = at + self_at_offset
+    self.st = st = st + self.st_offset
+    self.at = at = at + self.at_offset
 
     # Update the state.
     self.update_state()
@@ -249,7 +242,7 @@ def transform_render(self, widtho, heighto, st, at):
         mesh = True
 
     if mesh and not perspective:
-        mr = cr = make_mesh(cr, mesh, blur, state.mesh_pad)
+        mr = cr = make_mesh(cr)
 
     # The width and height of the child.
     width = cr.width
@@ -547,7 +540,7 @@ def transform_render(self, widtho, heighto, st, at):
         rv.blit(cr, pos)
 
     if mesh and perspective:
-        mr = rv = make_mesh(rv, mesh, blur, state.mesh_pad)
+        mr = rv = make_mesh(rv)
 
     # Nearest neighbor.
     rv.nearest = state.nearest
