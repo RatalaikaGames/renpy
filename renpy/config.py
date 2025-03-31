@@ -1072,7 +1072,7 @@ merge_uniforms = { }
 side_image_requires_attributes = True
 
 # What is the max mipmap level?
-max_mipmap_level = 1000
+max_mipmap_level = 0
 
 # Should we show the touch keyboard outside of emscripten/touch.
 touch_keyboard = os.environ.get("RENPY_TOUCH_KEYBOARD", False)

@@ -2145,18 +2145,18 @@ class Interface(object):
             if name not in renderers:
                 return False
 
-            try:
-                __import__(mod)
-                module = sys.modules[mod]
-                draw_class = getattr(module, cls)
-                draw_objects[name] = draw_class(*args)
-                return True
+            #try:
+            __import__(mod)
+            module = sys.modules[mod]
+            draw_class = getattr(module, cls)
+            draw_objects[name] = draw_class(*args)
+            return True
 
-            except Exception:
-                renpy.display.log.write("Couldn't import {0} renderer:".format(name))
-                renpy.display.log.exception()
+            #except Exception:
+             #   renpy.display.log.write("Couldn't import {0} renderer:".format(name))
+              #  renpy.display.log.exception()
 
-                return False
+               # return False
 
         #make_draw("gl", "renpy.gl.gldraw", "GLDraw", "gl")
         #make_draw("angle", "renpy.gl.gldraw", "GLDraw", "angle")
@@ -2290,8 +2290,8 @@ class Interface(object):
         if draw:
             renpy.display.draw.draw_screen(surftree)
 
-        if renpy.emscripten:
-            emscripten.sleep(0)
+        #if renpy.emscripten:
+         #   emscripten.sleep(0)
 
         now = time.time()
 
@@ -3177,8 +3177,14 @@ class Interface(object):
 
             # Step 2: Push textures to GPU.
             elif step == 2:
-                renpy.display.draw.ready_one_texture()
+                #renpy.display.draw.ready_one_texture()
+                renpy.webloader.process_downloaded_resources()
                 step += 1
+            # Step 3: Push textures to GPU.
+
+            #if expensive and renpy.emscripten:
+            #    self.exec_js_cmd()
+            #    step += 1
 
             # Step 3: Predict more images.
             elif step == 3:
@@ -3630,17 +3636,17 @@ class Interface(object):
                 # Check for autoreload.
                 renpy.loader.check_autoreload()
 
-                if renpy.emscripten or os.environ.get('RENPY_SIMULATE_DOWNLOAD', False):
-                    renpy.webloader.process_downloaded_resources()
+                #if renpy.emscripten or os.environ.get('RENPY_SIMULATE_DOWNLOAD', False):
+                    #renpy.webloader.process_downloaded_resources()
 
                 avoid_draw = False
 
-                if renpy.emscripten:
-                    avoid_draw = emscripten.run_script_int("webglContextLost")
+                # if renpy.emscripten:
+                #     avoid_draw = emscripten.run_script_int("webglContextLost")
 
-                    if emscripten.run_script_int("webglContextRestored"):
-                        self.display_reset = True
-                        emscripten.run_script("webglContextRestored = false;")
+                #     if emscripten.run_script_int("webglContextRestored"):
+                #         self.display_reset = True
+                #         emscripten.run_script("webglContextRestored = false;")
 
                 if not avoid_draw:
 
@@ -3888,8 +3894,8 @@ class Interface(object):
 
                     self.update_mouse(mouse_displayable)
 
-                    if renpy.emscripten:
-                        self.exec_js_cmd()
+                    #if renpy.emscripten:
+                     #   self.exec_js_cmd()
 
                     continue
 

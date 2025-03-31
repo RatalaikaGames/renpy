@@ -84,12 +84,12 @@ def sign_data(data):
 
     rv = ""
 
-    for i in signing_keys:
-        sk = ecdsa.SigningKey.from_der(i)
+    #for i in signing_keys:
+        #sk = ecdsa.SigningKey.from_der(i)
 
-        if sk is not None and sk.verifying_key is not None:
-            sig = sk.sign(data)
-            rv += encode_line("signature", sk.verifying_key.to_der(), sig)
+        #if sk is not None and sk.verifying_key is not None:
+            #sig = sk.sign(data)
+            #rv += encode_line("signature", sk.verifying_key.to_der(), sig)
 
     return rv
 
