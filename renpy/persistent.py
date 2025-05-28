@@ -105,8 +105,6 @@ class Persistent(object):
 
         self._seen_audio = { str(i) : True for i in self._seen_audio }
 
-        self._seen_audio = { str(i) : True for i in self._seen_audio }
-
         # The set of seen translate identifiers.
         if not self._seen_translates:
             self._seen_translates = set()
@@ -209,7 +207,7 @@ def load(filename):
             if not renpy.savetoken.check_persistent(s, do.unused_data.decode("utf-8")):
                 return None
 
-        persistent = loads(s)
+            persistent = loads(s)
 
     except Exception:
         try:
