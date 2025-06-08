@@ -29,6 +29,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <pygame_sdl2/pygame_sdl2.h>
 
+#ifdef _MSC_VER
+#define alloca _alloca
+#endif
+
 apply_audio_filter_type RPS_apply_audio_filter = NULL;
 
 SDL_mutex *name_mutex;
@@ -414,9 +418,9 @@ static void callback(void *userdata, Uint8 *stream, int length) {
     // Convert the length to samples.
     length /= (2 * sizeof(float));
 
-    float mix_buffer[length * 2];
-    short stream_buffer[length * 2];
-    float float_buffer[length * 2];
+    float* mix_buffer = (float*)malloc(length * 2 * sizeof(float));
+    short* stream_buffer = (short*)malloc(length * 2 * sizeof(short));
+    float* float_buffer = (float*)malloc(length * 2 * sizeof(float));
 
     memset(mix_buffer, 0, length * 2 * sizeof(float));
 
