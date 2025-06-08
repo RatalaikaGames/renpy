@@ -281,9 +281,9 @@ def check_status(shader, handle, type):
     log = ' ' * log_length
 
     if shader:
-        glGetShaderInfoLog(handle, log_length, &log_length, <char *> log)
+        glGetShaderInfoLog(handle, log_length, &log_length, log)
     else:
-        glGetProgramInfoLog(handle, log_length, &log_length, <char *> log)
+        glGetProgramInfoLog(handle, log_length, &log_length, log)
 
     raise Exception("Shader error: %s" % log)
 
