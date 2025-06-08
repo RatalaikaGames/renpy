@@ -75,7 +75,7 @@ cdef extern from "pyfreetype.h":
         FT_PIXEL_MODE_GRAY4,
         FT_PIXEL_MODE_LCD,
         FT_PIXEL_MODE_LCD_V,
-        FT_PIXEL_MODE_BGRA,
+        #FT_PIXEL_MODE_BGRA,
 
         FT_PIXEL_MODE_MAX
 
@@ -382,7 +382,7 @@ cdef extern from "pyfreetype.h":
         FT_LOAD_LINEAR_DESIGN
         FT_LOAD_SBITS_ONLY
         FT_LOAD_NO_AUTOHINT
-        FT_LOAD_COLOR
+        #FT_LOAD_COLOR
 
         FT_LOAD_TARGET_NORMAL
         FT_LOAD_TARGET_LIGHT
