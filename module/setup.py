@@ -30,6 +30,9 @@ import subprocess
 
 import future
 
+def skip_libs():
+    return os.environ.get("RENPY_SKIP_CYTHON_C_COMPILE") == "1"
+
 # Change to the directory containing this file.
 BASE = os.path.abspath(os.path.dirname(sys.argv[0]))
 os.chdir(BASE)
@@ -88,16 +91,18 @@ include("GL/glew.h")
 include("pygame_sdl2/pygame_sdl2.h", directory="python{}.{}".format(sys.version_info.major, sys.version_info.minor))
 include("hb.h", directory="harfbuzz")
 
-library("SDL2")
-library("png")
-library("avformat")
-library("avcodec")
-library("avutil")
+if not skip_libs():
+    library("SDL2")
+    library("png")
+    library("avformat")
+    library("avcodec")
+    library("avutil")
 has_avresample = library("avresample", optional=True)
 has_swresample = library("swresample", optional=True)
 has_swscale = library("swscale", optional=True)
-library("freetype")
-library("z")
+if not skip_libs():
+    library("freetype")
+    library("z")
 has_libglew = library("GLEW", optional=True)
 has_libglew32 = library("glew32", optional=True)
 
