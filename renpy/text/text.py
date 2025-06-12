@@ -39,7 +39,8 @@ from renpy.text.emoji_trie import emoji, UNQUALIFIED
 
 from renpy.gl2.gl2polygon import Polygon
 
-from _renpybidi import log2vis, WRTL, RTL, ON # @UnresolvedImport
+#MBG - apparently this isn't needed (right now?)
+#from _renpybidi import log2vis, WRTL, RTL, ON # @UnresolvedImport
 
 BASELINE = -65536
 
