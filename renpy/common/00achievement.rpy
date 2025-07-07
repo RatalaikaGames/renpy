@@ -22,6 +22,7 @@
 
 init -1500 python in achievement:
     from store import persistent, renpy, config, Action
+    import _ratapy
 
     # A list of backends that have been registered.
     backends = [ ]
@@ -86,6 +87,9 @@ init -1500 python in achievement:
 
         def grant(self, name):
             persistent._achievements.add(name)
+            if not RENPY_RATA:
+                return
+            _ratapy.SetAchievement(name)
 
         def clear(self, name):
             persistent._achievements.discard(name)
