@@ -87,9 +87,6 @@ init -1500 python in achievement:
 
         def grant(self, name):
             persistent._achievements.add(name)
-            if not RENPY_RATA:
-                return
-            _ratapy.SetAchievement(name)
 
         def clear(self, name):
             persistent._achievements.discard(name)
@@ -195,6 +192,9 @@ init -1500 python in achievement:
         if not has(name):
             for i in backends:
                 i.grant(name)
+
+        _ratapy.SetAchievement(name)
+
 
     def clear(name):
         """
