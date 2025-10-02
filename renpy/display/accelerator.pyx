@@ -79,19 +79,20 @@ def get_poi(state):
             return None
 
         perspective = d.perspective
+        config = renpy.config
 
         if perspective is True:
-            perspective = renpy.config.perspective
+            perspective = config.perspective
 
         elif isinstance(perspective, (int, float)):
-            perspective = (renpy.config.perspective[0], perspective, renpy.config.perspective[2])
+            perspective = (config.perspective[0], perspective, config.perspective[2])
 
         if not perspective:
             return None
 
         z11 = perspective[1]
-        width = renpy.config.screen_width
-        height = renpy.config.screen_height
+        width = config.screen_width
+        height = config.screen_height
 
         placement = (d.xpos, d.ypos, d.xanchor, d.yanchor, d.xoffset, d.yoffset, True)
         xplacement, yplacement = renpy.display.displayable.place(width, height, width, height, placement)
@@ -308,6 +309,7 @@ cdef class RenderTransform:
         cr = self.cr
         width = self.width
         height = self.height
+        config = renpy.config
 
         xo = 0
         yo = 0
@@ -318,7 +320,7 @@ cdef class RenderTransform:
         crop_relative = self.state.crop_relative
 
         if crop_relative is None:
-            crop_relative = renpy.config.crop_relative_default
+            crop_relative = config.crop_relative_default
 
         if crop is not None:
 
@@ -381,6 +383,7 @@ cdef class RenderTransform:
         """
 
         state = self.state
+        config = renpy.config
 
         # Render the child.
         child = self.transform.child
@@ -392,12 +395,12 @@ cdef class RenderTransform:
         ysize = state.ysize
 
         if xsize is not None:
-            if renpy.config.relative_transform_size:
+            if config.relative_transform_size:
                 xsize = absolute.compute_raw(xsize, self.widtho)
             self.widtho = xsize
 
         if ysize is not None:
-            if renpy.config.relative_transform_size:
+            if config.relative_transform_size:
                 ysize = absolute.compute_raw(ysize, self.heighto)
             self.heighto = ysize
 
@@ -871,6 +874,7 @@ cdef class RenderTransform:
         """
 
         state = self.state
+        config = renpy.config
 
         # Matrixcolor.
         if state.matrixcolor:
@@ -892,7 +896,7 @@ cdef class RenderTransform:
             rv.add_property("texture_scaling", "nearest")
 
         if state.blend:
-            rv.add_property("blend_func", renpy.config.gl_blend_func[state.blend])
+            rv.add_property("blend_func", config.gl_blend_func[state.blend])
 
         # Alpha.
         alpha = state.alpha
@@ -946,16 +950,17 @@ cdef class RenderTransform:
 
         transform = self.transform
         state = self.state
+        config = renpy.config
 
         # Figure out the perspective.
         perspective = state.perspective
 
         if perspective is True:
-            perspective = renpy.config.perspective
+            perspective = config.perspective
         elif perspective is False:
             perspective = None
         elif isinstance(perspective, (int, float)):
-            perspective = (renpy.config.perspective[0], perspective, renpy.config.perspective[2])
+            perspective = (config.perspective[0], perspective, config.perspective[2])
 
         self.perspective = perspective
 

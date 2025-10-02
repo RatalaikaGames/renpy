@@ -223,7 +223,8 @@ cdef class TextureLoader:
 
             self.allocated.discard(texture_number)
 
-        self.free_list = [ ]
+        #self.free_list = []
+        self.free_list *= 0     # fastest way to clean a list according to some search
 
 
     def ready_one_texture(self):
@@ -380,15 +381,15 @@ cdef class GLTexture(GL2Model):
         glViewport(0, 0, tw, th)
         
         #MBG - litter perf hack
-        glScissor(0, 0, tw, th)
-        glEnable(GL_SCISSOR_TEST)
+        #glScissor(0, 0, tw, th)
+        #glEnable(GL_SCISSOR_TEST)
 
         # Clear the screen.
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glClear(GL_COLOR_BUFFER_BIT)
         
         #MBG - undo little perf hack
-        glDisable(GL_SCISSOR_TEST)
+        #glDisable(GL_SCISSOR_TEST)
 
         # Set up the default modes.
         glEnable(GL_BLEND)
@@ -697,9 +698,10 @@ cdef class GLTexture(GL2Model):
             self.updateSizeTexels()
             return
 
-        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST)
-        glGenerateMipmap(GL_TEXTURE_2D)
-        self.updateSizeTexels()
+        if not level == 0:
+            glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST)
+            glGenerateMipmap(GL_TEXTURE_2D)
+            self.updateSizeTexels()
         
     def __del__(self):
         try:

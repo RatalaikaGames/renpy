@@ -25,14 +25,17 @@ cdef class Uniform:
 
     def __init__(self, program, location):
         self.location = location
-        self.ready = False
+        #MBG - ready is just for diagnostics, not useful for production code
+        if False:
+            self.ready = False
 
     cdef void assign(self, program, data):
         return
 
     cdef void finish(self):
-        self.ready = False
-        return
+        #MBG - ready is just for diagnostics, not useful for production code
+        if False:
+            self.ready = False
 
 cdef class UniformFloat(Uniform):
     cdef void assign(self, program, data):
@@ -292,8 +295,10 @@ cdef class Program:
         cdef Uniform u
         cdef int i
 
-        if not mesh.triangles:
-            return
+        #MBG - why would we not have triangles
+        if False:
+            if not mesh.triangles:
+                return
 
         # Set up the attributes.
         for a in self.attributes:
@@ -308,28 +313,32 @@ cdef class Program:
 
             glEnableVertexAttribArray(a.location)
 
-        for name, u in self.uniforms.iteritems():
-            if not u.ready:
-                self.missing("uniform", name)
+        #MBG - not useful in production code
+        if False:
+            for name, u in self.uniforms.iteritems():
+                if not u.ready:
+                    self.missing("uniform", name)
 
-        if len(properties) > 1:
+        #MBG - why do we have to restore the state? who depends on this? apparently nobody
+        if False:
+            if len(properties) > 1:
 
-            if "color_mask" in properties:
-                mask_r, mask_g, mask_b, mask_a = properties["color_mask"]
-                glColorMask(mask_r, mask_g, mask_b, mask_a)
+                if "color_mask" in properties:
+                    mask_r, mask_g, mask_b, mask_a = properties["color_mask"]
+                    glColorMask(mask_r, mask_g, mask_b, mask_a)
 
-            if "texture_scaling" in properties:
-                magnify, minify = TEXTURE_SCALING[properties["texture_scaling"]]
+                if "texture_scaling" in properties:
+                    magnify, minify = TEXTURE_SCALING[properties["texture_scaling"]]
 
-                for 0 <= i < self.samplers:
-                    glActiveTexture(GL_TEXTURE0 + i)
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnify)
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minify)
+                    for 0 <= i < self.samplers:
+                        glActiveTexture(GL_TEXTURE0 + i)
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnify)
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minify)
 
-            if "blend_func" in properties:
-                rgb_eq, src_rgb, dst_rgb, alpha_eq, src_alpha, dst_alpha = properties["blend_func"]
-                glBlendEquationSeparate(rgb_eq, alpha_eq)
-                glBlendFuncSeparate(src_rgb, dst_rgb, src_alpha, dst_alpha)
+                if "blend_func" in properties:
+                    rgb_eq, src_rgb, dst_rgb, alpha_eq, src_alpha, dst_alpha = properties["blend_func"]
+                    glBlendEquationSeparate(rgb_eq, alpha_eq)
+                    glBlendFuncSeparate(src_rgb, dst_rgb, src_alpha, dst_alpha)
 
         glDrawElements(GL_TRIANGLES, 3 * mesh.triangles, GL_UNSIGNED_SHORT, mesh.triangle)
 
@@ -350,6 +359,8 @@ cdef class Program:
 
 
     def finish(Program self):
+        #MBG - nothing useful happens in here (it would be better to not call this at all, this was just easier)
+        return
         cdef Attribute a
         cdef Uniform u
 

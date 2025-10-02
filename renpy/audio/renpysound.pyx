@@ -57,7 +57,7 @@ import_pygame_sdl2()
 
 cdef extern from "renpysound_core.h":
 
-    void RPS_play(int channel, SDL_RWops *rw, char *ext, object name, int fadein, int tight, int paused, double start, double end, float volume, void* maybeAlreadyMediaState)
+    void RPS_play(int channel, SDL_RWops *rw, char *ext, object name, int fadein, int tight, int paused, double start, double end, float volume)
     void RPS_queue(int channel, SDL_RWops *rw, char *ext, object name, int fadein, int tight, double start, double end, float volume)
     void RPS_stop(int channel)
     void RPS_dequeue(int channel, int even_tight)
@@ -146,7 +146,7 @@ def play(channel, file, name, paused=False, fadein=0, tight=False, start=0, end=
         tight = 0
 
     name = name.encode("utf-8")
-    RPS_play(channel, rw, name, name, fadein * 1000, tight, pause, start, end, relative_volume, NULL)
+    RPS_play(channel, rw, name, name, fadein * 1000, tight, pause, start, end, relative_volume)
     check_error()
 
 def queue(channel, file, name, fadein=0, tight=False, start=0, end=0, relative_volume=1.0):

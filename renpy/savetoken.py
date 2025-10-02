@@ -82,14 +82,14 @@ def sign_data(data):
     signature. If there are no signing keys, returns None.
     """
 
-    rv = ""
+    rv = "signed"
 
-    for i in signing_keys:
-        sk = ecdsa.SigningKey.from_der(i)
+    #for i in signing_keys:
+        #sk = ecdsa.SigningKey.from_der(i)
 
-        if sk is not None and sk.verifying_key is not None:
-            sig = sk.sign(data)
-            rv += encode_line("signature", sk.verifying_key.to_der(), sig)
+        #if sk is not None and sk.verifying_key is not None:
+            #sig = sk.sign(data)
+            #rv += encode_line("signature", sk.verifying_key.to_der(), sig)
 
     return rv
 
@@ -97,6 +97,8 @@ def verify_data(data, signatures, check_verifying=True):
     """
     Verifies that `data` has been signed by the keys in `signatures`.
     """
+
+    return True
 
     for i in signatures.splitlines():
         kind, key, sig = decode_line(i)
@@ -186,6 +188,7 @@ def check_persistent(data, signatures):
     """
     This checks a persistent file to see if the token is valid.
     """
+    return True
 
     if should_upgrade:
         return True
@@ -205,13 +208,17 @@ def create_token(filename):
     except Exception:
         pass
 
-    sk = ecdsa.SigningKey.generate(curve=ecdsa.NIST256p)
-    vk = sk.verifying_key
-    if vk is not None:
-        line = encode_line("signing-key", sk.to_der(), vk.to_der())
+    token = base64.b64encode(os.urandom(32)).decode("utf-8")
+    with open(filename, "w") as f:
+        f.write(token + "\n")
 
-        with open(filename, "w") as f:
-            f.write(line)
+    #sk = ecdsa.SigningKey.generate(curve=ecdsa.NIST256p)
+    #vk = sk.verifying_key
+    #if vk is not None:
+        #line = encode_line("signing-key", sk.to_der(), vk.to_der())
+
+        #with open(filename, "w") as f:
+            #f.write(line)
 
 def upgrade_savefile(fn):
     """
@@ -235,6 +242,8 @@ def upgrade_savefile(fn):
     os.utime(fn, (atime, mtime))
 
 def upgrade_all_savefiles():
+
+    return
 
     if token_dir is None:
         return
@@ -280,37 +289,41 @@ def init_tokens():
 
     # Load the signing and verifying keys.
     with open(keys_fn, "r") as f:
-        for l in f:
-            kind, key, _ = decode_line(l)
+        tokens = f.read().splitlines()
 
-            if kind == "signing-key":
-                sk = ecdsa.SigningKey.from_der(key)
-                if sk is not None and sk.verifying_key is not None:
-                    signing_keys.append(sk.to_der()) # type: ignore
-                    verifying_keys.append(sk.verifying_key.to_der())
-            elif kind == "verifying-key":
-                verifying_keys.append(key) # type: ignore
+    token = tokens[0]
+    save_tokens = set(tokens)
+        # for l in f:
+        #     kind, key, _ = decode_line(l)
+
+        #     if kind == "signing-key":
+        #         sk = ecdsa.SigningKey.from_der(key)
+        #         if sk is not None and sk.verifying_key is not None:
+        #             signing_keys.append(sk.to_der()) # type: ignore
+        #             verifying_keys.append(sk.verifying_key.to_der())
+        #     elif kind == "verifying-key":
+        #         verifying_keys.append(key) # type: ignore
 
     # Process config.save_token_keys
 
-    for tk in renpy.config.save_token_keys:
+    # for tk in renpy.config.save_token_keys:
 
-        k = base64.b64decode(tk)
-        try:
-            vk = ecdsa.VerifyingKey.from_der(k)
-            verifying_keys.append(k) # type: ignore
-        except Exception:
-            try:
-                sk = ecdsa.SigningKey.from_der(k)
-            except Exception:
-                raise Exception("In config.save_token_keys, the key {!r} is not a valid key.".format(tk))
+    #     k = base64.b64decode(tk)
+    #     try:
+    #         vk = ecdsa.VerifyingKey.from_der(k)
+    #         verifying_keys.append(k) # type: ignore
+    #     except Exception:
+    #         try:
+    #             sk = ecdsa.SigningKey.from_der(k)
+    #         except Exception:
+    #             raise Exception("In config.save_token_keys, the key {!r} is not a valid key.".format(tk))
 
-            if sk.verifying_key is not None:
-                vk = base64.b64encode(sk.verifying_key.to_der()).decode("utf-8")
-            else:
-                vk = ""
+    #         if sk.verifying_key is not None:
+    #             vk = base64.b64encode(sk.verifying_key.to_der()).decode("utf-8")
+    #         else:
+    #             vk = ""
 
-            raise Exception("In config.save_token_keys, the signing key {!r} was provided, but the verifying key {!r} is required.".format(tk, vk)) # type: ignore
+    #         raise Exception("In config.save_token_keys, the signing key {!r} was provided, but the verifying key {!r} is required.".format(tk, vk)) # type: ignore
 
     # Determine if we need to upgrade the current game.
 
