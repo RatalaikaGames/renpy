@@ -706,7 +706,7 @@ def init():
 
     renpy.loadsave.location = location
 
-    if not renpy.emscripten:
+    if not renpy.emscripten and not renpy.rata: # MBG - this is.. very.. noisy. I don't think we should be doing this on console.
         scan_thread = threading.Thread(target=run_scan_thread)
         scan_thread.start()
 
