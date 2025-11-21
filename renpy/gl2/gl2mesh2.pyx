@@ -157,16 +157,16 @@ cdef class Mesh2(Mesh):
         rv.point[3].y = pt
 
         rv.attribute[0] = tl
-        rv.attribute[1] = tb
+        rv.attribute[1] = tt
 
         rv.attribute[2] = tr
-        rv.attribute[3] = tb
+        rv.attribute[3] = tt
 
         rv.attribute[4] = tr
-        rv.attribute[5] = tt
+        rv.attribute[5] = tb
 
         rv.attribute[6] = tl
-        rv.attribute[7] = tt
+        rv.attribute[7] = tb
 
         rv.triangles = 2
 

@@ -86,8 +86,8 @@ cpdef Matrix screen_projection_matrix(float w, float h):
 
     rv.xdx = 2/w
     rv.xdw = -1.00000000000000
-    rv.ydy = -2/h
-    rv.ydw = 1.00000000000000
+    rv.ydy = 2/h
+    rv.ydw = -1.00000000000000
     rv.zdz = 1.00000000000000
     rv.wdw = 1.00000000000000
 
