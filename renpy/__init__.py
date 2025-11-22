@@ -418,7 +418,8 @@ def import_all():
     import renpy.curry
     import renpy.color
     import renpy.easy
-    import renpy.encryption
+    if not renpy.rata:
+        import renpy.encryption
     import renpy.execution
     import renpy.lexer
     import renpy.loadsave
