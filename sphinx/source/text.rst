@@ -292,6 +292,18 @@ Tags that apply to all text are:
 
         "{cps=20}Fixed Speed{/cps} {cps=*2}Double Speed{/cps}
 
+
+.. text-tag:: feature
+
+    The feature tag enables or disables OpenType layout features. The name of
+    the feature is part of the tag, separated by a colon. The argument
+    should be 1 to enable the feature, or 0 to disable it. For example,
+    to disable ligatures, use the following: ::
+
+        "{feature:liga=0}Traffic{/feature} is light today."
+
+    A list of layout features can be found `here <https://learn.microsoft.com/en-us/typography/opentype/spec/featuretags>`_.
+
 .. text-tag:: font
 
     The font tag renders the text between itself and its closing tag
@@ -338,7 +350,8 @@ Tags that apply to all text are:
 
     The outline text tag changes all the outlines (including drop
     shadows) to the given color. The color should be in #rgb, #rgba,
-    #rrggbb, or #rrggbbaa format. ::
+    #rrggbb, or #rrggbbaa format. This will only adjust existing outlines,
+    it does not add them. ::
 
         "Let's have a {outlinecolor=#00ff00}Green{/outlinecolor} outline."
 
@@ -678,21 +691,24 @@ and the :propref:`altruby_style` property (instead of :propref:`ruby_style`).
 Fonts
 =====
 
-Ren'Py supports TrueType/OpenType fonts and collections, and
-Image-Based fonts.
+Ren'Py supports scalable fonts in the OpenType, TrueType, WOFF, and WOFF2 formats.
 
-A TrueType or OpenType font is specified by giving the name of the font
-file. The file must be present in the game directory or one of the archive
-files.
+Scalable fonts are specified by giving the name of the font file, as a string.
+Fonts are searched for in the :file:`game` directory and in archive files.
+If the font is not found it is searched for using the :file:`fonts/` prefix.
+For example, when looking for "test.ttf", Ren'Py will first search for
+:file:`game/test.ttf`, and then for :file:`game/fonts/test.ttf`. (It will also
+search in archive files.)
 
-Ren'Py also supports TrueType/OpenType collections that define more than one
+Ren'Py supports TrueType/OpenType collections that define more than one
 font. When accessing a collection, use the 0-based font index,
 followed by an at-sign and the file name. For example, "0\@font.ttc" is
 the first font in a collection, "1\@font.ttc" the second, and so on.
 
-When looking for a font files, if the file is not found, Ren'Py will search
-in the :file:`game/fonts` directory. For example, when looking for "test.ttf", Ren'Py
-will first search for :file:`game/test.ttf`, and then for :file:`game/fonts/test.ttf`.
+While Ren'Py supports font files of any size (subject to system memory limitations),
+WOFF2 compression tools may have problems with very large font files. See :ghbug:`6605`
+for discussion of this.
+
 
 Font Replacement
 ----------------
@@ -726,30 +742,6 @@ enable :ref:`fontgroup` to be used by these tags. ::
         e "Sorry, what does {font=jap}Black holes and revelations{/font} mean ?"
         y "You pronounce it {font=tjap}Black Holes And Revelations{/font}." # the capital letters appear in OrthodoxHerbertarian
 
-Image-Based Fonts
------------------
-
-Image based fonts can be registered by calling one of the following
-registration functions. Registering an image-based font requires the
-specification of a name, size, boldness, italicness, and
-underline. When all of these properties match the registered font,
-the registered font is used.
-
-.. include:: inc/image_fonts
-
-As BMFont is the most complete of the three image font formats Ren'Py
-supports, it's the one recommended for new projects. An example of
-BMFont use is::
-
-    init python:
-        renpy.register_bmfont("bmfont", 22, filename="bmfont.fnt")
-
-    define ebf = Character('Eileen', what_font="bmfont", what_size=22)
-
-    label demo_bmfont:
-
-        ebf "Finally, Ren'Py supports BMFonts."
-
 
 .. _fontgroup:
 
@@ -777,6 +769,30 @@ For example::
 Note that while FontGroups can be given a name using :var:`config.font_name_map`,
 a FontGroup only takes filepaths as fonts, and does not recognize names or aliases
 defined using that variable.
+
+Image-Based Fonts
+-----------------
+
+.. note:: Image-based fonts are not recommended for use in new projects. Applying graphical effects to fonts can be done with text shaders.
+
+Image based fonts can be registered by calling one of the following
+registration functions. Registering an image-based font requires the
+specification of a name, size, boldness, italicness, and
+underline. When all of these properties match the registered font,
+the registered font is used.
+
+.. include:: inc/image_fonts
+
+An example of BMFont use is::
+
+    init python:
+        renpy.register_bmfont("bmfont", 22, filename="bmfont.fnt")
+
+    define ebf = Character('Eileen', what_font="bmfont", what_size=22)
+
+    label demo_bmfont:
+
+        ebf "Finally, Ren'Py supports BMFonts."
 
 
 .. _text-displayables:

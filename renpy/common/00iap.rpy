@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2026 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -246,12 +246,13 @@ init -1500 python in iap:
                 renpy.pause.
             """
 
+            import renpy.pygame as pygame
+
             while not self.helper.finished:
                 if interact:
                     renpy.pause(.1)
                 else:
-                    import pygame_sdl2
-                    pygame_sdl2.event.pump()
+                    pygame.event.pump()
                     time.sleep(.1)
 
         def validate_products(self, interact):

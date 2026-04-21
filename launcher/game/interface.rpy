@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2026 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -137,8 +137,8 @@ screen bottom_info:
                                 text_color "#F96854"
                                 text_hover_color Color("#F96854").tint(.8)
 
-                    textbutton _("preferences") style "l_link" action Jump("preferences")
-                    textbutton _("quit") style "l_link" action Quit(confirm=False)
+                    textbutton _("preferences") id "pref_btn" style "l_link" action Jump("preferences")
+                    textbutton _("quit") id "quit_btn" style "l_link" action Quit(confirm=False)
 
             if persistent.sponsor_message and not interface.NO_LAUNCHER_LINKS:
 
@@ -352,7 +352,7 @@ init python in interface:
 
     def error(message, submessage=None, label="front_page", **kwargs):
         """
-        Indicates to the user that an error has occured.
+        Indicates to the user that an error has occurred.
 
         `message`
             The message to display.
@@ -408,7 +408,7 @@ init python in interface:
         except Exception as e:
             renpy.renpy.error.report_exception(e, editor=False)
 
-            error(_("While [what!qt], an error occured:"),
+            error(_("While [what!qt], an error occurred:"),
                 _("[exception!q]"),
                 what=what,
                 label=label,

@@ -59,16 +59,17 @@ Ren'Py binaries can include source code from the following projects:
 * libwebp (Modified BSD License, Patent License)
 * libyuv (Three clause BSD License)
 * MetalAngle (Three clause BSD License)
+* Open Asset Import Library (assimp) (Three Clause BSD License)
 * pefile (MIT License)
 * py2exe (MIT License)
 * pyasn1 (Modified BSD License)
 * Pygame_SDL2 (MIT License, GNU LGPL)
 * pyjnius (MIT License)
 * pyobjc (MIT License)
-* pysocks (BSD 3-Clause License)
+* pysocks (Three Clause BSD License)
 * Python (Python License)
 * requests (Apache License 2.0)
-* rsa (Apache Lixense 2.0)
+* rsa (Apache License 2.0)
 * SDL2_image (Zlib License)
 * SDL2_ttf (Zlib License)
 * SDL2 (Zlib License)
@@ -76,7 +77,7 @@ Ren'Py binaries can include source code from the following projects:
 * tinyfiledialogs (Zlib License)
 * urllib3 (MIT License)
 * urllib3 (MIT License)
-* websockets (BSD 3-Clause License)
+* websockets (Three Clause BSD License)
 * xz (Three clause BSD License)
 * zlib (Zlib License)
 * zsync (Artistic License)
@@ -85,12 +86,16 @@ For the purposes of LGPL compliance, all source code that Ren'Py depends
 on is located in one of the following repositories:
 
 * https://github.com/renpy/renpy (Ren'Py)
-* https://github.com/renpy/pygame_sdl2 (Pygame_SDL2)
 * https://github.com/renpy/renpy-build (Dependencies)
-* https://github.com/renpy/renpyweb (Web)
 
 Ren'Py Build will download source code from other git repositories
 as needed.
+
+For some releases before Ren'Py 8.5, pygame_sdl2 and web support were
+separate from Ren'Py.
+
+* https://github.com/renpy/pygame_sdl2 (Pygame_SDL2)
+* https://github.com/renpy/renpyweb (Web)
 
 And for releases before Ren'Py 7.4:
 

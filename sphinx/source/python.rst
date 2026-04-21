@@ -62,6 +62,7 @@ behavior:
    default store, the Python will execute in the store with that
    name.
 
+.. _dollar-line:
 
 One-line Python Statement
 -------------------------
@@ -169,11 +170,16 @@ to add entries to a dictionary::
     define config.tag_layer["eileen"] = "master"
 
 In addition to ``=``, define can take two more operators. The ``+=``
-operator adds, and is generally used for list concatenaton. The ``|=``
+operator adds, and is generally used for list concatenation. The ``|=``
 or operator is generally used to concatenate sets. For example::
 
     define config.keymap["dismiss"] += [ "K_KP_PLUS" ]
     define endings |= { "best_ending" }
+
+The define statement takes an optional init priority, between ``define``
+and the variable name. When a priority is not given, 0 is used. For example::
+
+    define -1 config.image_directories = [ "images", "dlc/images" ]
 
 One advantage of using the define statement is that it records the
 filename and line number at which the assignment occurred, and
@@ -200,12 +206,13 @@ example::
     default points = 0
 
 When the variable ``points`` is not defined at game start, this statement is
-equivalent to::
+roughly equivalent to::
 
     label start:
         $ points = 0
 
-When the variable ``points`` is not defined at game load, it's equivalent to::
+The actual point in which the variable is set is before the splashscreen and main menu
+are run.  When the variable ``points`` is not defined at game load, it's equivalent to::
 
     label after_load:
         $ points = 0
@@ -385,30 +392,34 @@ block::
     init python:
         import dateutil.parser
 
-.. warning::
-
-    Python defined in .rpy files is transformed to allow rollback
-    to work. Python imported from .py files is not. As a result,
-    objects created in Python will not work with rollback, and
-    probably should not be changed after creation.
-
-    Not all Python packages are compatible with Ren'Py. It's up to you
-    to audit the packages you install and make sure the packages will
-    work.
+Not all Python packages are compatible with Ren'Py. It's up to you
+to audit the packages you install and make sure the packages will
+work.
 
 
-.. _exec_py:
+Rollback and Isinstance
+-----------------------
 
-Injecting Python
-----------------
+Python defined in .rpy files is transformed to allow rollback
+to work. Python imported from .py files is not. As a result,
+objects created in Python will not work with rollback, and
+probably should not be changed after creation.
 
-Python can be injected into a game at runtime by creating a file named
-``exec.py`` in the base directory. It's suggested that this file is created
-under a different name, edited, and then atomically moved into place.
+As part of the transformation, Ren'Py replaces the dict, list, and set classes
+with its own versions that support rollback. These classes are subclasses of the
+built-in classes, and so all methods will work. However, these classes will not
+match instances of the python built-in dict, list, and set classes.
 
-When Ren'Py sees a file named ``exec.py``, it will load the contents of the file,
-delete the file, and execute the contents in the game store using Python's
-``exec``. This is always done during an interaction.
+To fix this problem, Ren'Py makes available the Python classes.
 
-This is intended to support debugging tools. By default it is enabled when developer
-mode is true, but can also be enabled by setting the RENPY_EXEC_PY environment variable.
+.. class:: python_dict
+
+    The python_dict class is the Python built-in dict class.
+
+.. class:: python_list
+
+    The python_list class is the Python built-in list class.
+
+.. class:: python_set
+
+    The python_set class is the Python built-in set class.

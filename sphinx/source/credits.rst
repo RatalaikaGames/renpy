@@ -23,14 +23,18 @@ the omission in future versions.
 * Alex
 * Alexandre Detiste
 * Alexandre Tranchant
+* Aliengeo
 * Alisha Taylor
 * Altskop
 * Andrej
 * Andrí Wilford
 * Andy_kl
 * Apricotorange
+* Atlas Cove
 * Arda Güler
+* Arman
 * Arowana-vx
+* Arsym
 * Asfdfdfd
 * Auro-Cyanide
 * Avonder
@@ -40,6 +44,7 @@ the omission in future versions.
 * Bas Couwenberg
 * Bbs3223474
 * Ben Wright
+* Bkats
 * BlackDragonHunt/Mangagamer
 * Brainos
 * Brimbel
@@ -75,18 +80,22 @@ the omission in future versions.
 * Diapolo10
 * DinakiS
 * Dipesh Aggarwal
+* Dm1sh
 * Do10HM
 * Dogtopus
+* Doohyeon Won
 * Doomfest
 * Donghyeok Tak
 * DragoonHP
 * Duanemoody
+* Dynamiclinking
 * Edward Betts
 * Edward Nicholes Jr.
 * Edwin
 * Eevee (Lexy Munroe)
 * Elckarow
 * Eliza Velasquez
+* Emmanuel Ferdman
 * Emmanuel Marty
 * Emmeken
 * Enerccio
@@ -131,14 +140,17 @@ the omission in future versions.
 * JackkelDragon
 * Jackmcbarn
 * Jacob Kauffmann
+* Jade Macho
 * JaHIY
 * Jake Staines
+* Jamaine
 * James Broadhead
 * James Pearson Hughes
 * JamiesonC
 * Jan Beich
 * Jan Masek
 * Javimat
+* Jaybe Games
 * Jeremy Rand
 * Jesusaves
 * Joaquin Garmendia Cabrera
@@ -219,12 +231,14 @@ the omission in future versions.
 * Nyaatrap
 * OctoSpacc
 * OleSTEEP
+* Opolis13
 * Oscar Six
 * Oshi-Shinobu
 * Patrick Dawson
 * Paul J Martinez
 * Paul Morio
 * Pavel Langwell
+* Peter Dave Hello
 * Peter DeVita
 * Petr Abdulin
 * Philat
@@ -233,6 +247,8 @@ the omission in future versions.
 * Pratomo Asta Nugraha
 * Project Gardares
 * Psunbury
+* Puxap-3opre
+* Quetz
 * Raj Singh Chauhan
 * Raspberry-soft
 * Rastagong
@@ -262,6 +278,7 @@ the omission in future versions.
 * Siege-Wizard
 * SleepKirby
 * Spiky Caterpillar
+* Stanislau Tsitsianok
 * Sunrise Sarsaparilla
 * Susnux
 * Sylvain Beucler
@@ -271,6 +288,7 @@ the omission in future versions.
 * The66F95
 * Thuong Nguyen Huu
 * Tichq
+* Tinyboxvk
 * Tlm-2501
 * Tmrwiz
 * Totally a booplicate
@@ -279,6 +297,7 @@ the omission in future versions.
 * Veydzh3r
 * Viktoras Agejevas
 * Viliam Búr
+* VivianTu789
 * Vladya
 * Vollschauer
 * William Tumeo

@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2026 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -122,10 +122,6 @@ init -1500 python:
             if alternative not in __alternatives[preference]:
                 raise Exception("{0} is not a known alternative for style preference {1}.".format(alternative, preference))
 
-    def __change_language():
-        __spdirty.flag = True
-        __update()
-
     def __set_style_preference(preference, alternative):
         """
         :doc: style_preferences
@@ -198,7 +194,6 @@ init -1500 python:
     renpy.get_style_preference = __get_style_preference
 
     config.interact_callbacks.append(__update)
-    config.change_language_callbacks.append(__change_language)
     config.build_styles_callbacks.append(__apply_styles)
 
 init 1500 python:
