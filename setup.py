@@ -24,6 +24,9 @@
 import sys
 import os
 
+def skip_libs():
+    return os.environ.get("RENPY_SKIP_CYTHON_C_COMPILE") == "1"
+
 # Change to the directory containing this file.
 BASE = os.path.abspath(os.path.dirname(sys.argv[0]))
 os.chdir(BASE)
@@ -59,19 +62,20 @@ def main():
     sdl2
     """
 
-    library("avformat")
-    library("avcodec")
-    library("avutil")
-    library("swresample")
-    library("swscale")
-    library("harfbuzz")
-    library("freetype")
-    library("fribidi")
-    library("SDL2_image")
-    library("SDL2")
-    library("png")
-    library("jpeg")
-    library("z")
+    if not skip_libs():
+        library("avformat")
+        library("avcodec")
+        library("avutil")
+        library("swresample")
+        library("swscale")
+        library("harfbuzz")
+        library("freetype")
+        library("fribidi")
+        library("SDL2_image")
+        library("SDL2")
+        library("png")
+        library("jpeg")
+        library("z")
 
     if windows:
         setuplib.extra_compile_args.append("-fno-strict-aliasing")

@@ -224,9 +224,11 @@ def cython(name, source=[], define_macros=[], pyx=None, language="c", compile_ar
         generate_cython_queue.append((name, language, mod_coverage, split_name, fn, c_fn))
 
     # Build the module normally once we have the c file.
+    compile_if = os.environ.get("RENPY_SKIP_CYTHON_C_COMPILE") != "1"
+    if compile_if:
 
-    if mod_coverage:
-        define_macros = define_macros + [("CYTHON_TRACE", "1")]
+        if mod_coverage:
+            define_macros = define_macros + [("CYTHON_TRACE", "1")]
 
     cmodule(name, [c_fn] + source, define_macros=define_macros, language=language, compile_args=compile_args)
 
