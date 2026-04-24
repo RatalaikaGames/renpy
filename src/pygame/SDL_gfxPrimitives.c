@@ -3959,6 +3959,8 @@ int ellipseRGBA(SDL_Surface * dst, Sint16 x, Sint16 y, Sint16 rx, Sint16 ry, Uin
 
 /* ----- AA Ellipse */
 
+//MBG - huh?
+#if 0
 /* Windows targets do not have lrint, so provide a local inline version */
 #if defined(_MSC_VER)
 /* Detect 64bit and use intrinsic version */
@@ -3997,6 +3999,9 @@ lrint (double flt)
 #else
 #error lrint needed for MSVC on non X86/AMD64/ARM targets.
 #endif
+#endif
+
+//MBG - huh?
 #endif
 
 /*!
