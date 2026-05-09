@@ -599,6 +599,11 @@ cdef class GLTexture(GL2Model):
         # But it doesn't seem to work with ANGLE or emscripten, so we avoid using PBOs when
         # angle is in use.
 
+        # MBG - SPIGL needs a Y flip on upload here to match the orientation produced by
+        # load_gltexture_rata; the source surface is already premultiplied so we only ask for flip.
+        if renpy.rata:
+            glPixelStorei(8889, 8889)
+
         if not renpy.emscripten and not draw.angle:
 
             glGenBuffers(1, &pixel_buffer)
@@ -613,6 +618,9 @@ cdef class GLTexture(GL2Model):
 
             glPixelStorei(GL_UNPACK_ROW_LENGTH, s.pitch // 4)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.width, self.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, s.pixels)
+
+        if renpy.rata:
+            glPixelStorei(8889, 0)
 
         self.mipmap_texture(premultiplied, self.width, self.height, self.properties)
 
