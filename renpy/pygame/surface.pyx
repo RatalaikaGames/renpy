@@ -54,12 +54,17 @@ cdef class Surface:
 
     def __cinit__(self):
         self.surface = NULL
+        self.renderer = NULL
         self.owns_surface = False
         self.window_surface = False
         self.has_alpha = False
 
     def __dealloc__(self):
         global total_size
+
+        if self.renderer:
+            SDL_DestroyRenderer(self.renderer)
+            self.renderer = NULL
 
         if self.surface and self.owns_surface:
             if total_size:

@@ -153,7 +153,7 @@ def main():
     cython("renpy.pygame.controller")
     cython("renpy.pygame.rect")
     cython("renpy.pygame.rwobject")
-    cython("renpy.pygame.surface", source=[ "src/pygame/alphablit.c" ])
+    cython("renpy.pygame.surface", source=[ "../Sources/pygs/RGalphablit.cpp" ])
     cython("renpy.pygame.display")
     cython("renpy.pygame.event")
     cython("renpy.pygame.locals")
@@ -164,7 +164,7 @@ def main():
     cython("renpy.pygame.pygame_time")
     cython("renpy.pygame.image", source=[ "src/pygame/write_jpeg.c", "src/pygame/write_png.c" ])
     cython("renpy.pygame.transform", source=[ "src/pygame/SDL2_rotozoom.c" ])
-    cython("renpy.pygame.gfxdraw", source=[ "src/pygame/SDL_gfxPrimitives.c" ])
+    cython("renpy.pygame.gfxdraw", source=[ "../Sources/pygs/SDL2_gfxPrimitives.c" ])
     cython("renpy.pygame.draw")
     cython("renpy.pygame.scrap")
 
