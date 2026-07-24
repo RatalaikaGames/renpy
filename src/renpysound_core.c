@@ -39,19 +39,37 @@ SDL_mutex *name_mutex;
 
 #ifdef __EMSCRIPTEN__
 
-#define LOCK_AUDIO() { }
-#define UNLOCK_AUDIO() { }
+#define BEGIN() { }
+#define ENTER() { }
+#define EXIT() { }
+#define ALTENTER() { }
+#define ALTEXIT() { }
 
 #define LOCK_NAME() { }
 #define UNLOCK_NAME() { }
 
 #else
 
-/* These prevent the audio callback from running when held. Use this to
-   prevent the audio callback from running while the state of the audio
-   system is being changed. */
-#define LOCK_AUDIO() { SDL_LockAudio(); }
-#define UNLOCK_AUDIO() { SDL_UnlockAudio(); }
+static void myLockAudio()
+{
+    SDL_LockAudio();
+}
+
+static void myUnlockAudio()
+{
+    SDL_UnlockAudio();
+}
+
+/* MBG - these take the place of LOCK_AUDIO/UNLOCK_AUDIO. The GIL must be
+   released before the audio lock is taken, because the audio callback can take
+   the GIL (audio filters), and a thread holding either one while waiting for
+   the other would deadlock. It also keeps python threads running while we wait
+   for the mixer. */
+#define BEGIN() PyThreadState *_save
+#define ENTER() { _save = PyEval_SaveThread(); myLockAudio(); }
+#define EXIT() { myUnlockAudio(); PyEval_RestoreThread(_save); }
+#define ALTENTER() { _save = PyEval_SaveThread(); }
+#define ALTEXIT() { PyEval_RestoreThread(_save); }
 
 /* This is held while the current track is being changed by the audio callback,
    and can also be held to the current track doesn't change while things are
@@ -210,7 +228,7 @@ struct Channel {
     struct MediaState *playing;
 
     /* The name of the playing stream. */
-    char *playing_name;
+    PyObject *playing_name;
 
     /* The number of ms to take to fade in the playing stream. */
     int playing_fadein;
@@ -240,7 +258,7 @@ struct Channel {
     struct MediaState *queued;
 
     /* The name of the queued up stream. */
-    char *queued_name;
+    PyObject *queued_name;
 
     /* The number of ms to take to fade in the queued stream. */
     int queued_fadein;
@@ -304,9 +322,36 @@ struct Dying {
     struct MediaState *stream;
     PyObject *audio_filter;
     struct Dying *next;
+    PyObject *name;
 };
 
 static struct Dying *dying = NULL;
+
+/*
+ * MBG - list of python objects (names, audio filters) to decref under the GIL
+ * and NOT under the SDL mixer lock. Pushes may only happen while the mixer
+ * lock is held; the list is drained by RPS_periodic.
+ */
+
+static PyObject **names_to_decref = NULL;
+static int names_to_decref_count = 0;
+static int names_to_decref_reserved = 0;
+
+static void names_to_decref_require(int amount)
+{
+    if (amount < names_to_decref_reserved)
+        return;
+    names_to_decref_reserved = amount * 2 + 1; /* avoid growing too much */
+    names_to_decref = realloc(names_to_decref, names_to_decref_reserved * sizeof(void*));
+}
+
+static void names_to_decref_push(PyObject *name)
+{
+    if (!name)
+        return;
+    names_to_decref_require(names_to_decref_count + 1);
+    names_to_decref[names_to_decref_count++] = name;
+}
 
 /*
  * The number of channels the system knows about.
@@ -426,9 +471,22 @@ static void callback(void *userdata, Uint8 *stream, int length) {
     // Convert the length to samples.
     length /= (2 * sizeof(float));
 
-    float* mix_buffer = (float*)malloc(length * 2 * sizeof(float));
-    short* stream_buffer = (short*)malloc(length * 2 * sizeof(short));
-    float* float_buffer = (float*)malloc(length * 2 * sizeof(float));
+    /* MBG - these were VLAs originally. Only one audio callback runs at a
+       time, so persistent buffers grown on demand are safe. */
+    static float *mix_buffer = NULL;
+    static short *stream_buffer = NULL;
+    static float *float_buffer = NULL;
+    static int buffers_length = 0;
+
+    if (length > buffers_length) {
+        free(mix_buffer);
+        free(stream_buffer);
+        free(float_buffer);
+        mix_buffer = (float*)malloc(length * 2 * sizeof(float));
+        stream_buffer = (short*)malloc(length * 2 * sizeof(short));
+        float_buffer = (float*)malloc(length * 2 * sizeof(float));
+        buffers_length = length;
+    }
 
     memset(mix_buffer, 0, length * 2 * sizeof(float));
 
@@ -485,8 +543,6 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
                     post_event(c);
 
-                    LOCK_NAME()
-
                     d = malloc(sizeof(struct Dying));
                     d->next = dying;
                     d->stream = c->playing;
@@ -500,7 +556,11 @@ static void callback(void *userdata, Uint8 *stream, int length) {
 
                     dying = d;
 
-                    free(c->playing_name);
+                    LOCK_NAME()
+
+                    /* MBG - no refcounting here (would take the GIL inside the
+                       mixer callback). RPS_periodic decrefs it later. */
+                    d->name = c->playing_name;
 
                     c->playing = c->queued;
                     c->playing_name = c->queued_name;
@@ -659,14 +719,16 @@ struct MediaState *load_stream(SDL_RWops *rw, const char *ext, double start, dou
         media_want_video(rv, video);
     }
 
-    media_start(rv);
     return rv;
 }
 
 
-void RPS_play(int channel, SDL_RWops *rw, const char *ext, const char *name, int synchro_start, int fadein, int tight, double start, double end, float relative_volume, PyObject *audio_filter) {
+void RPS_play(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int synchro_start, int fadein, int tight, double start, double end, float relative_volume, PyObject *audio_filter, void *maybeAlreadyMediaState) {
+
+    BEGIN();
 
     struct Channel *c;
+    struct MediaState *newMedia;
 
     if (check_channel(channel)) {
         return;
@@ -674,74 +736,88 @@ void RPS_play(int channel, SDL_RWops *rw, const char *ext, const char *name, int
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    /* Do the loading (IO!) before the audio lock is taken. */
+    if (maybeAlreadyMediaState) {
+        newMedia = (struct MediaState *) maybeAlreadyMediaState;
+    } else {
+        newMedia = load_stream(rw, ext, start, end, c->video);
+    }
+
+    if (! newMedia) {
+        /* MBG - clean failure of opening nonexistent paths: do nothing. */
+        error(SUCCESS);
+        return;
+    }
+
+    Py_INCREF(name);
+
+    if (audio_filter) {
+        Py_INCREF(audio_filter);
+    }
+
+    ENTER();
+    LOCK_NAME();
 
     /* Free playing and queued samples. */
     if (c->playing) {
         free_stream(c->playing);
         c->playing = NULL;
-        free(c->playing_name);
+        names_to_decref_push(c->playing_name);
         c->playing_name = NULL;
         c->playing_tight = 0;
         c->playing_start_ms = 0;
         c->playing_relative_volume = 1.0;
 
         if (c->playing_audio_filter) {
-            Py_DECREF(c->playing_audio_filter);
-            c->queued_audio_filter = NULL;
+            names_to_decref_push(c->playing_audio_filter);
+            c->playing_audio_filter = NULL;
         }
     }
 
     if (c->queued) {
         free_stream(c->queued);
         c->queued = NULL;
-        free(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_tight = 0;
         c->queued_start_ms = 0;
         c->queued_relative_volume = 1.0;
 
         if (c->queued_audio_filter) {
-            Py_DECREF(c->queued_audio_filter);
+            names_to_decref_push(c->queued_audio_filter);
             c->queued_audio_filter = NULL;
         }
     }
 
-    /* Allocate playing sample. */
+    /* Install the playing sample. */
 
-    c->playing = load_stream(rw, ext, start, end, c->video);
+    c->playing = newMedia;
+    media_start(newMedia);
 
-    if (! c->playing) {
-        UNLOCK_AUDIO();
-        error(SOUND_ERROR);
-        return;
-    }
-
-    c->playing_name = strdup(name);
+    c->playing_name = name;
     c->playing_fadein = fadein;
     c->playing_tight = tight;
     c->playing_start_ms = (int) (start * 1000);
     c->playing_relative_volume = relative_volume;
 
-    if (audio_filter) {
-        c->playing_audio_filter = audio_filter;
-        Py_INCREF(c->playing_audio_filter);
-    } else {
-        c->playing_audio_filter = NULL;
-    }
+    c->playing_audio_filter = audio_filter;
 
     c->playing_synchro_start = synchro_start;
 
     start_stream(c, 1);
 
-    UNLOCK_AUDIO();
+    UNLOCK_NAME();
+    EXIT();
 
     error(SUCCESS);
 }
 
-void RPS_queue(int channel, SDL_RWops *rw, const char *ext, const char *name, int synchro_start, int fadein, int tight, double start, double end, float relative_volume, PyObject *audio_filter) {
+void RPS_queue(int channel, SDL_RWops *rw, const char *ext, PyObject *name, int synchro_start, int fadein, int tight, double start, double end, float relative_volume, PyObject *audio_filter) {
+
+    BEGIN();
 
     struct Channel *c;
+    struct MediaState *newMedia;
 
     if (check_channel(channel)) {
         return;
@@ -749,42 +825,54 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, const char *name, in
 
     c = &channels[channel];
 
-    /* If we're not playing, then we should play instead of queue. */
-    if (!c->playing) {
-        RPS_play(channel, rw, ext, name, synchro_start, fadein, tight, start, end, relative_volume, audio_filter);
+    /* Do the loading (IO!) before the audio lock is taken. */
+    newMedia = load_stream(rw, ext, start, end, c->video);
+
+    if (! newMedia) {
+        /* MBG - clean failure of opening nonexistent paths: do nothing. */
+        error(SUCCESS);
         return;
     }
 
-    MediaState *ms = load_stream(rw, ext, start, end, c->video);
+    Py_INCREF(name);
 
-    LOCK_AUDIO();
+    if (audio_filter) {
+        Py_INCREF(audio_filter);
+    }
+
+    ENTER();
+
+    /* If we're not playing, then we should play instead of queue. */
+    if (!c->playing) {
+        EXIT();
+        Py_DECREF(name);
+        if (audio_filter) {
+            Py_DECREF(audio_filter);
+        }
+        RPS_play(channel, rw, ext, name, synchro_start, fadein, tight, start, end, relative_volume, audio_filter, newMedia);
+        return;
+    }
 
     /* Free queued sample. */
 
     if (c->queued) {
         free_stream(c->queued);
         c->queued = NULL;
-        free(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_tight = 0;
     }
 
     if (c->queued_audio_filter) {
-        Py_DECREF(c->queued_audio_filter);
+        names_to_decref_push(c->queued_audio_filter);
         c->queued_audio_filter = NULL;
     }
 
-    /* Allocate queued sample. */
-    c->queued = ms;
+    /* Install the queued sample. */
+    c->queued = newMedia;
+    media_start(newMedia);
 
-    if (! c->queued) {
-        UNLOCK_AUDIO();
-
-        error(SOUND_ERROR);
-        return;
-    }
-
-    c->queued_name = strdup(name);
+    c->queued_name = name;
     c->queued_fadein = fadein;
     c->queued_tight = tight;
     c->queued_synchro_start = synchro_start;
@@ -792,15 +880,9 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, const char *name, in
     c->queued_start_ms = (int) (start * 1000);
     c->queued_relative_volume = relative_volume;
 
+    c->queued_audio_filter = audio_filter;
 
-    if (audio_filter) {
-        c->queued_audio_filter = audio_filter;
-        Py_INCREF(c->queued_audio_filter);
-    } else {
-        c->queued_audio_filter = NULL;
-    }
-
-    UNLOCK_AUDIO();
+    EXIT();
 
     error(SUCCESS);
 }
@@ -812,6 +894,8 @@ void RPS_queue(int channel, SDL_RWops *rw, const char *ext, const char *name, in
  */
 void RPS_stop(int channel) {
 
+    BEGIN();
+
     struct Channel *c;
 
     if (check_channel(channel)) {
@@ -820,7 +904,8 @@ void RPS_stop(int channel) {
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    ENTER();
+    LOCK_NAME();
 
     if (c->playing) {
         post_event(c);
@@ -830,7 +915,7 @@ void RPS_stop(int channel) {
     if (c->playing) {
         free_stream(c->playing);
         c->playing = NULL;
-        free(c->playing_name);
+        names_to_decref_push(c->playing_name);
         c->playing_name = NULL;
         c->playing_start_ms = 0;
         c->playing_relative_volume = 1.0;
@@ -838,14 +923,14 @@ void RPS_stop(int channel) {
     }
 
     if (c->playing_audio_filter) {
-        Py_DECREF(c->playing_audio_filter);
+        names_to_decref_push(c->playing_audio_filter);
         c->playing_audio_filter = NULL;
     }
 
     if (c->queued) {
         free_stream(c->queued);
         c->queued = NULL;
-        free(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
         c->queued_start_ms = 0;
         c->queued_relative_volume = 1.0;
@@ -854,11 +939,12 @@ void RPS_stop(int channel) {
     }
 
     if (c->queued_audio_filter) {
-        Py_DECREF(c->queued_audio_filter);
+        names_to_decref_push(c->queued_audio_filter);
         c->queued_audio_filter = NULL;
     }
 
-    UNLOCK_AUDIO();
+    UNLOCK_NAME();
+    EXIT();
 
     error(SUCCESS);
 }
@@ -873,6 +959,8 @@ void RPS_stop(int channel) {
  */
 void RPS_dequeue(int channel, int even_tight) {
 
+    BEGIN();
+
     struct Channel *c;
 
     if (check_channel(channel)) {
@@ -881,12 +969,12 @@ void RPS_dequeue(int channel, int even_tight) {
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    ENTER();
 
     if (c->queued && (! c->playing_tight || even_tight)) {
         free_stream(c->queued);
         c->queued = NULL;
-        free(c->queued_name);
+        names_to_decref_push(c->queued_name);
         c->queued_name = NULL;
     } else {
         c->queued_tight = 0;
@@ -896,11 +984,11 @@ void RPS_dequeue(int channel, int even_tight) {
     c->queued_synchro_start = 0;
 
     if (c->queued_audio_filter) {
-        Py_DECREF(c->queued_audio_filter);
+        names_to_decref_push(c->queued_audio_filter);
         c->queued_audio_filter = NULL;
     }
 
-    UNLOCK_AUDIO();
+    EXIT();
 
     error(SUCCESS);
 }
@@ -913,6 +1001,8 @@ void RPS_dequeue(int channel, int even_tight) {
 int RPS_queue_depth(int channel) {
     int rv = 0;
 
+    BEGIN();
+
     struct Channel *c;
 
     if (check_channel(channel)) {
@@ -921,12 +1011,12 @@ int RPS_queue_depth(int channel) {
 
     c = &channels[channel];
 
-    LOCK_NAME();
+    ENTER();
 
     if (c->playing) rv++;
     if (c->queued) rv++;
 
-    UNLOCK_NAME();
+    EXIT();
 
     error(SUCCESS);
 
@@ -934,7 +1024,9 @@ int RPS_queue_depth(int channel) {
 }
 
 PyObject *RPS_playing_name(int channel) {
+    BEGIN();
     PyObject *rv;
+
     struct Channel *c;
 
     if (check_channel(channel)) {
@@ -944,16 +1036,21 @@ PyObject *RPS_playing_name(int channel) {
 
     c = &channels[channel];
 
+    ALTENTER();
     LOCK_NAME();
+    ALTEXIT();
 
     if (c->playing_name) {
-        rv = PyBytes_FromString(c->playing_name);
+        rv = c->playing_name;
     } else {
-        Py_INCREF(Py_None);
         rv = Py_None;
     }
 
+    Py_INCREF(rv);
+
+    ALTENTER();
     UNLOCK_NAME();
+    ALTEXIT();
 
     error(SUCCESS);
 
@@ -967,6 +1064,8 @@ PyObject *RPS_playing_name(int channel) {
  */
 void RPS_fadeout(int channel, int ms) {
 
+    BEGIN();
+
     struct Channel *c;
 
     if (check_channel(channel)) {
@@ -975,7 +1074,7 @@ void RPS_fadeout(int channel, int ms) {
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    ENTER();
 
     if (c->queued) {
 
@@ -987,7 +1086,7 @@ void RPS_fadeout(int channel, int ms) {
         if ((position + ms / 1000.0 < duration) || (! c->playing_tight) || (ms <= 32)) {
                 free_stream(c->queued);
                 c->queued = NULL;
-                free(c->queued_name);
+                names_to_decref_push(c->queued_name);
                 c->queued_name = NULL;
                 c->queued_start_ms = 0;
                 c->queued_relative_volume = 1.0;
@@ -998,7 +1097,7 @@ void RPS_fadeout(int channel, int ms) {
         c->stop_samples = 0;
         c->playing_tight = 0;
         c->playing_synchro_start = 0;
-        UNLOCK_AUDIO();
+        EXIT();
 
         error(SUCCESS);
         return;
@@ -1023,7 +1122,7 @@ void RPS_fadeout(int channel, int ms) {
         c->playing_tight = 0;
     }
 
-    UNLOCK_AUDIO();
+    EXIT();
 
     error(SUCCESS);
 }
@@ -1033,6 +1132,8 @@ void RPS_fadeout(int channel, int ms) {
  */
 void RPS_pause(int channel, int pause) {
 
+    BEGIN();
+
     struct Channel *c;
 
     if (check_channel(channel)) {
@@ -1041,11 +1142,15 @@ void RPS_pause(int channel, int pause) {
 
     c = &channels[channel];
 
+    ENTER();
+
     c->paused = pause;
 
     if (c->playing) {
         media_pause(c->playing, pause);
     }
+
+    EXIT();
 
     error(SUCCESS);
 
@@ -1058,6 +1163,10 @@ void RPS_pause(int channel, int pause) {
 void RPS_global_pause(int pause) {
     int i;
 
+    BEGIN();
+
+    ENTER();
+
     SDL_PauseAudio(pause);
 
     for (i = 0; i < num_channels; i++) {
@@ -1065,6 +1174,8 @@ void RPS_global_pause(int pause) {
             media_pause(channels[i].playing, pause);
         }
     }
+
+    EXIT();
 }
 
 
@@ -1075,13 +1186,15 @@ int RPS_get_pos(int channel) {
     int rv;
     struct Channel *c;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return -1;
     }
 
     c = &channels[channel];
 
-    LOCK_NAME();
+    ENTER();
 
     if (c->playing) {
         rv = samples_to_ms(c->pos) + c->playing_start_ms;
@@ -1089,7 +1202,7 @@ int RPS_get_pos(int channel) {
         rv = -1;
     }
 
-    UNLOCK_NAME();
+    EXIT();
 
     error(SUCCESS);
     return rv;
@@ -1103,13 +1216,15 @@ double RPS_get_duration(int channel) {
     double rv;
     struct Channel *c;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return 0.0;
     }
 
     c = &channels[channel];
 
-    LOCK_NAME();
+    ENTER();
 
     if (c->playing) {
         rv = media_duration(c->playing);
@@ -1117,7 +1232,7 @@ double RPS_get_duration(int channel) {
         rv = 0.0;
     }
 
-    UNLOCK_NAME();
+    EXIT();
 
     error(SUCCESS);
     return rv;
@@ -1130,13 +1245,19 @@ double RPS_get_duration(int channel) {
 void RPS_set_endevent(int channel, int event) {
     struct Channel *c;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return;
     }
 
     c = &channels[channel];
 
+    ENTER();
+
     c->event = event;
+
+    EXIT();
 
     error(SUCCESS);
 }
@@ -1147,12 +1268,19 @@ void RPS_set_endevent(int channel, int event) {
 void RPS_set_volume(int channel, float volume) {
     struct Channel *c;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return;
     }
 
     c = &channels[channel];
+
+    ENTER();
+
     c->mixer_volume = volume;
+
+    EXIT();
 
     error(SUCCESS);
 }
@@ -1160,7 +1288,11 @@ void RPS_set_volume(int channel, float volume) {
 
 float RPS_get_volume(int channel) {
 
+    float rv;
+
     struct Channel *c;
+
+    BEGIN();
 
     if (check_channel(channel)) {
         return 0.0;
@@ -1168,8 +1300,14 @@ float RPS_get_volume(int channel) {
 
     c = &channels[channel];
 
+    ENTER();
+
+    rv = c->mixer_volume;
+
+    EXIT();
+
     error(SUCCESS);
-    return c->mixer_volume;
+    return rv;
 }
 
 /*
@@ -1179,20 +1317,22 @@ float RPS_get_volume(int channel) {
 void RPS_set_pan(int channel, float pan, float delay) {
     struct Channel *c;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return;
     }
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    ENTER();
 
     c->pan.start = get_interpolate(&c->pan);
     c->pan.end = pan;
     c->pan.done = 0;
     c->pan.duration = ms_to_samples(delay * 1000);
 
-    UNLOCK_AUDIO();
+    EXIT();
 
     error(SUCCESS);
 }
@@ -1203,20 +1343,22 @@ void RPS_set_pan(int channel, float pan, float delay) {
 void RPS_set_secondary_volume(int channel, float vol2, float delay) {
     struct Channel *c;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return;
     }
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    ENTER();
 
     c->secondary_volume.start = get_interpolate(&c->secondary_volume);
     c->secondary_volume.end = log_power(vol2);
     c->secondary_volume.done = 0;
     c->secondary_volume.duration = ms_to_samples(delay * 1000);
 
-    UNLOCK_AUDIO();
+    EXIT();
 
     error(SUCCESS);
 }
@@ -1227,7 +1369,10 @@ void RPS_set_secondary_volume(int channel, float vol2, float delay) {
  */
 void RPS_replace_audio_filter(int channel, PyObject *new_filter, int primary) {
 
+    BEGIN();
+
     struct Channel *c;
+    int increfs_used = 0;
 
     if (check_channel(channel)) {
         return;
@@ -1235,24 +1380,34 @@ void RPS_replace_audio_filter(int channel, PyObject *new_filter, int primary) {
 
     c = &channels[channel];
 
-    LOCK_AUDIO();
+    /* Refcounting can't happen inside the audio lock, so take the increfs we
+       might need up front and give the unused ones back afterwards. */
+    Py_INCREF(new_filter);
+    Py_INCREF(new_filter);
+
+    ENTER();
 
     if (primary) {
 
         if (c->playing_audio_filter) {
-            Py_DECREF(c->playing_audio_filter);
-            Py_INCREF(new_filter);
+            names_to_decref_push(c->playing_audio_filter);
             c->playing_audio_filter = new_filter;
+            increfs_used++;
         }
     }
 
     if (c->queued_audio_filter) {
-        Py_DECREF(c->queued_audio_filter);
-        Py_INCREF(new_filter);
+        names_to_decref_push(c->queued_audio_filter);
         c->queued_audio_filter = new_filter;
+        increfs_used++;
     }
 
-    UNLOCK_AUDIO();
+    EXIT();
+
+    while (increfs_used < 2) {
+        Py_DECREF(new_filter);
+        increfs_used++;
+    }
 
     error(SUCCESS);
 
@@ -1293,17 +1448,23 @@ int RPS_video_ready(int channel) {
     struct Channel *c;
     int rv;
 
+    BEGIN();
+
     if (check_channel(channel)) {
         return 1;
     }
 
     c = &channels[channel];
 
+    ALTENTER();
+
     if (c->playing) {
         rv = media_video_ready(c->playing);
     } else {
         rv = 1;
     }
+
+    ALTEXIT();
 
     error(SUCCESS);
 
@@ -1335,6 +1496,9 @@ void RPS_init(int freq, int stereo, int samples, int status, int equal_mono, int
     if (initialized) {
         return;
     }
+
+    /* arbitrarily assumes 16 channels. it can expand later. */
+    names_to_decref_require(16);
 
     name_mutex = SDL_CreateMutex();
 
@@ -1376,15 +1540,17 @@ void RPS_init(int freq, int stereo, int samples, int status, int equal_mono, int
 
 void RPS_quit() {
 
+    BEGIN();
+
     if (! initialized) {
         return;
     }
 
     int i;
 
-    LOCK_AUDIO();
+    ENTER();
     SDL_PauseAudio(1);
-    UNLOCK_AUDIO();
+    EXIT();
 
     for (i = 0; i < num_channels; i++) {
         RPS_stop(i);
@@ -1437,25 +1603,40 @@ static void handle_synchro_start() {
  * streams. */
 void RPS_periodic() {
 
-    LOCK_NAME();
+    BEGIN();
+
+    PyObject **decref_list;
+    int decref_count;
+
+    ENTER();
+
     handle_synchro_start();
 
-    struct Dying *d = dying;
-    dying = NULL;
-    UNLOCK_NAME();
-
-    while (d) {
+    while (dying) {
+        struct Dying *d = dying;
         media_close(d->stream);
-        struct Dying *next_d = d->next;
-
-        if (d->audio_filter) {
-            Py_DECREF(d->audio_filter);
-        }
-
+        names_to_decref_push(d->name);
+        names_to_decref_push(d->audio_filter);
+        dying = d->next;
         free(d);
-        d = next_d;
     }
 
+    /* Snapshot the decref list while the audio lock is held (pushes only
+       happen under it), so the decrefs can be done under the GIL without
+       racing other pushers. */
+    decref_list = names_to_decref;
+    decref_count = names_to_decref_count;
+    names_to_decref = NULL;
+    names_to_decref_count = 0;
+    names_to_decref_reserved = 0;
+
+    EXIT();
+
+    for (int i = 0; i < decref_count; i++) {
+        Py_DECREF(decref_list[i]);
+    }
+
+    free(decref_list);
 }
 
 void RPS_advance_time(void) {

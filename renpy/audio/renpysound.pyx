@@ -57,8 +57,8 @@ from sdl2 cimport SDL_RWops
 
 cdef extern from "renpysound_core.h":
 
-    void RPS_play(int channel, SDL_RWops *rw, char *ext, char* name, int synchro_start, int fadein, int tight, double start, double end, float volume, object audio_filter)
-    void RPS_queue(int channel, SDL_RWops *rw, char *ext, char *name, int synchro_start, int fadein, int tight, double start, double end, float volume, object audio_filter)
+    void RPS_play(int channel, SDL_RWops *rw, char *ext, object name, int synchro_start, int fadein, int tight, double start, double end, float volume, object audio_filter, void *maybeAlreadyMediaState)
+    void RPS_queue(int channel, SDL_RWops *rw, char *ext, object name, int synchro_start, int fadein, int tight, double start, double end, float volume, object audio_filter)
     void RPS_stop(int channel)
     void RPS_dequeue(int channel, int even_tight)
     int RPS_queue_depth(int channel)
@@ -159,7 +159,7 @@ def play(channel, file, name, synchro_start=False, fadein=0, tight=False, start=
         tight = 0
 
     name = name.encode("utf-8")
-    RPS_play(channel, rw, name, name, synchro_start, fadein * 1000, tight, start, end, relative_volume, audio_filter)
+    RPS_play(channel, rw, name, name, synchro_start, fadein * 1000, tight, start, end, relative_volume, audio_filter, NULL)
     check_error()
 
 
@@ -396,12 +396,18 @@ def read_video(channel):
     if rv is None:
         return rv
 
-    # Remove padding from the edges of the surface.
+    # MBG - I know we need padding in renpy generally, but it seems like we go
+    # straight from ffmedia adding padding to this removing it. So I guess the
+    # internal renpy padding is not important at this point? I don't want to
+    # add it in my own ratamedia, so let's not take it off here.
+    ## Remove padding from the edges of the surface.
+    #w, h = rv.get_size()
+    #
+    ## This has to be set to the same number it is in ffmedia.c
+    #FRAME_PADDING = 4
+    #return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
     w, h = rv.get_size()
-
-    # This has to be set to the same number it is in ffmedia.c
-    FRAME_PADDING = 4
-    return rv.subsurface((FRAME_PADDING, FRAME_PADDING, w - FRAME_PADDING * 2, h - FRAME_PADDING * 2))
+    return rv.subsurface((0, 0, w, h))
 
 
 # No video will be played from this channel.
