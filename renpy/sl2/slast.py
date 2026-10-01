@@ -49,15 +49,27 @@ from renpy.python import py_eval_bytecode
 from renpy.pyanalysis import Analysis, NOT_CONST, LOCAL_CONST, GLOBAL_CONST, ccache
 
 import hashlib
-import time
 
 from renpy.python import py_eval as eval
 
 # This file contains the abstract syntax tree for a screen language
 # screen.
 
-# A serial number that makes each SLNode unique.
-serial = int(time.time() * 1000000)
+# A serial number that makes each SLNode unique within its script's range.
+serial = 0
+
+
+def seed_serial(filename):
+    """
+    Gives each script a stable serial range independent of compilation order
+    and the absolute project directory. The low 32 bits are the node counter.
+    """
+    global serial
+
+    filename = renpy.lexer.elide_filename(filename)
+    digest = hashlib.sha256(filename.encode("utf-8")).digest()
+    serial = int.from_bytes(digest[:8], "big") << 32
+
 
 # A sentinel used to indicate we should use the value found in the
 # expression.

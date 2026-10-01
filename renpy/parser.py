@@ -1676,6 +1676,8 @@ def parse(fn, filedata=None, linenumber=1):
 
     renpy.game.exception_info = "While parsing " + fn + "."
 
+    renpy.sl2.slast.seed_serial(fn)
+
     try:
         lines = list_logical_lines(fn, filedata, linenumber)
         nested = group_logical_lines(lines)
